@@ -1,0 +1,16 @@
+services:
+  db-soop:
+    image: postgres:16
+    restart: on-failure
+    ports:
+      - "6000:5432"
+    volumes:
+      - db-soop-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: sql
+      POSTGRES_DB: soop
+
+volumes:
+  db-soop-data:
+    driver: local

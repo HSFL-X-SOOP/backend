@@ -1,0 +1,33 @@
+# === Java / Kotlin / Maven ===
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# === Maven specific ===
+.mvn/
+!**/mvn/wrapper/maven-wrapper.jar
+
+# === IntelliJ IDEA ===
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# === Logs ===
+*.log
+
+# === OS-generated ===
+.DS_Store
+Thumbs.db
+
+# === Environment / Config ===
+.env
+
+# === Build tools ===
+build/
+.gradle/
+.kts
+
