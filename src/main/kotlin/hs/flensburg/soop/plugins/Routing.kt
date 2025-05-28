@@ -1,8 +1,8 @@
-package hs.flensburg.soop.plugins
+package main.kotlin.hs.flensburg.soop.plugins
 
-import hs.flensburg.soop.business.ApiError
-import hs.flensburg.soop.business.Result
-import hs.flensburg.soop.business.ServiceLayerError
+import main.kotlin.hs.flensburg.soop.business.ApiError
+import main.kotlin.hs.flensburg.soop.business.Result
+import main.kotlin.hs.flensburg.soop.business.ServiceLayerError
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.response.respond

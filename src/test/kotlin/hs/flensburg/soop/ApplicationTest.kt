@@ -1,2 +1,2 @@
-package hs.flensburg.soop
+package test.kotlin.hs.flensburg.soop
 

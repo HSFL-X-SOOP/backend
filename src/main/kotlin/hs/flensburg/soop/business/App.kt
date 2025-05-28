@@ -1,9 +1,9 @@
-package hs.flensburg.soop.business
+package main.kotlin.hs.flensburg.soop.business
 
-import hs.flensburg.soop.Config
+import main.kotlin.hs.flensburg.soop.Config
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import hs.flensburg.soop.business.Env.dslContext
+import main.kotlin.hs.flensburg.soop.business.Env.dslContext
 import io.ktor.http.HttpStatusCode
 import org.jooq.DSLContext
 import org.jooq.SQLDialect

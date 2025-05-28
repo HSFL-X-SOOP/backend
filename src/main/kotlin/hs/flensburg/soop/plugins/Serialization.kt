@@ -1,4 +1,4 @@
-package hs.flensburg.soop.plugins
+package main.kotlin.hs.flensburg.soop.plugins
 
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application

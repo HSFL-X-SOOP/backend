@@ -1,4 +1,4 @@
-# <span style="color:coral"> **GEOMAR x SOOP x HSFL** </span>
+# <span style="color:coral"> **HSFL X SOOP** </span>
 
 ---
 
