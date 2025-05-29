@@ -1,4 +1,4 @@
-package main.kotlin.hs.flensburg.soop
+package hs.flensburg.soop
 
 import io.github.cdimascio.dotenv.Dotenv
 
