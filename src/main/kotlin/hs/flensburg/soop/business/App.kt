@@ -87,7 +87,7 @@ object Jooq {
      */
     fun <T> query(query: DSLContext.() -> T): Result<DataAccessException, T> {
         return try {
-            Result.ok(query.invoke(dslContext))
+            Result.success(query.invoke(dslContext))
         } catch (e: DataAccessException) {
             Result.failure(e)
         }
@@ -104,7 +104,7 @@ object Jooq {
         return try {
             dslContext.transactionResult { transactionConfiguration ->
                 val txDslContext = DSL.using(transactionConfiguration)
-                Result.ok(query.invoke(txDslContext))
+                Result.success(query.invoke(txDslContext))
             }
         } catch (e: DataAccessException) {
             Result.failure(e)
@@ -129,7 +129,7 @@ sealed class Result<out E, out T> {
     fun getOrNull(): T? = (this as? Success<E, T>)?.result
 
     companion object {
-        fun <E, T> ok(result: T): Result<E, T> = Success(result)
+        fun <E, T> success(result: T): Result<E, T> = Success(result)
         fun <E, T> failure(error: E): Result<E, T> = Failure(error)
     }
 }

@@ -38,5 +38,20 @@ data class Config(
             ),
             mode = Mode.valueOf(get("MODE", "DEV").uppercase()),
         )
+
+        fun parseConfig(): Config = Config(
+            http = Http(
+                host = System.getenv("HTTP_HOST") ?: "0.0.0.0",
+                port = (System.getenv("HTTP_PORT") ?: "8080").toInt(),
+            ),
+            database = Database(
+                url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:6000/soop",
+                user = System.getenv("DATABASE_USER") ?: "user",
+                password = System.getenv("DATABASE_PASSWORD") ?: "sql",
+            ),
+            mode = Mode.valueOf(
+                (System.getenv("MODE") ?: "DEV").uppercase()
+            )
+        )
     }
 }
