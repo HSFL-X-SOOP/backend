@@ -27,6 +27,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <log4j2.version>2.24.3</log4j2.version>
 
+        <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
         <maven.compiler.target>21</maven.compiler.target>
         <maven.compiler.source>21</maven.compiler.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -48,11 +49,11 @@
             <version>${kotlin.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.jetbrains.kotlinx</groupId>
-            <artifactId>kotlinx-serialization-json</artifactId>
-            <version>1.8.0</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.jetbrains.kotlinx</groupId>-->
+<!--            <artifactId>kotlinx-serialization-json</artifactId>-->
+<!--            <version>1.8.0</version>-->
+<!--        </dependency>-->
 
         <!-- Ktor Dependencies -->
         <dependency>
@@ -197,6 +198,7 @@
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <version>${kotlin.version}</version>
+                <extensions>true</extensions>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -215,9 +217,9 @@
                     <jvmTarget>${kotlin.compiler.jvmTarget}</jvmTarget>
                     <apiVersion>${kotlin.apiVersion}</apiVersion>
                     <languageVersion>${kotlin.languageVersion}</languageVersion>
-                    <compilerPlugins>
-                        <plugin>kotlinx-serialization</plugin>
-                    </compilerPlugins>
+<!--                    <compilerPlugins>-->
+<!--                        <plugin>kotlinx-serialization</plugin>-->
+<!--                    </compilerPlugins>-->
                 </configuration>
             </plugin>
 
@@ -264,6 +266,9 @@
                     <password>${database.password}</password>
                     <schemas>${database.schemas}</schemas>
                     <cleanDisabled>false</cleanDisabled>
+                    <locations>
+                        <location>filesystem:database-migrations/scripts</location>
+                    </locations>
                 </configuration>
                 <dependencies>
                     <dependency>
