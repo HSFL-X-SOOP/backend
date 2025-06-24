@@ -1,48 +1,42 @@
 package hs.flensburg.soop.business
 
 import hs.flensburg.soop.Config
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
-import hs.flensburg.soop.business.Env.dslContext
+import de.lambda9.tailwind.core.KIO
+import de.lambda9.tailwind.jooq.Jooq
 import io.ktor.http.HttpStatusCode
-import org.jooq.DSLContext
-import org.jooq.SQLDialect
-import org.jooq.exception.DataAccessException
-import org.jooq.impl.DSL
+import javax.sql.DataSource
 
 
 /**
  * The [Env] object contains all dependencies necessary to start the application.
  */
-object Env {
-    /** A global DSLContext for the application.*/
-    lateinit var dslContext: DSLContext
+data class Env(val config: Config) {
+    companion object {
+        /**
+         * Creates a new [Env] for this application.
+         * @param config a configuration
+         */
+        fun configure(config: Config): Pair<JEnv, DataSource> {
+            val env = Env(
+                config = config
+            )
 
-    /**
-     * This function is called on application startup to configure the Database connection.
-     *
-     * @param config The configuration object containing the passed environment variables.
-     * @return An instance of [AppEnvironment] containing the configuration, DSLContext, and DataSource.
-     */
-    fun configure(config: Config): AppEnvironment {
-        val ds = HikariConfig().apply {
-            jdbcUrl = config.database.url
-            username = config.database.user
-            password = config.database.password
-            driverClassName = "org.postgresql.Driver"
-        }.let(::HikariDataSource)
-
-        dslContext = DSL.using(ds, SQLDialect.POSTGRES)
-
-        return AppEnvironment(
-            config = config,
-            dslContext = dslContext,
-            dataSource = ds
-        )
+            return de.lambda9.tailwind.jooq.Jooq.create(
+                env = env,
+                config = de.lambda9.tailwind.jooq.Jooq.Config(
+                    url = config.database.url,
+                    user = config.database.user,
+                    password = config.database.password,
+                    schema = "soop",
+                )
+            )
+        }
     }
-
-    data class AppEnvironment(val config: Config, val dslContext: DSLContext, val dataSource: HikariDataSource)
 }
+
+typealias JEnv = Jooq<Env>
+
+typealias App<E, A> = KIO<JEnv, E, A>
 
 
 /**
@@ -72,83 +66,3 @@ open class ApiError(
 interface ServiceLayerError {
     fun toApiError(): ApiError
 }
-
-
-/**
- * The [Jooq] object provides utility functions to execute queries using jOOQ.
- */
-object Jooq {
-    /**
-     * This function is used to execute a query to the database.
-     *
-     * @param query A lambda function that takes a DSLContext and returns a result of type T. Inside the lambda,
-     * you can build and execute a jooq query.
-     * @return A Result object containing either a DataAccessException or the result of type T.
-     */
-    fun <T> query(query: DSLContext.() -> T): Result<DataAccessException, T> {
-        return try {
-            Result.success(query.invoke(dslContext))
-        } catch (e: DataAccessException) {
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * This function is used to execute a transactional query to the database.
-     *
-     * @param query A lambda function that takes a DSLContext and returns a result of type T. Inside the lambda,
-     * you can build and execute a jooq query.
-     * @return A Result object containing either a DataAccessException or the result of type T.
-     */
-    fun <T> transactionalQuery(query: DSLContext.() -> T): Result<DataAccessException, T> {
-        return try {
-            dslContext.transactionResult { transactionConfiguration ->
-                val txDslContext = DSL.using(transactionConfiguration)
-                Result.success(query.invoke(txDslContext))
-            }
-        } catch (e: DataAccessException) {
-            Result.failure(e)
-        }
-    }
-}
-
-
-/**
- * A sealed class representing the result of an operation. It can either be a success or a failure.
- *
- * @param E The type of the error.
- * @param T The type of the success result.
- */
-sealed class Result<out E, out T> {
-    data class Success<E, T>(val result: T) : Result<E, T>()
-    data class Failure<E, T>(val error: E) : Result<E, T>()
-
-    fun isSuccess(): Boolean = this is Success
-    fun isFailure(): Boolean = this is Failure
-
-    fun getOrNull(): T? = (this as? Success<E, T>)?.result
-
-    companion object {
-        fun <E, T> success(result: T): Result<E, T> = Success(result)
-        fun <E, T> failure(error: E): Result<E, T> = Failure(error)
-    }
-}
-
-/*
-data class Comprehension<E, T>(
-    val fn: () -> Result<E, T>,
-) {
-    fun run(): Result<E, T> {
-        return fn.invoke()
-    }
-
-    fun <R> fold(
-        onSuccess: (T) -> R,
-        onFailure: (E) -> R,
-    ): R {
-        return when (val result = fn.invoke()) {
-            is Result.Success -> onSuccess(result.result)
-            is Result.Failure -> onFailure(result.error)
-        }
-    }
-}*/
