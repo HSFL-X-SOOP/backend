@@ -13,7 +13,10 @@
         <main.class>hs.flensburg.soop.MainKt</main.class>
 
         <kotlin.version>2.1.20</kotlin.version>
+        <kotlin.apiVersion>1.9</kotlin.apiVersion>
+        <kotlin.languageVersion>2.1</kotlin.languageVersion>
         <kotlin.code.style>official</kotlin.code.style>
+        <tailwind.version>0.2.0</tailwind.version>
         <ktor.version>3.1.2</ktor.version>
         <jooq.version>3.20.3</jooq.version>
         <hikari.version>6.3.0</hikari.version>
@@ -43,6 +46,12 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
             <version>${kotlin.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-serialization-json</artifactId>
+            <version>1.8.0</version>
         </dependency>
 
         <!-- Ktor Dependencies -->
@@ -80,6 +89,19 @@
             <groupId>io.ktor</groupId>
             <artifactId>ktor-server-call-logging-jvm</artifactId>
             <version>${ktor.version}</version>
+        </dependency>
+
+        <!-- KIO -->
+        <dependency>
+            <groupId>de.lambda9.tailwind</groupId>
+            <artifactId>tailwind-kio</artifactId>
+            <version>${tailwind.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.lambda9.tailwind</groupId>
+            <artifactId>tailwind-kio-jooq</artifactId>
+            <version>${tailwind.version}</version>
         </dependency>
 
         <!-- jOOQ Dependencies -->
@@ -165,9 +187,9 @@
         <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/test/kotlin</testSourceDirectory>
         <resources>
-        <resource>
-            <directory>${project.basedir}/src/main/resources</directory>
-        </resource>
+            <resource>
+                <directory>${project.basedir}/src/main/resources</directory>
+            </resource>
         </resources>
         <plugins>
             <!-- Kotlin compiler plugin -->
@@ -189,6 +211,14 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <jvmTarget>${kotlin.compiler.jvmTarget}</jvmTarget>
+                    <apiVersion>${kotlin.apiVersion}</apiVersion>
+                    <languageVersion>${kotlin.languageVersion}</languageVersion>
+                    <compilerPlugins>
+                        <plugin>kotlinx-serialization</plugin>
+                    </compilerPlugins>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -216,40 +246,38 @@
                     </execution>
                 </executions>
             </plugin>
-
-<!--            <plugin>-->
-<!--                <groupId>org.flywaydb</groupId>-->
-<!--                <artifactId>flyway-maven-plugin</artifactId>-->
-<!--                <version>${flyway.version}</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <phase>generate-sources</phase>-->
-<!--                        <goals>-->
-<!--                            <goal>migrate</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <configuration>-->
-<!--                    <url>${database.url}</url>-->
-<!--                    <user>${database.user}</user>-->
-<!--                    <password>${database.password}</password>-->
-<!--                    <schemas>${database.schemas}</schemas>-->
-<!--                    <cleanDisabled>false</cleanDisabled>-->
-<!--                </configuration>-->
-<!--                <dependencies>-->
-<!--                    <dependency>-->
-<!--                        <groupId>org.postgresql</groupId>-->
-<!--                        <artifactId>postgresql</artifactId>-->
-<!--                        <version>${postgres.version}</version>-->
-<!--                    </dependency>-->
-<!--                    <dependency>-->
-<!--                        <groupId>org.flywaydb</groupId>-->
-<!--                        <artifactId>flyway-database-postgresql</artifactId>-->
-<!--                        <version>${flyway.version}</version>-->
-<!--                    </dependency>-->
-<!--                </dependencies>-->
-<!--            </plugin>-->
-
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>${flyway.version}</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>migrate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <url>${database.url}</url>
+                    <user>${database.user}</user>
+                    <password>${database.password}</password>
+                    <schemas>${database.schemas}</schemas>
+                    <cleanDisabled>false</cleanDisabled>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>${postgres.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-database-postgresql</artifactId>
+                        <version>${flyway.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
             <plugin>
 
                 <groupId>org.jooq</groupId>
