@@ -1,0 +1,24 @@
+package hs.flensburg.soop.business.api.dto
+
+import kotlinx.serialization.Serializable
+import hs.flensburg.soop.database.generated.tables.pojos.Location
+
+@Serializable
+data class LocationDTO(
+    val id: Long,
+    val name: String?,
+    val coordinates: GeoPointDTO?
+)
+
+@Serializable
+data class GeoPointDTO(
+    val latitude: Double,
+    val longitude: Double
+)
+
+// Annahme: Location.coordinates ist ein org.postgis.Point oder null
+fun Location.toLocationDTO() = LocationDTO(
+    id = this.id ?: 0L,
+    name = this.name,
+    coordinates = (this.coordinates as? Pair<Double, Double>)?.let {GeoPointDTO(it.first, it.second)}
+)

@@ -7,8 +7,14 @@ import de.lambda9.tailwind.core.extensions.exit.getOrNull
 import hs.flensburg.soop.Config.Companion.parseConfig
 import hs.flensburg.soop.business.Env
 import hs.flensburg.soop.business.JEnv
-import hs.flensburg.soop.business.api.dto.toDTO
+import hs.flensburg.soop.business.api.dto.MeasurementTypeDTO
+import hs.flensburg.soop.business.api.dto.SensorDTO
+import hs.flensburg.soop.business.api.dto.toMeasurementTypeDTO
+import hs.flensburg.soop.business.api.dto.toSensorDTO
+import hs.flensburg.soop.business.api.getAllMeasurementTypesFromDB
 import hs.flensburg.soop.business.api.getAllSensorsFromDB
+import hs.flensburg.soop.database.generated.tables.pojos.Measurementtype
+import hs.flensburg.soop.database.generated.tables.pojos.Sensor
 import hs.flensburg.soop.plugins.configureKIO
 import hs.flensburg.soop.plugins.configureSerialization
 import hs.flensburg.soop.plugins.respondKIO
@@ -55,10 +61,26 @@ fun Application.modules(env: JEnv) {
         route("/sensors") {
             get {
                 // TODO: Wrap in KIO
+                // response: Exit<DataException, List<Sensor>>
                 val response = getAllSensorsFromDB().unsafeRunSync(env)
                 if (response.isSuccess()) {
-                    val sensors = response.getOrNull()!!.map { it.toDTO() }
-                    call.respond(sensors)
+                    //sensors: List<Sensor>
+                    val sensors: List<Sensor> = response.getOrNull()!!
+                    val sensorDTOs: List<SensorDTO> = sensors.map { it.toSensorDTO() }
+                    call.respond(sensorDTOs)
+                }else{
+                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren"))
+                }
+            }
+        }
+        route("/measurementtypes") {
+            get {
+                // TODO: Wrap in KIO
+                val response = getAllMeasurementTypesFromDB().unsafeRunSync(env)
+                if (response.isSuccess()) {
+                    val measurementtypes: List<Measurementtype> = response.getOrNull()!!
+                    val measurementtypeDTOs: List<MeasurementTypeDTO> = measurementtypes.map { it.toMeasurementTypeDTO() }
+                    call.respond(measurementtypeDTOs)
                 }else{
                     call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren"))
                 }

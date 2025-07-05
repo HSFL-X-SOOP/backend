@@ -12,7 +12,7 @@ data class SensorDTO(
 )
 
 // Mapping-Funktion
-fun Sensor.toDTO() = SensorDTO(
+fun Sensor.toSensorDTO() = SensorDTO(
     id = this.id,
     name = this.name,
     description = this.description,

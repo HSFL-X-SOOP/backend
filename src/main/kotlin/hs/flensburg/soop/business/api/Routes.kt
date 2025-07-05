@@ -4,34 +4,29 @@ import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.soop.business.App
 import hs.flensburg.soop.business.JEnv
+import hs.flensburg.soop.database.generated.tables.Location
 import io.ktor.server.application.Application
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import org.jooq.exception.DataAccessException
-import hs.flensburg.soop.database.generated.tables.pojos.Sensor
 import hs.flensburg.soop.database.generated.tables.references.SENSOR
-
-/*
-fun Application.registerLocationRoutes(env: JEnv) {
-    routing {
-        get("/locations") {
-            getSensorDataFromDB().unsafeRunSync(env)
-        }
-    }
-}
+import hs.flensburg.soop.database.generated.tables.pojos.Sensor
+import hs.flensburg.soop.database.generated.tables.references.MEASUREMENTTYPE
+import hs.flensburg.soop.database.generated.tables.pojos.Measurementtype
 
 
- */
 fun getAllSensorsFromDB(): App<DataAccessException, List<Sensor>> = Jooq.query {
     selectFrom(SENSOR).fetchInto(Sensor::class.java)
 }
-/*
-fun getSensorDataFromDB(): App<DataAccessException, Unit> = Jooq.query {
-    val sensor = select(SENSOR)
 
-    val result = select(
-            LOCATION.ID,
+fun getAllMeasurementTypesFromDB(): App<DataAccessException, List<Measurementtype>> = Jooq.query {
+    selectFrom(MEASUREMENTTYPE).fetchInto(Measurementtype::class.java)
+}
+/*
+fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<Location>> = Jooq.query {
+    result = select(
+            Location.ID,
             Location.NAME,
             Measurement.ID.`as`("measurement_id"),
             Measurement.VALUE,
@@ -47,13 +42,15 @@ fun getSensorDataFromDB(): App<DataAccessException, Unit> = Jooq.query {
         .leftJoin(MeasurementType).on(Measurement.MEASUREMENT_TYPE_ID.eq(MeasurementType.ID))
         .where(
             Measurement.TIMESTAMP.eq(
-                DSL.select(DSL.max(Measurement.TIMESTAMP))
+                select(max(Measurement.TIMESTAMP))
                     .from(Measurement)
                     .where(Measurement.SENSOR_ID.eq(Sensor.ID))
             )
                 .or(Measurement.ID.isNull)
         )
-        .fetchMaps()
-
+        .fetch()
+    }
 }
-*/
+
+
+ */
