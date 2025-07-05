@@ -8,15 +8,19 @@ import hs.flensburg.soop.Config.Companion.parseConfig
 import hs.flensburg.soop.business.Env
 import hs.flensburg.soop.business.JEnv
 import hs.flensburg.soop.business.api.dto.LocationDTO
+import hs.flensburg.soop.business.api.dto.MeasurementDTO
 import hs.flensburg.soop.business.api.dto.MeasurementTypeDTO
 import hs.flensburg.soop.business.api.dto.SensorDTO
 import hs.flensburg.soop.business.api.dto.toLocationDTO
+import hs.flensburg.soop.business.api.dto.toMeasurementDTO
 import hs.flensburg.soop.business.api.dto.toMeasurementTypeDTO
 import hs.flensburg.soop.business.api.dto.toSensorDTO
 import hs.flensburg.soop.business.api.getAllLocationsFromDB
 import hs.flensburg.soop.business.api.getAllMeasurementTypesFromDB
+import hs.flensburg.soop.business.api.getAllMeasurementsFromDB
 import hs.flensburg.soop.business.api.getAllSensorsFromDB
 import hs.flensburg.soop.database.generated.tables.pojos.Location
+import hs.flensburg.soop.database.generated.tables.pojos.Measurement
 import hs.flensburg.soop.database.generated.tables.pojos.Measurementtype
 import hs.flensburg.soop.database.generated.tables.pojos.Sensor
 import hs.flensburg.soop.plugins.configureKIO
@@ -73,7 +77,7 @@ fun Application.modules(env: JEnv) {
                     val sensorDTOs: List<SensorDTO> = sensors.map { it.toSensorDTO() }
                     call.respond(sensorDTOs)
                 }else{
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren"))
+                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren ${response}"))
                 }
             }
         }
@@ -86,7 +90,7 @@ fun Application.modules(env: JEnv) {
                     val measurementtypeDTOs: List<MeasurementTypeDTO> = measurementtypes.map { it.toMeasurementTypeDTO() }
                     call.respond(measurementtypeDTOs)
                 }else{
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren"))
+                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren ${response}"))
                 }
             }
         }
@@ -98,6 +102,19 @@ fun Application.modules(env: JEnv) {
                     val locations: List<Location> = response.getOrNull()!!
                     val locationDTOs: List<LocationDTO> = locations.map { it.toLocationDTO() }
                     call.respond(locationDTOs)
+                }else{
+                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren ${response}"))
+                }
+            }
+        }
+        route("/measurements") {
+            get {
+                // TODO: Wrap in KIO
+                val response = getAllMeasurementsFromDB().unsafeRunSync(env)
+                if (response.isSuccess()) {
+                    val measurements: List<Measurement> = response.getOrNull()!!
+                    val measurementDTOs: List<MeasurementDTO> = measurements.map { it.toMeasurementDTO() }
+                    call.respond(measurementDTOs)
                 }else{
                     call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren ${response}"))
                 }

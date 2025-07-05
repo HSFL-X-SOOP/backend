@@ -13,7 +13,7 @@
         <main.class>hs.flensburg.soop.MainKt</main.class>
 
         <kotlin.version>2.1.20</kotlin.version>
-        <kotlin.apiVersion>1.9</kotlin.apiVersion>
+        <kotlin.apiVersion>2.1</kotlin.apiVersion>
         <kotlin.languageVersion>2.1</kotlin.languageVersion>
         <kotlin.code.style>official</kotlin.code.style>
         <tailwind.version>0.2.0</tailwind.version>
@@ -83,7 +83,7 @@
 
         <dependency>
             <groupId>org.jetbrains.kotlinx</groupId>
-            <artifactId>kotlinx-datetime</artifactId>
+            <artifactId>kotlinx-datetime-jvm</artifactId>
             <version>${kotlinxDateTime.version}</version>
         </dependency>
 
