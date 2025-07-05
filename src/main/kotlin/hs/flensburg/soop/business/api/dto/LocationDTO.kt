@@ -12,8 +12,8 @@ data class LocationDTO(
 
 @Serializable
 data class GeoPointDTO(
-    val latitude: Double,
-    val longitude: Double
+    val lat: Double,
+    val lon: Double
 )
 
 // Annahme: Location.coordinates ist ein org.postgis.Point oder null
