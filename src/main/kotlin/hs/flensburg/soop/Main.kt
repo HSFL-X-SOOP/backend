@@ -19,6 +19,7 @@ import hs.flensburg.soop.business.api.getAllLocationsFromDB
 import hs.flensburg.soop.business.api.getAllMeasurementTypesFromDB
 import hs.flensburg.soop.business.api.getAllMeasurementsFromDB
 import hs.flensburg.soop.business.api.getAllSensorsFromDB
+import hs.flensburg.soop.business.api.getLocationsWithLatestMeasurements
 import hs.flensburg.soop.database.generated.tables.pojos.Location
 import hs.flensburg.soop.database.generated.tables.pojos.Measurement
 import hs.flensburg.soop.database.generated.tables.pojos.Measurementtype
@@ -120,5 +121,18 @@ fun Application.modules(env: JEnv) {
                 }
             }
         }
+        route("/latestmeasurements") {
+            get {
+                val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
+                println(response)
+                if (response.isSuccess()) {
+                    val result = response.getOrNull()!! // List<LocationWithLatestMeasurementsDTO>
+                    call.respond(result)
+                } else {
+                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten ${response}"))
+                }
+            }
+        }
+
     }
 }
