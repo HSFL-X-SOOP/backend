@@ -124,7 +124,6 @@ fun Application.modules(env: JEnv) {
         route("/latestmeasurements") {
             get {
                 val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
-                println(response)
                 if (response.isSuccess()) {
                     val result = response.getOrNull()!! // List<LocationWithLatestMeasurementsDTO>
                     call.respond(result)

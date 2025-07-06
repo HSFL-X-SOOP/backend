@@ -2,11 +2,12 @@ package hs.flensburg.soop.business.api
 
 import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.soop.business.App
+import hs.flensburg.soop.business.api.dto.EnrichedMeasurementDTO
 import hs.flensburg.soop.business.api.dto.GeoPointDTO
 import hs.flensburg.soop.business.api.dto.LocationDTO
 import hs.flensburg.soop.business.api.dto.LocationWithLatestMeasurementsDTO
-import hs.flensburg.soop.business.api.dto.MeasurementDTO
-import hs.flensburg.soop.business.api.dto.toMeasurementDTO
+import hs.flensburg.soop.business.api.dto.toMeasurementTypeDTO
+import hs.flensburg.soop.business.api.dto.toSensorDTO
 import hs.flensburg.soop.database.generated.tables.pojos.Location
 import hs.flensburg.soop.database.generated.tables.pojos.Measurement
 import hs.flensburg.soop.database.generated.tables.pojos.Measurementtype
@@ -15,10 +16,13 @@ import hs.flensburg.soop.database.generated.tables.references.LOCATION
 import hs.flensburg.soop.database.generated.tables.references.MEASUREMENT
 import hs.flensburg.soop.database.generated.tables.references.MEASUREMENTTYPE
 import hs.flensburg.soop.database.generated.tables.references.SENSOR
-import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jooq.exception.DataAccessException
 import org.jooq.impl.DSL
 import java.time.OffsetDateTime
+import kotlin.time.ExperimentalTime
+import kotlin.time.toKotlinInstant
 
 
 fun getAllSensorsFromDB(): App<DataAccessException, List<Sensor>> = Jooq.query {
@@ -55,6 +59,7 @@ fun getAllMeasurementsFromDB(): App<DataAccessException, List<Measurement>> = Jo
     selectFrom(MEASUREMENT).fetchInto(Measurement::class.java)
 }
 
+@OptIn(ExperimentalTime::class)
 fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
     val sql = """
         WITH latest AS (
@@ -72,40 +77,71 @@ fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<Location
           l.name AS loc_name,
           ST_Y(l.coordinates::geometry) AS latitude,
           ST_X(l.coordinates::geometry) AS longitude,
-          lm.sensor_id,
-          lm.type_id,
+        
+          s.id AS sensor_id,
+          s.name AS sensor_name,
+          s.description AS sensor_description,
+          s.is_moving AS sensor_is_moving,
+        
+          mt.id AS type_id,
+          mt.name AS type_name,
+          mt.description AS type_description,
+          mt.unit_name,
+          mt.unit_symbol,
+          mt.unit_definition,
+        
           lm.time AS meas_time,
           lm.value AS meas_value
+        
         FROM latest AS lm
-        JOIN soop.location AS l ON lm.location_id = l.id
+        JOIN soop.location l ON lm.location_id = l.id
+        JOIN soop.sensor s ON lm.sensor_id = s.id
+        JOIN soop.measurementtype mt ON lm.type_id = mt.id
+        
         ORDER BY l.id;
       """.trimIndent()
 
     resultQuery(sql).fetchGroups(
-        // Key = LocationDTO
-        {
-            val id = it.get("loc_id", Long::class.java)!!
+        { rec ->
             LocationDTO(
-                id = id,
-                name = it.get("loc_name", String::class.java),
+                id = rec.get("loc_id", Long::class.java)!!,
+                name = rec.get("loc_name", String::class.java),
                 coordinates = GeoPointDTO(
-                    it.get("latitude", Double::class.java)!!,
-                    it.get("longitude", Double::class.java)!!
+                    lat = rec.get("latitude", Double::class.java)!!,
+                    lon = rec.get("longitude", Double::class.java)!!
                 )
             )
         },
-        // Value = Measurement → then .toMeasurementDTO()
         { rec ->
-            Measurement(
-                sensorId = rec.get("sensor_id", Long::class.java),
-                typeId = rec.get("type_id", Long::class.java),
-                locationId = rec.get("loc_id", Long::class.java),
-                time = rec.get("meas_time", OffsetDateTime::class.java),
-                value = rec.get("meas_value", Double::class.java)
-            ).toMeasurementDTO()
+            val sensor = Sensor(
+                id = rec.get("sensor_id", Long::class.java),
+                name = rec.get("sensor_name", String::class.java),
+                description = rec.get("sensor_description", String::class.java),
+                isMoving = rec.get("sensor_is_moving", Boolean::class.java)
+            ).toSensorDTO()
+
+            val type = Measurementtype(
+                id = rec.get("type_id", Long::class.java),
+                name = rec.get("type_name", String::class.java),
+                description = rec.get("type_description", String::class.java),
+                unitName = rec.get("unit_name", String::class.java),
+                unitSymbol = rec.get("unit_symbol", String::class.java),
+                unitDefinition = rec.get("unit_definition", String::class.java)
+            ).toMeasurementTypeDTO()
+
+            val time = rec.get("meas_time", OffsetDateTime::class.java)
+                .toInstant()?.toKotlinInstant()?.toLocalDateTime(TimeZone.UTC)
+
+            EnrichedMeasurementDTO(
+                sensor = sensor,
+                measurementType = type,
+                time = time,
+                value = rec.get("meas_value", Double::class.java)!!
+            )
         }
-    ).map { (locationDto, measurements) ->
-        LocationWithLatestMeasurementsDTO(location = locationDto, latestMeasurements = measurements)
+    ).map { (location, enrichedMeasurements) ->
+        LocationWithLatestMeasurementsDTO(location, enrichedMeasurements)
     }
+
 }
 
