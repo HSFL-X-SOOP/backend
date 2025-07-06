@@ -4,6 +4,7 @@ import de.lambda9.tailwind.core.KIO
 import hs.flensburg.soop.Config.Companion.parseConfig
 import hs.flensburg.soop.business.Env
 import hs.flensburg.soop.business.JEnv
+import hs.flensburg.soop.business.configureScheduling
 import hs.flensburg.soop.plugins.configureKIO
 import hs.flensburg.soop.plugins.configureSerialization
 import hs.flensburg.soop.plugins.respondKIO
@@ -39,12 +40,5 @@ fun main(args: Array<String>) {
 fun Application.modules(env: JEnv) {
     configureSerialization()
     configureKIO(env)
-
-    routing {
-        route("/test") {
-            get {
-                call.respondKIO(KIO.ok("This is a test response"))
-            }
-        }
-    }
+    configureScheduling(env)
 }
