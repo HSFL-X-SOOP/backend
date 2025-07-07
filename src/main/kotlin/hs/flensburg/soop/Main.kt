@@ -33,6 +33,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.Application
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
+import org.flywaydb.core.Flyway
 import io.ktor.server.response.respond
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
@@ -48,7 +49,14 @@ fun main(args: Array<String>) {
         else -> null
     }
 
-    val (env, _) = Env.configure(config?.parseConfig() ?: Config.parseConfig())
+    val (env, dsl) = Env.configure(config?.parseConfig() ?: Config.parseConfig())
+
+    Flyway(
+        Flyway.configure()
+            .driver("org.postgresql.Driver")
+            .dataSource(dsl)
+            .schemas("soop")
+    ).migrate()
 
     embeddedServer(
         factory = Netty,

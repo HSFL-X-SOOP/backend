@@ -305,9 +305,6 @@
                     <password>${database.password}</password>
                     <schemas>${database.schemas}</schemas>
                     <cleanDisabled>false</cleanDisabled>
-                    <locations>
-                        <location>filesystem:database-migrations/scripts</location>
-                    </locations>
                 </configuration>
                 <dependencies>
                     <dependency>
