@@ -69,7 +69,7 @@ fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<Location
             m.location_id,
             m.time,
             m.value
-          FROM soop.measurement AS m
+          FROM marlin.measurement AS m
           ORDER BY m.location_id, m.type_id, m.time DESC
         )
         SELECT
@@ -94,9 +94,9 @@ fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<Location
           lm.value AS meas_value
         
         FROM latest AS lm
-        JOIN soop.location l ON lm.location_id = l.id
-        JOIN soop.sensor s ON lm.sensor_id = s.id
-        JOIN soop.measurementtype mt ON lm.type_id = mt.id
+        JOIN marlin.location l ON lm.location_id = l.id
+        JOIN marlin.sensor s ON lm.sensor_id = s.id
+        JOIN marlin.measurementtype mt ON lm.type_id = mt.id
         
         ORDER BY l.id;
       """.trimIndent()

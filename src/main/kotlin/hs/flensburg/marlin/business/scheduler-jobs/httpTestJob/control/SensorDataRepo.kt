@@ -36,12 +36,12 @@ object SensorDataRepo {
         // ST_DWithin(geographyA, geographyB, distance_in_meters)
         val locationQuery = """
     WITH existing_location AS (
-        SELECT id FROM soop.location 
+        SELECT id FROM marlin.location 
         WHERE ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, 5)
         LIMIT 1
     ),
     new_location AS (
-        INSERT INTO soop.location (coordinates) 
+        INSERT INTO marlin.location (coordinates) 
         SELECT ST_SetSRID(ST_MakePoint(?, ?), 4326)
         WHERE NOT EXISTS (SELECT 1 FROM existing_location)
         RETURNING id

@@ -18,7 +18,7 @@ object ReverseGeoCodingService {
         // get all locations without a name
         val locationsWithoutNames = """
             SELECT id, ST_X(coordinates::geometry) as lon, ST_Y(coordinates::geometry) as lat
-            FROM soop.location 
+            FROM marlin.location 
             WHERE name IS NULL 
             AND coordinates IS NOT NULL
         """.trimIndent()
