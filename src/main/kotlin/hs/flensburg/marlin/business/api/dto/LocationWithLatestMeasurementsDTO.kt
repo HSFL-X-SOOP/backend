@@ -1,4 +1,4 @@
-package hs.flensburg.soop.business.api.dto
+package hs.flensburg.marlin.business.api.dto
 
 import kotlinx.serialization.Serializable
 import kotlinx.datetime.LocalDateTime

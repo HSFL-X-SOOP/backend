@@ -1,4 +1,4 @@
-package hs.flensburg.soop.business.jobs.reverseGeocoding.entity
+package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity
 
 import kotlinx.serialization.Serializable
 

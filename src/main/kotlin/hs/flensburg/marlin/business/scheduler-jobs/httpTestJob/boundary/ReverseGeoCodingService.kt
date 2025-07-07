@@ -1,10 +1,10 @@
-package hs.flensburg.soop.business.jobs.httpTestJob.boundary
+package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.boundary
 
 import de.lambda9.tailwind.jooq.Jooq
-import hs.flensburg.soop.business.App
-import hs.flensburg.soop.business.httpclient
-import hs.flensburg.soop.business.jobs.reverseGeocoding.entity.NominatimResponse
-import hs.flensburg.soop.database.generated.tables.references.LOCATION
+import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.httpclient
+import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity.NominatimResponse
+import hs.flensburg.marlin.database.generated.tables.references.LOCATION
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.runBlocking

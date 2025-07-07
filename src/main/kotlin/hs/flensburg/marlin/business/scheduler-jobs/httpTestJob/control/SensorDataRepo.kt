@@ -1,11 +1,11 @@
-package hs.flensburg.soop.business.jobs.httpTestJob.control
+package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.control
 
 import de.lambda9.tailwind.jooq.Jooq
-import hs.flensburg.soop.business.App
-import hs.flensburg.soop.business.jobs.httpTestJob.entity.ThingClean
-import hs.flensburg.soop.database.generated.tables.references.MEASUREMENT
-import hs.flensburg.soop.database.generated.tables.references.MEASUREMENTTYPE
-import hs.flensburg.soop.database.generated.tables.references.SENSOR
+import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity.ThingClean
+import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENT
+import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENTTYPE
+import hs.flensburg.marlin.database.generated.tables.references.SENSOR
 import org.jooq.exception.DataAccessException
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter

@@ -1,7 +1,7 @@
-package hs.flensburg.soop.business.api.dto
+package hs.flensburg.marlin.business.api.dto
 
 import kotlinx.serialization.Serializable
-import hs.flensburg.soop.database.generated.tables.pojos.Sensor
+import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
 
 @Serializable
 data class SensorDTO(

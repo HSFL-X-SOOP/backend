@@ -1,6 +1,6 @@
-package hs.flensburg.soop.business
+package hs.flensburg.marlin.business
 
-import hs.flensburg.soop.Config
+import hs.flensburg.marlin.Config
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.jooq.Jooq
 import io.ktor.http.HttpStatusCode
@@ -27,7 +27,7 @@ data class Env(val config: Config) {
                     url = config.database.url,
                     user = config.database.user,
                     password = config.database.password,
-                    schema = "soop",
+                    schema = "marlin",
                 )
             )
         }

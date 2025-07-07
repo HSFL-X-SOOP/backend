@@ -1,9 +1,9 @@
-CREATE SCHEMA IF NOT EXISTS soop;
-SET search_path TO soop, pg_catalog, public;
+CREATE SCHEMA IF NOT EXISTS marlin;
+SET search_path TO marlin, pg_catalog, public;
 
-CREATE EXTENSION  IF NOT EXISTS postgis WITH SCHEMA soop;
-CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA soop;
-CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA soop;
+CREATE EXTENSION  IF NOT EXISTS postgis WITH SCHEMA marlin;
+CREATE EXTENSION IF NOT EXISTS timescaledb WITH SCHEMA marlin;
+CREATE EXTENSION IF NOT EXISTS timescaledb_toolkit WITH SCHEMA marlin;
 
 CREATE TABLE Sensor (
                         id BIGINT PRIMARY KEY,

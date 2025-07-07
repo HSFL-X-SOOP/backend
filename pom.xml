@@ -3,14 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>hs.flensburg.soop</groupId>
+    <groupId>hs.flensburg.marlin</groupId>
     <artifactId>backend</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
     <name>backend</name>
 
     <properties>
-        <main.class>hs.flensburg.soop.MainKt</main.class>
+        <main.class>hs.flensburg.marlin.MainKt</main.class>
 
         <kotlin.version>2.2.0</kotlin.version>
         <kotlin.apiVersion>2.1</kotlin.apiVersion>
@@ -35,11 +35,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- DATABASE -->
-        <database.url>jdbc:postgresql://localhost:6000/soop</database.url>
+        <database.url>jdbc:postgresql://localhost:6000/marlin</database.url>
         <database.user>user</database.user>
         <database.password>sql</database.password>
-        <database.schemas>soop</database.schemas>
-        <database.generated.package>hs.flensburg.soop.database.generated</database.generated.package>
+        <database.schemas>marlin</database.schemas>
+        <database.generated.package>hs.flensburg.marlin.database.generated</database.generated.package>
     </properties>
 
     <dependencies>

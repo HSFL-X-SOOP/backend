@@ -1,33 +1,33 @@
-package hs.flensburg.soop
+package hs.flensburg.marlin
 
 import de.lambda9.tailwind.core.Exit.Companion.isSuccess
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.exit.getOrNull
-import hs.flensburg.soop.Config.Companion.parseConfig
-import hs.flensburg.soop.business.Env
-import hs.flensburg.soop.business.JEnv
-import hs.flensburg.soop.business.api.dto.LocationDTO
-import hs.flensburg.soop.business.api.dto.MeasurementDTO
-import hs.flensburg.soop.business.api.dto.MeasurementTypeDTO
-import hs.flensburg.soop.business.api.dto.SensorDTO
-import hs.flensburg.soop.business.api.dto.toLocationDTO
-import hs.flensburg.soop.business.api.dto.toMeasurementDTO
-import hs.flensburg.soop.business.api.dto.toMeasurementTypeDTO
-import hs.flensburg.soop.business.api.dto.toSensorDTO
-import hs.flensburg.soop.business.api.getAllLocationsFromDB
-import hs.flensburg.soop.business.api.getAllMeasurementTypesFromDB
-import hs.flensburg.soop.business.api.getAllMeasurementsFromDB
-import hs.flensburg.soop.business.api.getAllSensorsFromDB
-import hs.flensburg.soop.business.api.getLocationsWithLatestMeasurements
-import hs.flensburg.soop.database.generated.tables.pojos.Location
-import hs.flensburg.soop.database.generated.tables.pojos.Measurement
-import hs.flensburg.soop.database.generated.tables.pojos.Measurementtype
-import hs.flensburg.soop.database.generated.tables.pojos.Sensor
-import hs.flensburg.soop.business.configureScheduling
-import hs.flensburg.soop.plugins.configureKIO
-import hs.flensburg.soop.plugins.configureSerialization
-import hs.flensburg.soop.plugins.respondKIO
+import hs.flensburg.marlin.Config.Companion.parseConfig
+import hs.flensburg.marlin.business.Env
+import hs.flensburg.marlin.business.JEnv
+import hs.flensburg.marlin.business.api.dto.LocationDTO
+import hs.flensburg.marlin.business.api.dto.MeasurementDTO
+import hs.flensburg.marlin.business.api.dto.MeasurementTypeDTO
+import hs.flensburg.marlin.business.api.dto.SensorDTO
+import hs.flensburg.marlin.business.api.dto.toLocationDTO
+import hs.flensburg.marlin.business.api.dto.toMeasurementDTO
+import hs.flensburg.marlin.business.api.dto.toMeasurementTypeDTO
+import hs.flensburg.marlin.business.api.dto.toSensorDTO
+import hs.flensburg.marlin.business.api.getAllLocationsFromDB
+import hs.flensburg.marlin.business.api.getAllMeasurementTypesFromDB
+import hs.flensburg.marlin.business.api.getAllMeasurementsFromDB
+import hs.flensburg.marlin.business.api.getAllSensorsFromDB
+import hs.flensburg.marlin.business.api.getLocationsWithLatestMeasurements
+import hs.flensburg.marlin.database.generated.tables.pojos.Location
+import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
+import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
+import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
+import hs.flensburg.marlin.business.configureScheduling
+import hs.flensburg.marlin.plugins.configureKIO
+import hs.flensburg.marlin.plugins.configureSerialization
+import hs.flensburg.marlin.plugins.respondKIO
 import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.Application
@@ -44,7 +44,7 @@ private val logger = KotlinLogging.logger { }
 fun main(args: Array<String>) {
     val mode = System.getenv("MODE")?.uppercase() ?: "DEV"
 
-    println("Starting SOOP in $mode mode...")
+    logger.info { "Starting Marlin-Backend in $mode mode" }
 
     val config = when (mode) {
         "STAGING", "DEV" -> dotenv()
@@ -53,19 +53,17 @@ fun main(args: Array<String>) {
 
     val (env, dsl) = Env.configure(config?.parseConfig() ?: Config.parseConfig())
 
-    println("SOOP is running in ${env.env.config.database.user} mode")
-
     Flyway(
         Flyway.configure()
             .driver("org.postgresql.Driver")
             .dataSource(dsl)
-            .schemas("soop")
+            .schemas("marlin")
     ).migrate()
 
     embeddedServer(
         factory = Netty,
-        port = 8080,
-        host = "0.0.0.0",
+        port = env.env.config.http.port,
+        host = env.env.config.http.host,
         module = { modules(env) }
     ).start(wait = true)
 }
