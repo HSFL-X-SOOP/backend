@@ -24,6 +24,7 @@ import hs.flensburg.soop.database.generated.tables.pojos.Location
 import hs.flensburg.soop.database.generated.tables.pojos.Measurement
 import hs.flensburg.soop.database.generated.tables.pojos.Measurementtype
 import hs.flensburg.soop.database.generated.tables.pojos.Sensor
+import hs.flensburg.soop.business.configureScheduling
 import hs.flensburg.soop.plugins.configureKIO
 import hs.flensburg.soop.plugins.configureSerialization
 import hs.flensburg.soop.plugins.respondKIO
@@ -60,6 +61,7 @@ fun main(args: Array<String>) {
 fun Application.modules(env: JEnv) {
     configureSerialization()
     configureKIO(env)
+    configureScheduling(env)
 
     routing {
         route("/test") {

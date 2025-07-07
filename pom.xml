@@ -12,9 +12,10 @@
     <properties>
         <main.class>hs.flensburg.soop.MainKt</main.class>
 
-        <kotlin.version>2.1.20</kotlin.version>
+        <kotlin.version>2.2.0</kotlin.version>
         <kotlin.apiVersion>2.1</kotlin.apiVersion>
         <kotlin.languageVersion>2.1</kotlin.languageVersion>
+        <kotlinx.io.version>0.7.0</kotlinx.io.version>
         <kotlin.code.style>official</kotlin.code.style>
         <tailwind.version>0.2.0</tailwind.version>
         <ktor.version>3.1.2</ktor.version>
@@ -64,6 +65,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-io-core-jvm</artifactId>
+            <version>${kotlinx.io.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.ktor</groupId>
             <artifactId>ktor-server-netty-jvm</artifactId>
             <version>${ktor.version}</version>
@@ -72,6 +79,24 @@
         <dependency>
             <groupId>io.ktor</groupId>
             <artifactId>ktor-server-content-negotiation-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-client-core-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-client-cio-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-client-content-negotiation-jvm</artifactId>
             <version>${ktor.version}</version>
         </dependency>
 
@@ -90,6 +115,12 @@
         <dependency>
             <groupId>io.ktor</groupId>
             <artifactId>ktor-server-call-logging-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-client-logging-jvm</artifactId>
             <version>${ktor.version}</version>
         </dependency>
 

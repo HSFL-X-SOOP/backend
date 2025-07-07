@@ -1,3 +1,0 @@
-[submodule "database-migrations"]
-	path = database-migrations
-	url = git@github.com:HSFL-X-SOOP/database-migrations.git
