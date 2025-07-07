@@ -18,12 +18,16 @@ private val logger = KotlinLogging.logger { }
 fun main(args: Array<String>) {
     val mode = System.getenv("MODE")?.uppercase() ?: "DEV"
 
+    println("Starting SOOP in $mode mode...")
+
     val config = when (mode) {
         "STAGING", "DEV" -> dotenv()
         else -> null
     }
 
     val (env, dsl) = Env.configure(config?.parseConfig() ?: Config.parseConfig())
+
+    println("SOOP is running in ${env.env.config.database.user} mode")
 
     Flyway(
         Flyway.configure()
