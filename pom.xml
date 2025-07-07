@@ -19,6 +19,7 @@
         <kotlin.code.style>official</kotlin.code.style>
         <tailwind.version>0.2.0</tailwind.version>
         <ktor.version>3.1.2</ktor.version>
+        <kotlinxDateTime.version>0.7.0</kotlinxDateTime.version>
         <jooq.version>3.20.3</jooq.version>
         <hikari.version>6.3.0</hikari.version>
         <flyway.version>11.8.0</flyway.version>
@@ -103,6 +104,12 @@
             <groupId>io.ktor</groupId>
             <artifactId>ktor-serialization-kotlinx-json-jvm</artifactId>
             <version>${ktor.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.kotlinx</groupId>
+            <artifactId>kotlinx-datetime-jvm</artifactId>
+            <version>${kotlinxDateTime.version}</version>
         </dependency>
 
         <dependency>
