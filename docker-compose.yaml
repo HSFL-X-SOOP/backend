@@ -1,6 +1,6 @@
 services:
   db-soop:
-    image: postgres:17
+    image: timescale/timescaledb-ha:pg17
     restart: on-failure
     ports:
       - "6000:5432"

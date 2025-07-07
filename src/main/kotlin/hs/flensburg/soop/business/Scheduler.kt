@@ -4,6 +4,7 @@ import de.lambda9.tailwind.core.Exit
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.exit.fold
+import hs.flensburg.soop.business.jobs.httpTestJob.boundary.SensorDataService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -20,6 +21,11 @@ private val logger = KotlinLogging.logger("Scheduling")
 
 @OptIn(DelicateCoroutinesApi::class)
 fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
+
+
+    schedule(1.minutes, true) {
+        SensorDataService.getMultipleSensorData(env = env)
+    }
 
 }
 
