@@ -59,6 +59,6 @@ jobs:
           username: ${{ env.SERVER_USER }}
           key: ${{ env.DEPLOY_KEY }}
           script: |
+            sudo systemctl stop marlin.service
             docker pull ${{ env.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-            docker compose down
-            docker compose up -d
+            sudo systemctl start marlin.service
