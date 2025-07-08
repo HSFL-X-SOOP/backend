@@ -124,6 +124,12 @@
             <version>${ktor.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-cors-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
         <!-- KIO -->
         <dependency>
             <groupId>de.lambda9.tailwind</groupId>
