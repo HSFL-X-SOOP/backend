@@ -61,45 +61,47 @@ fun getAllMeasurementsFromDB(): App<DataAccessException, List<Measurement>> = Jo
 
 @OptIn(ExperimentalTime::class)
 fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
+    // Query to fetch only the newest measurement within the last 2 hours for each location
     val sql = """
-        WITH latest AS (
-          SELECT DISTINCT ON (m.location_id, m.type_id)
-            m.sensor_id,
-            m.type_id,
-            m.location_id,
-            m.time,
-            m.value
-          FROM soop.measurement AS m
-          ORDER BY m.location_id, m.type_id, m.time DESC
-        )
-        SELECT
-          l.id AS loc_id,
-          l.name AS loc_name,
-          ST_Y(l.coordinates::geometry) AS latitude,
-          ST_X(l.coordinates::geometry) AS longitude,
-        
-          s.id AS sensor_id,
-          s.name AS sensor_name,
-          s.description AS sensor_description,
-          s.is_moving AS sensor_is_moving,
-        
-          mt.id AS type_id,
-          mt.name AS type_name,
-          mt.description AS type_description,
-          mt.unit_name,
-          mt.unit_symbol,
-          mt.unit_definition,
-        
-          lm.time AS meas_time,
-          lm.value AS meas_value
-        
-        FROM latest AS lm
-        JOIN soop.location l ON lm.location_id = l.id
-        JOIN soop.sensor s ON lm.sensor_id = s.id
-        JOIN soop.measurementtype mt ON lm.type_id = mt.id
-        
-        ORDER BY l.id;
-      """.trimIndent()
+    WITH latest AS (
+      SELECT DISTINCT ON (m.location_id, m.type_id)
+        m.sensor_id,
+        m.type_id,
+        m.location_id,
+        m.time,
+        m.value
+      FROM soop.measurement AS m
+      WHERE m.time >= NOW() - INTERVAL '2 hour' -- last 2 hours
+      ORDER BY m.location_id, m.type_id, m.time DESC
+    )
+    SELECT
+      l.id AS loc_id,
+      l.name AS loc_name,
+      ST_Y(l.coordinates::geometry) AS latitude,
+      ST_X(l.coordinates::geometry) AS longitude,
+
+      s.id AS sensor_id,
+      s.name AS sensor_name,
+      s.description AS sensor_description,
+      s.is_moving AS sensor_is_moving,
+
+      mt.id AS type_id,
+      mt.name AS type_name,
+      mt.description AS type_description,
+      mt.unit_name,
+      mt.unit_symbol,
+      mt.unit_definition,
+
+      lm.time AS meas_time,
+      lm.value AS meas_value
+
+    FROM latest AS lm
+    JOIN soop.location l ON lm.location_id = l.id
+    JOIN soop.sensor s ON lm.sensor_id = s.id
+    JOIN soop.measurementtype mt ON lm.type_id = mt.id
+
+    ORDER BY l.id;
+  """.trimIndent()
 
     resultQuery(sql).fetchGroups(
         { rec ->
