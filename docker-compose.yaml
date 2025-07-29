@@ -1,16 +1,16 @@
 services:
-  db-soop:
+  db-marlin:
     image: timescale/timescaledb-ha:pg17
     restart: on-failure
     ports:
       - "6000:5432"
     volumes:
-      - db-soop-data:/var/lib/postgresql/data
+      - db-marlin-data:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: sql
-      POSTGRES_DB: soop
+      POSTGRES_DB: marlin
 
 volumes:
-  db-soop-data:
+  db-marlin-data:
     driver: local

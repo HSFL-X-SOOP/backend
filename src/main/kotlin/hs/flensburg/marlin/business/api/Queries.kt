@@ -1,21 +1,21 @@
-package hs.flensburg.soop.business.api
+package hs.flensburg.marlin.business.api
 
 import de.lambda9.tailwind.jooq.Jooq
-import hs.flensburg.soop.business.App
-import hs.flensburg.soop.business.api.dto.EnrichedMeasurementDTO
-import hs.flensburg.soop.business.api.dto.GeoPointDTO
-import hs.flensburg.soop.business.api.dto.LocationDTO
-import hs.flensburg.soop.business.api.dto.LocationWithLatestMeasurementsDTO
-import hs.flensburg.soop.business.api.dto.toMeasurementTypeDTO
-import hs.flensburg.soop.business.api.dto.toSensorDTO
-import hs.flensburg.soop.database.generated.tables.pojos.Location
-import hs.flensburg.soop.database.generated.tables.pojos.Measurement
-import hs.flensburg.soop.database.generated.tables.pojos.Measurementtype
-import hs.flensburg.soop.database.generated.tables.pojos.Sensor
-import hs.flensburg.soop.database.generated.tables.references.LOCATION
-import hs.flensburg.soop.database.generated.tables.references.MEASUREMENT
-import hs.flensburg.soop.database.generated.tables.references.MEASUREMENTTYPE
-import hs.flensburg.soop.database.generated.tables.references.SENSOR
+import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.api.dto.EnrichedMeasurementDTO
+import hs.flensburg.marlin.business.api.dto.GeoPointDTO
+import hs.flensburg.marlin.business.api.dto.LocationDTO
+import hs.flensburg.marlin.business.api.dto.LocationWithLatestMeasurementsDTO
+import hs.flensburg.marlin.business.api.dto.toMeasurementTypeDTO
+import hs.flensburg.marlin.business.api.dto.toSensorDTO
+import hs.flensburg.marlin.database.generated.tables.pojos.Location
+import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
+import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
+import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
+import hs.flensburg.marlin.database.generated.tables.references.LOCATION
+import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENT
+import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENTTYPE
+import hs.flensburg.marlin.database.generated.tables.references.SENSOR
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jooq.exception.DataAccessException
@@ -63,45 +63,45 @@ fun getAllMeasurementsFromDB(): App<DataAccessException, List<Measurement>> = Jo
 fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
     // Query to fetch only the newest measurement within the last 2 hours for each location
     val sql = """
-    WITH latest AS (
-      SELECT DISTINCT ON (m.location_id, m.type_id)
-        m.sensor_id,
-        m.type_id,
-        m.location_id,
-        m.time,
-        m.value
-      FROM soop.measurement AS m
-      WHERE m.time >= NOW() - INTERVAL '2 hour' -- last 2 hours
-      ORDER BY m.location_id, m.type_id, m.time DESC
-    )
-    SELECT
-      l.id AS loc_id,
-      l.name AS loc_name,
-      ST_Y(l.coordinates::geometry) AS latitude,
-      ST_X(l.coordinates::geometry) AS longitude,
-
-      s.id AS sensor_id,
-      s.name AS sensor_name,
-      s.description AS sensor_description,
-      s.is_moving AS sensor_is_moving,
-
-      mt.id AS type_id,
-      mt.name AS type_name,
-      mt.description AS type_description,
-      mt.unit_name,
-      mt.unit_symbol,
-      mt.unit_definition,
-
-      lm.time AS meas_time,
-      lm.value AS meas_value
-
-    FROM latest AS lm
-    JOIN soop.location l ON lm.location_id = l.id
-    JOIN soop.sensor s ON lm.sensor_id = s.id
-    JOIN soop.measurementtype mt ON lm.type_id = mt.id
-
-    ORDER BY l.id;
-  """.trimIndent()
+        WITH latest AS (
+          SELECT DISTINCT ON (m.location_id, m.type_id)
+            m.sensor_id,
+            m.type_id,
+            m.location_id,
+            m.time,
+            m.value
+          FROM marlin.measurement AS m
+          WHERE m.time >= NOW() - INTERVAL '2 hour' -- last 2 hours
+          ORDER BY m.location_id, m.type_id, m.time DESC
+        )
+        SELECT
+          l.id AS loc_id,
+          l.name AS loc_name,
+          ST_Y(l.coordinates::geometry) AS latitude,
+          ST_X(l.coordinates::geometry) AS longitude,
+        
+          s.id AS sensor_id,
+          s.name AS sensor_name,
+          s.description AS sensor_description,
+          s.is_moving AS sensor_is_moving,
+        
+          mt.id AS type_id,
+          mt.name AS type_name,
+          mt.description AS type_description,
+          mt.unit_name,
+          mt.unit_symbol,
+          mt.unit_definition,
+        
+          lm.time AS meas_time,
+          lm.value AS meas_value
+        
+        FROM latest AS lm
+        JOIN marlin.location l ON lm.location_id = l.id
+        JOIN marlin.sensor s ON lm.sensor_id = s.id
+        JOIN marlin.measurementtype mt ON lm.type_id = mt.id
+        
+        ORDER BY l.id;
+      """.trimIndent()
 
     resultQuery(sql).fetchGroups(
         { rec ->

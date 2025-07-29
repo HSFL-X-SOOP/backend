@@ -1,4 +1,4 @@
-package hs.flensburg.soop.business
+package hs.flensburg.marlin.business
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO

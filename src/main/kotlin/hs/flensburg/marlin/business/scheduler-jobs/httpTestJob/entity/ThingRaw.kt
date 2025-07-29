@@ -1,4 +1,4 @@
-package hs.flensburg.soop.business.jobs.httpTestJob.entity
+package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

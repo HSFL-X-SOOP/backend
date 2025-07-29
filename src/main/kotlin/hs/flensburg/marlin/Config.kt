@@ -1,4 +1,4 @@
-package hs.flensburg.soop
+package hs.flensburg.marlin
 
 import io.github.cdimascio.dotenv.Dotenv
 
@@ -32,7 +32,7 @@ data class Config(
                 port = get("HTTP_PORT", "8080").toInt(),
             ),
             database = Database(
-                url = get("DATABASE_URL", "jdbc:postgresql://localhost:6000/soop"),
+                url = get("DATABASE_URL", "jdbc:postgresql://localhost:6000/marlin"),
                 user = get("DATABASE_USER", "user"),
                 password = get("DATABASE_PASSWORD", "sql"),
             ),
@@ -45,7 +45,7 @@ data class Config(
                 port = (System.getenv("HTTP_PORT") ?: "8080").toInt(),
             ),
             database = Database(
-                url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:6000/soop",
+                url = System.getenv("DATABASE_URL") ?: "jdbc:postgresql://localhost:6000/marlin",
                 user = System.getenv("DATABASE_USER") ?: "user",
                 password = System.getenv("DATABASE_PASSWORD") ?: "sql",
             ),

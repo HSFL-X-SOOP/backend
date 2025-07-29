@@ -1,4 +1,4 @@
-package hs.flensburg.soop.business.jobs.httpTestJob.entity
+package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity
 
 
 // ==== Clean Data Models ====

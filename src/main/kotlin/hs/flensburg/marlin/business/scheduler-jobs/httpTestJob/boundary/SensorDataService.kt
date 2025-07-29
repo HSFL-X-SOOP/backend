@@ -1,12 +1,12 @@
-package hs.flensburg.soop.business.jobs.httpTestJob.boundary
+package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.boundary
 
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
-import hs.flensburg.soop.business.JEnv
-import hs.flensburg.soop.business.httpclient
-import hs.flensburg.soop.business.jobs.httpTestJob.control.SensorDataRepo
-import hs.flensburg.soop.business.jobs.httpTestJob.entity.ThingClean
-import hs.flensburg.soop.business.jobs.httpTestJob.entity.ThingRaw
-import hs.flensburg.soop.business.jobs.httpTestJob.entity.toClean
+import hs.flensburg.marlin.business.JEnv
+import hs.flensburg.marlin.business.httpclient
+import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.control.SensorDataRepo
+import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity.ThingClean
+import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity.ThingRaw
+import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity.toClean
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 

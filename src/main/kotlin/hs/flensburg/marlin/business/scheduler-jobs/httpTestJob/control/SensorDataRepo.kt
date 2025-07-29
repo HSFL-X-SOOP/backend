@@ -1,11 +1,11 @@
-package hs.flensburg.soop.business.jobs.httpTestJob.control
+package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.control
 
 import de.lambda9.tailwind.jooq.Jooq
-import hs.flensburg.soop.business.App
-import hs.flensburg.soop.business.jobs.httpTestJob.entity.ThingClean
-import hs.flensburg.soop.database.generated.tables.references.MEASUREMENT
-import hs.flensburg.soop.database.generated.tables.references.MEASUREMENTTYPE
-import hs.flensburg.soop.database.generated.tables.references.SENSOR
+import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity.ThingClean
+import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENT
+import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENTTYPE
+import hs.flensburg.marlin.database.generated.tables.references.SENSOR
 import org.jooq.exception.DataAccessException
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
@@ -36,12 +36,12 @@ object SensorDataRepo {
         // ST_DWithin(geographyA, geographyB, distance_in_meters)
         val locationQuery = """
     WITH existing_location AS (
-        SELECT id FROM soop.location 
+        SELECT id FROM marlin.location 
         WHERE ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, 5)
         LIMIT 1
     ),
     new_location AS (
-        INSERT INTO soop.location (coordinates) 
+        INSERT INTO marlin.location (coordinates) 
         SELECT ST_SetSRID(ST_MakePoint(?, ?), 4326)
         WHERE NOT EXISTS (SELECT 1 FROM existing_location)
         RETURNING id
