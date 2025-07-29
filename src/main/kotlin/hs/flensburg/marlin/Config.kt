@@ -5,7 +5,8 @@ import io.github.cdimascio.dotenv.Dotenv
 data class Config(
     val http: Http,
     val database: Database,
-    val mode: Mode
+    val mode: Mode,
+    val auth: Auth
 ) {
 
     enum class Mode {
@@ -25,6 +26,13 @@ data class Config(
         val password: String,
     )
 
+    data class Auth(
+        val jwtSecretAccess: String,
+        val jwtSecretRefresh: String,
+        val jwtIssuer: String,
+        val jwtAudience: String,
+    )
+
     companion object {
         fun Dotenv.parseConfig(): Config = Config(
             http = Http(
@@ -37,6 +45,12 @@ data class Config(
                 password = get("DATABASE_PASSWORD", "sql"),
             ),
             mode = Mode.valueOf(get("MODE", "DEV").uppercase()),
+            auth = Auth(
+                jwtSecretAccess = get("JWT_SECRET_ACCESS", ""),
+                jwtSecretRefresh = get("JWT_SECRET_REFRESH", ""),
+                jwtIssuer = get("JWT_ISSUER", ""),
+                jwtAudience = get("JWT_AUDIENCE", "")
+            )
         )
 
         fun parseConfig(): Config = Config(
@@ -49,8 +63,12 @@ data class Config(
                 user = System.getenv("DATABASE_USER") ?: "user",
                 password = System.getenv("DATABASE_PASSWORD") ?: "sql",
             ),
-            mode = Mode.valueOf(
-                (System.getenv("MODE") ?: "DEV").uppercase()
+            mode = Mode.valueOf((System.getenv("MODE") ?: "DEV").uppercase()),
+            auth = Auth(
+                jwtSecretAccess = System.getenv("JWT_SECRET_ACCESS") ?: "",
+                jwtSecretRefresh = System.getenv("JWT_SECRET_REFRESH") ?: "",
+                jwtIssuer = System.getenv("JWT_ISSUER") ?: "",
+                jwtAudience = System.getenv("JWT_AUDIENCE") ?: ""
             )
         )
     }

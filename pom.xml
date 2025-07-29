@@ -23,11 +23,12 @@
         <jooq.version>3.20.3</jooq.version>
         <hikari.version>6.3.0</hikari.version>
         <flyway.version>11.8.0</flyway.version>
-        <postgres.version>42.7.5</postgres.version>
+        <postgres.version>42.7.7</postgres.version>
         <kotlin.logging.version>7.0.7</kotlin.logging.version>
         <kotlin.dotenv.version>6.5.1</kotlin.dotenv.version>
         <slf4j.version>2.0.17</slf4j.version>
         <log4j2.version>2.24.3</log4j2.version>
+        <bcrypt.version>0.4</bcrypt.version>
 
         <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
         <maven.compiler.target>21</maven.compiler.target>
@@ -130,6 +131,18 @@
             <version>${ktor.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-auth-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-auth-jwt-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
         <!-- KIO -->
         <dependency>
             <groupId>de.lambda9.tailwind</groupId>
@@ -218,6 +231,13 @@
             <groupId>io.github.oshai</groupId>
             <artifactId>kotlin-logging-jvm</artifactId>
             <version>${kotlin.logging.version}</version>
+        </dependency>
+
+        <!--Encryption-->
+        <dependency>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>${bcrypt.version}</version>
         </dependency>
     </dependencies>
 

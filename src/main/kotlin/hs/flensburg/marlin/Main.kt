@@ -27,14 +27,12 @@ import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
 import hs.flensburg.marlin.business.configureScheduling
 import hs.flensburg.marlin.plugins.configureCORS
 import hs.flensburg.marlin.plugins.configureKIO
+import hs.flensburg.marlin.plugins.configureRouting
 import hs.flensburg.marlin.plugins.configureSerialization
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
 import io.ktor.server.application.Application
-import io.ktor.server.application.install
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import org.flywaydb.core.Flyway
@@ -77,13 +75,9 @@ fun Application.modules(env: JEnv) {
     configureKIO(env)
     configureScheduling(env)
     configureCORS()
+    configureRouting(env)
 
     routing {
-        route("/test") {
-            get {
-                call.respondKIO(KIO.ok("This is a test response"))
-            }
-        }
         route("/sensors") {
             get {
                 // TODO: Wrap in KIO

@@ -49,6 +49,7 @@ open class ApiError(
     val statusCode: HttpStatusCode,
     val message: String,
 ) {
+    data class Unauthorized(val msg: String?) : ApiError(HttpStatusCode.Unauthorized, msg ?: "Nicht autorisert")
     data class NotFound(val msg: String?) : ApiError(HttpStatusCode.NotFound, msg ?: "Nicht gefunden")
     data class BadRequest(val msg: String?) : ApiError(HttpStatusCode.BadRequest, msg ?: "Fehlerhafte Anfrage")
     data class AlreadyExists(val msg: String?) : ApiError(HttpStatusCode.Conflict, msg ?: "Bereits vorhanden")

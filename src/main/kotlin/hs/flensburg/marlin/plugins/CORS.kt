@@ -17,7 +17,5 @@ fun Application.configureCORS() {
         allowMethod(HttpMethod.Put)
         allowMethod(HttpMethod.Delete)
         allowMethod(HttpMethod.Options)
-
-        allowCredentials = true
     }
 }
