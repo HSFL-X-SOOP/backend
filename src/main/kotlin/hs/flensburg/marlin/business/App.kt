@@ -38,7 +38,6 @@ typealias JEnv = Jooq<Env>
 
 typealias App<E, A> = KIO<JEnv, E, A>
 
-
 /**
  * The [ApiError] class represents an error that can occur in the application.
  *
@@ -59,7 +58,6 @@ open class ApiError(
 
 }
 
-
 /**
  * The [ServiceLayerError] interface represents an error that can occur in the service layer.
  * It provides a method to convert the error to an [ApiError].
@@ -67,3 +65,4 @@ open class ApiError(
 interface ServiceLayerError {
     fun toApiError(): ApiError
 }
+

@@ -12,24 +12,28 @@
     <properties>
         <main.class>hs.flensburg.marlin.MainKt</main.class>
 
+        <!--Kotlin-->
         <kotlin.version>2.2.0</kotlin.version>
         <kotlin.apiVersion>2.1</kotlin.apiVersion>
         <kotlin.languageVersion>2.1</kotlin.languageVersion>
         <kotlinx.io.version>0.7.0</kotlinx.io.version>
         <kotlin.code.style>official</kotlin.code.style>
-        <tailwind.version>0.2.0</tailwind.version>
-        <ktor.version>3.1.2</ktor.version>
         <kotlinxDateTime.version>0.7.0</kotlinxDateTime.version>
-        <jooq.version>3.20.3</jooq.version>
+        <kotlin.logging.version>7.0.7</kotlin.logging.version>
+        <kotlin.dotenv.version>6.5.1</kotlin.dotenv.version>
+
+        <tailwind.version>0.2.0</tailwind.version>
+        <ktor.version>3.2.3</ktor.version>
+        <ktor-openapi-tools.version>5.1.0</ktor-openapi-tools.version>
+        <jooq.version>3.20.5</jooq.version>
         <hikari.version>6.3.0</hikari.version>
         <flyway.version>11.8.0</flyway.version>
         <postgres.version>42.7.7</postgres.version>
-        <kotlin.logging.version>7.0.7</kotlin.logging.version>
-        <kotlin.dotenv.version>6.5.1</kotlin.dotenv.version>
         <slf4j.version>2.0.17</slf4j.version>
         <log4j2.version>2.24.3</log4j2.version>
         <bcrypt.version>0.4</bcrypt.version>
 
+        <!--Compile-->
         <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
         <maven.compiler.target>21</maven.compiler.target>
         <maven.compiler.source>21</maven.compiler.source>
@@ -141,6 +145,25 @@
             <groupId>io.ktor</groupId>
             <artifactId>ktor-server-auth-jwt-jvm</artifactId>
             <version>${ktor.version}</version>
+        </dependency>
+
+        <!--OpenAPI - Swagger UI-->
+        <dependency>
+            <groupId>io.github.smiley4</groupId>
+            <artifactId>ktor-openapi</artifactId>
+            <version>${ktor-openapi-tools.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.smiley4</groupId>
+            <artifactId>ktor-swagger-ui</artifactId>
+            <version>${ktor-openapi-tools.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.smiley4</groupId>
+            <artifactId>ktor-redoc</artifactId>
+            <version>${ktor-openapi-tools.version}</version>
         </dependency>
 
         <!-- KIO -->

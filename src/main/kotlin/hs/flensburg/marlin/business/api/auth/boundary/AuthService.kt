@@ -1,7 +1,6 @@
 package hs.flensburg.marlin.business.api.auth.boundary
 
 import de.lambda9.tailwind.core.KIO
-import de.lambda9.tailwind.core.KIO.Companion.unit
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
@@ -17,7 +16,6 @@ import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
 import io.ktor.server.auth.jwt.JWTCredential
-import org.mindrot.jbcrypt.BCrypt
 
 object AuthService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -36,7 +34,7 @@ object AuthService {
         val email = credentials.email
         val password = credentials.password
 
-        !KIO.failOn(email.isBlank() || password.isBlank()) { Error.Unauthorized }
+        !KIO.failOn(email.isBlank() || password.isBlank()) { Error.BadRequest }
 
         val existingUser = !UserRepo.fetchByEmail(email).orDie()
 
@@ -59,12 +57,9 @@ object AuthService {
     }
 
     fun login(credentials: LoginRequest): App<Error, LoginResponse> = KIO.comprehension {
-        val email = credentials.email
-        val password = credentials.password
+        val user = !UserRepo.fetchByEmail(credentials.email).orDie().onNullFail { Error.Unauthorized }
 
-        val user = !UserRepo.fetchByEmail(email).orDie().onNullFail { Error.Unauthorized }
-
-        Hashing.verifyPassword(password, user.password!!)
+        Hashing.verifyPassword(credentials.password, user.password!!)
 
         val accessToken = JWTAuthority.generateAccessToken(user)
 
