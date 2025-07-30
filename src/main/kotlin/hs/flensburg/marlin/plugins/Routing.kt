@@ -10,6 +10,7 @@ import io.github.smiley4.ktorswaggerui.swaggerUI
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
+import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
@@ -26,6 +27,7 @@ fun Application.configureRouting(env: JEnv) {
         }
         route("/api.json") { openApi() }
         route("/swagger") { swaggerUI("/api.json") }
+        get("/") { call.respondRedirect("/swagger", permanent = false) }
     }
 }
 
