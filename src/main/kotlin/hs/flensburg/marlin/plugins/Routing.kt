@@ -1,6 +1,7 @@
 package hs.flensburg.marlin.plugins
 
 import de.lambda9.tailwind.core.KIO
+import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
 import io.github.smiley4.ktoropenapi.OpenApi
@@ -27,7 +28,11 @@ fun Application.configureRouting(env: JEnv) {
         }
         route("/api.json") { openApi() }
         route("/swagger") { swaggerUI("/api.json") }
-        get { call.respondRedirect("/swagger", permanent = false) }
+        if (env.env.config.mode == Config.Mode.PROD) {
+            get { call.respondRedirect("/api/swagger", permanent = false) }
+        } else {
+            get { call.respondRedirect("/swagger", permanent = false) }
+        }
     }
 }
 
