@@ -100,13 +100,5 @@ fun Application.configureAuth(envConfig: Config) {
 
             call.respondKIO(AuthService.refresh(refreshToken))
         }
-
-        authenticate(Realm.COMMON) {
-            get("/whoami") {
-                val principal = call.principal<LoggedInUser>()!!
-
-                call.respondText { principal.email }
-            }
-        }
     }
 }
