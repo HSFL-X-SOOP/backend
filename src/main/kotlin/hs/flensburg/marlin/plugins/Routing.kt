@@ -25,11 +25,9 @@ fun Application.configureRouting(env: JEnv) {
         get(path = "/health", builder = { description = "Health check endpoint" }) {
             call.respondKIO(KIO.ok("Marlin-Backend is running!"))
         }
-        route("/api") {
-            route("/api.json") { openApi() }
-            route("/swagger") { swaggerUI("/api/api.json") }
-            get { call.respondRedirect("/api/swagger", permanent = false) }
-        }
+        route("/api.json") { openApi() }
+        route("/swagger") { swaggerUI("/api.json") }
+        get { call.respondRedirect("/swagger", permanent = false) }
     }
 }
 
