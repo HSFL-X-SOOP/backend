@@ -25,7 +25,7 @@ fun Application.configureRouting(env: JEnv) {
             call.respondKIO(KIO.ok("Marlin-Backend is running!"))
         }
         route("/api.json") { openApi() }
-        route("/api") { swaggerUI("/api.json") }
+        route("/swagger") { swaggerUI("/api.json") }
     }
 }
 
