@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.business.api.auth.boundary
 
+import com.auth0.jwt.JWT
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
@@ -15,17 +16,20 @@ import hs.flensburg.marlin.business.api.auth.entity.RefreshRequest
 import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
+import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.jwt.JWTCredential
 
 object AuthService {
     sealed class Error(private val message: String) : ServiceLayerError {
         object Unauthorized : Error("Unauthorized access")
         object BadRequest : Error("Bad request")
+        object OAuthRedirectRequired : Error("Redirect required")
 
         override fun toApiError(): ApiError {
             return when (this) {
                 is Unauthorized -> ApiError.Unauthorized(message)
                 is BadRequest -> ApiError.BadRequest(message)
+                is OAuthRedirectRequired -> ApiError.Unauthorized(message)
             }
         }
     }
@@ -50,7 +54,6 @@ object AuthService {
         val user = !UserRepo.insert(userRecord).orDie()
 
         val accessToken = JWTAuthority.generateAccessToken(user)
-
         val refreshToken = if (credentials.rememberMe) JWTAuthority.generateRefreshToken(user) else null
 
         KIO.ok(LoginResponse(accessToken, refreshToken))
@@ -59,11 +62,35 @@ object AuthService {
     fun login(credentials: LoginRequest): App<Error, LoginResponse> = KIO.comprehension {
         val user = !UserRepo.fetchByEmail(credentials.email).orDie().onNullFail { Error.Unauthorized }
 
+        !KIO.failOn(user.password == null) { Error.OAuthRedirectRequired }
+
         Hashing.verifyPassword(credentials.password, user.password!!)
 
         val accessToken = JWTAuthority.generateAccessToken(user)
-
         val refreshToken = if (credentials.rememberMe) JWTAuthority.generateRefreshToken(user) else null
+
+        KIO.ok(LoginResponse(accessToken, refreshToken))
+    }
+
+    fun loginGoogleUser(authResponse: OAuthAccessTokenResponse.OAuth2): App<Error, LoginResponse> = KIO.comprehension {
+        val identificationToken = authResponse.extraParameters["id_token"]
+
+        val credentials = JWT.decode(identificationToken)
+        val email = credentials.getClaim("email").asString()
+        val user = (!UserRepo.fetchByEmail(email).orDie()).let {
+            if (it == null) {
+                val userRecord = UserRecord().apply {
+                    this.email = email
+                }
+
+                !UserRepo.insert(userRecord).orDie()
+            } else {
+                it
+            }
+        }
+
+        val accessToken = JWTAuthority.generateAccessToken(user)
+        val refreshToken = JWTAuthority.generateRefreshToken(user)
 
         KIO.ok(LoginResponse(accessToken, refreshToken))
     }

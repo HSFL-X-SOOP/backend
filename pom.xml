@@ -32,6 +32,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <log4j2.version>2.24.3</log4j2.version>
         <bcrypt.version>0.4</bcrypt.version>
+        <simplejavamail.version>8.12.6</simplejavamail.version>
 
         <!--Compile-->
         <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
@@ -261,6 +262,13 @@
             <groupId>org.mindrot</groupId>
             <artifactId>jbcrypt</artifactId>
             <version>${bcrypt.version}</version>
+        </dependency>
+
+        <!--Email-->
+        <dependency>
+            <groupId>org.simplejavamail</groupId>
+            <artifactId>simple-java-mail</artifactId>
+            <version>${simplejavamail.version}</version>
         </dependency>
     </dependencies>
 

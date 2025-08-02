@@ -31,10 +31,10 @@ fun Application.configureRouting(env: JEnv) {
 
         if (env.env.config.mode == Config.Mode.PROD) {
             route("/swagger") { swaggerUI("/api/api.json") }
-            get { call.respondRedirect("/api/swagger", permanent = false) }
+            get({ hidden = true }) { call.respondRedirect("/api/swagger", permanent = false) }
         } else {
             route("/swagger") { swaggerUI("/api.json") }
-            get { call.respondRedirect("/swagger", permanent = false) }
+            get({ hidden = true }) { call.respondRedirect("/swagger", permanent = false) }
         }
 
     }
