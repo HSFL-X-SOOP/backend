@@ -36,7 +36,6 @@ fun Application.configureRouting(env: JEnv) {
         }
 
         exception<SerializationException> { call, cause ->
-            // Handles malformed JSON, missing fields, etc.
             call.respond(
                 HttpStatusCode.BadRequest,
                 mapOf("error" to "Malformed JSON: ${cause.cause?.message}")

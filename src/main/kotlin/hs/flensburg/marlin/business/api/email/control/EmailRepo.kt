@@ -24,12 +24,6 @@ object EmailRepo {
             .fetchOneInto(Email::class.java)
     }
 
-    fun fetchPending(): JIO<List<Email>> = Jooq.query {
-        selectFrom(EMAIL)
-            .where(EMAIL.SENT_AT.isNull)
-            .fetchInto(Email::class.java)
-    }
-
     fun updateSentAt(id: Long): JIO<Unit> = Jooq.query {
         update(EMAIL)
             .set(EMAIL.SENT_AT, LocalDateTime.now())
@@ -37,10 +31,4 @@ object EmailRepo {
             .execute()
     }
 
-    fun setError(id: Long, error: String): JIO<Unit> = Jooq.query {
-        update(EMAIL)
-            .set(EMAIL.ERROR, error)
-            .where(EMAIL.ID.eq(id))
-            .execute()
-    }
 }
