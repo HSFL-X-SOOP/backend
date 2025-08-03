@@ -78,7 +78,12 @@ fun Application.configureAuth(envConfig: Config) {
 
     routing {
         authenticate("auth-oauth-google") {
-            get("/login/google", { hidden = true }) { }
+            get(
+                path = "/login/google",
+                builder = {
+                    tags("auth")
+                    description = "Redirect to Google for OAuth login"
+                }) {}
 
             get("/auth/google/callback", { hidden = true }) {
 
