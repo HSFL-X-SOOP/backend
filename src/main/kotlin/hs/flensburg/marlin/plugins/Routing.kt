@@ -8,19 +8,41 @@ import io.github.smiley4.ktoropenapi.OpenApi
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktorswaggerui.swaggerUI
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
+import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import kotlinx.serialization.SerializationException
 
 
 fun Application.configureRouting(env: JEnv) {
     configureAuth(env.env.config)
 
     install(OpenApi)
+
+    install(StatusPages) {
+        exception<BadRequestException> { call, cause ->
+            call.respond(
+                HttpStatusCode.BadRequest,
+                mapOf("error" to (cause.cause?.message ?: "Invalid request data"))
+            )
+        }
+
+        exception<SerializationException> { call, cause ->
+            // Handles malformed JSON, missing fields, etc.
+            call.respond(
+                HttpStatusCode.BadRequest,
+                mapOf("error" to "Malformed JSON: ${cause.cause?.message}")
+            )
+        }
+    }
 
     routing {
         get(path = "/health", builder = { description = "Health check endpoint" }) {

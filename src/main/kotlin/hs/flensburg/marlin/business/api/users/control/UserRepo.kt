@@ -20,6 +20,13 @@ object UserRepo {
             .fetchOneInto(User::class.java)
     }
 
+    fun setEmailIsVerified(id: Long): JIO<Unit> = Jooq.query {
+        update(USER)
+            .set(USER.VERIFIED, true)
+            .where(USER.ID.eq(id))
+            .execute()
+    }
+
     fun fetchByEmail(email: String): JIO<User?> = Jooq.query {
         selectFrom(USER)
             .where(USER.EMAIL.eq(email))

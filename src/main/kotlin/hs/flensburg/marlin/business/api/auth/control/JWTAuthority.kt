@@ -10,42 +10,71 @@ import java.util.Date
 object JWTAuthority {
     private lateinit var ISSUER: String
     private lateinit var AUDIENCE: String
-    private lateinit var ALGORITHM_ACCESS: Algorithm
-    private lateinit var ALGORITHM_REFRESH: Algorithm
+    private lateinit var ALGORITHM: Algorithm
     private const val ACCESS_TTL_MILLIS: Long = 36_000_00L * 3 // 3 hours
     private const val REFRESH_TTL_IN_MS: Long = 36_000_00L * 24 * 30 // 30 days
+    private const val PASSWORD_RESET_TTL_IN_MS: Long = 36_000_00L / 2 // 30 minutes
+    private const val MAGIC_LINK_TTL_IN_MS: Long = 36_000_00L / 2 // 30 minutes
+    private const val EMAIL_VERIFICATION_TTL_IN_MS: Long = 36_000_00L * 24 // 24 hours
+
+    private const val AUTH_SUBJECT = "Authorization Token"
+    private const val REFRESH_SUBJECT = "Refresh Token"
+    private const val MAGIC_LINK_SUBJECT = "Magic Link"
+    private const val EMAIL_VERIFICATION_SUBJECT = "Email Verification"
 
     fun init(envConfig: Config) {
         ISSUER = envConfig.auth.jwtIssuer
         AUDIENCE = envConfig.auth.jwtAudience
-        ALGORITHM_ACCESS = Algorithm.HMAC256(envConfig.auth.jwtSecretAccess)
-        ALGORITHM_REFRESH = Algorithm.HMAC256(envConfig.auth.jwtSecretRefresh)
+        ALGORITHM = Algorithm.HMAC256(envConfig.auth.jwtSecretAccess)
     }
 
     val accessVerifier: JWTVerifier by lazy {
-        JWT.require(ALGORITHM_ACCESS)
+        JWT.require(ALGORITHM)
             .withAudience(AUDIENCE)
             .withIssuer(ISSUER)
+            .withSubject(AUTH_SUBJECT)
             .build()
     }
 
     val refreshVerifier: JWTVerifier by lazy {
-        JWT.require(ALGORITHM_REFRESH)
+        JWT.require(ALGORITHM)
             .withAudience(AUDIENCE)
             .withIssuer(ISSUER)
+            .withSubject(REFRESH_SUBJECT)
+            .build()
+    }
+
+    val magicLinkVerifier: JWTVerifier by lazy {
+        JWT.require(ALGORITHM)
+            .withAudience(AUDIENCE)
+            .withIssuer(ISSUER)
+            .withSubject(MAGIC_LINK_SUBJECT)
+            .build()
+    }
+
+    val emailVerificationVerifier: JWTVerifier by lazy {
+        JWT.require(ALGORITHM)
+            .withAudience(AUDIENCE)
+            .withIssuer(ISSUER)
+            .withSubject(EMAIL_VERIFICATION_SUBJECT)
             .build()
     }
 
     fun generateAccessToken(user: User): String =
-        generateToken(user, "Authorization Token", ALGORITHM_ACCESS, ACCESS_TTL_MILLIS)
+        generateToken(user, AUTH_SUBJECT, ACCESS_TTL_MILLIS)
 
     fun generateRefreshToken(user: User): String =
-        generateToken(user, "Refresh Token", ALGORITHM_REFRESH, REFRESH_TTL_IN_MS)
+        generateToken(user, REFRESH_SUBJECT, REFRESH_TTL_IN_MS)
+
+    fun generateMagicLinkToken(user: User): String =
+        generateToken(user, MAGIC_LINK_SUBJECT, MAGIC_LINK_TTL_IN_MS)
+
+    fun generateEmailVerificationToken(user: User): String =
+        generateToken(user, EMAIL_VERIFICATION_SUBJECT, EMAIL_VERIFICATION_TTL_IN_MS)
 
     private fun generateToken(
         user: User,
         subject: String,
-        algorithm: Algorithm,
         ttlMillis: Long
     ): String = JWT.create()
         .withSubject(subject)
@@ -54,7 +83,7 @@ object JWTAuthority {
         .withIssuer(ISSUER)
         .withAudience(AUDIENCE)
         .withExpiresAt(getExpiration(ttlMillis))
-        .sign(algorithm)
+        .sign(ALGORITHM)
 
     private fun getExpiration(ttlMillis: Long) = Date(System.currentTimeMillis() + ttlMillis)
 }

@@ -53,6 +53,8 @@ open class ApiError(
     data class BadRequest(val msg: String?) : ApiError(HttpStatusCode.BadRequest, msg ?: "Fehlerhafte Anfrage")
     data class AlreadyExists(val msg: String?) : ApiError(HttpStatusCode.Conflict, msg ?: "Bereits vorhanden")
     data class Unknown(val msg: String?) : ApiError(HttpStatusCode.InternalServerError, msg ?: "Unbekannter Fehler")
+    data class Conflict(val msg: String?) : ApiError(HttpStatusCode.Conflict, msg ?: "Konflikt aufgetreten")
+    data class TooManyRequests(val msg: String?) : ApiError(HttpStatusCode.TooManyRequests, msg ?: "Zu viele Anfragen")
 
     // Add more error types as needed
 

@@ -33,11 +33,11 @@ data class Config(
         val port: Int,
         val username: String,
         val password: String,
+        val sendFrom: String
     )
 
     data class Auth(
         val jwtSecretAccess: String,
-        val jwtSecretRefresh: String,
         val jwtIssuer: String,
         val jwtAudience: String,
     )
@@ -63,11 +63,11 @@ data class Config(
                 host = get("MAIL_HOST", ""),
                 port = get("MAIL_PORT", "").toInt(),
                 username = get("MAIL_USERNAME", ""),
-                password = get("MAIL_PASSWORD", "")
+                password = get("MAIL_PASSWORD", ""),
+                sendFrom = get("MAIL_FROM", "")
             ),
             auth = Auth(
                 jwtSecretAccess = get("JWT_SECRET_ACCESS", ""),
-                jwtSecretRefresh = get("JWT_SECRET_REFRESH", ""),
                 jwtIssuer = get("JWT_ISSUER", ""),
                 jwtAudience = get("JWT_AUDIENCE", "")
             ),
@@ -92,11 +92,11 @@ data class Config(
                 host = System.getenv("MAIL_HOST") ?: "",
                 port = (System.getenv("MAIL_PORT") ?: "").toInt(),
                 username = System.getenv("MAIL_USERNAME") ?: "",
-                password = System.getenv("MAIL_PASSWORD") ?: ""
+                password = System.getenv("MAIL_PASSWORD") ?: "",
+                sendFrom = System.getenv("MAIL_FROM") ?: ""
             ),
             auth = Auth(
                 jwtSecretAccess = System.getenv("JWT_SECRET_ACCESS") ?: "",
-                jwtSecretRefresh = System.getenv("JWT_SECRET_REFRESH") ?: "",
                 jwtIssuer = System.getenv("JWT_ISSUER") ?: "",
                 jwtAudience = System.getenv("JWT_AUDIENCE") ?: ""
             ),
