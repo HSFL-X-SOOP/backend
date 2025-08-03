@@ -56,7 +56,7 @@ fun Application.configureAuth(envConfig: Config) {
         oauth("auth-oauth-google") {
             urlProvider = {
                 if (envConfig.mode == Config.Mode.PROD) {
-                    "http://marlin-live.com/api/auth/google/callback"
+                    "https://marlin-live.com/api/auth/google/callback"
                 } else {
                     "http://localhost:8080/auth/google/callback"
                 }
@@ -93,8 +93,7 @@ fun Application.configureAuth(envConfig: Config) {
 
             get("/auth/google/callback", { hidden = true }) {
 
-                val token = call.principal<OAuthAccessTokenResponse.OAuth2>()
-                    ?: error("No OAuth2 principal")
+                val token = call.principal<OAuthAccessTokenResponse.OAuth2>() ?: error("No OAuth2 principal")
 
                 call.respondKIO(AuthService.loginGoogleUser(token))
             }
