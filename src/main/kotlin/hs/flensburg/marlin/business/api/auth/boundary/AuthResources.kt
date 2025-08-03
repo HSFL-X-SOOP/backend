@@ -54,7 +54,13 @@ fun Application.configureAuth(envConfig: Config) {
         }
 
         oauth("auth-oauth-google") {
-            urlProvider = { "http://localhost:8080/auth/google/callback" }
+            urlProvider = {
+                if (envConfig.mode == Config.Mode.PROD) {
+                    "http://marlin-live.com/api/auth/google/callback"
+                } else {
+                    "http://localhost:8080/auth/google/callback"
+                }
+            }
 
             providerLookup = {
                 OAuthServerSettings.OAuth2ServerSettings(
