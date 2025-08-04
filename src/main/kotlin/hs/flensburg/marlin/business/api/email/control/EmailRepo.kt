@@ -30,5 +30,4 @@ object EmailRepo {
             .where(EMAIL.ID.eq(id))
             .execute()
     }
-
 }

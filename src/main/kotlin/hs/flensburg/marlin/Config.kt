@@ -37,7 +37,7 @@ data class Config(
     )
 
     data class Auth(
-        val jwtSecretAccess: String,
+        val jwtSecret: String,
         val jwtIssuer: String,
         val jwtAudience: String,
     )
@@ -67,7 +67,7 @@ data class Config(
                 sendFrom = get("MAIL_FROM", "")
             ),
             auth = Auth(
-                jwtSecretAccess = get("JWT_SECRET_ACCESS", ""),
+                jwtSecret = get("JWT_SECRET_ACCESS", ""),
                 jwtIssuer = get("JWT_ISSUER", ""),
                 jwtAudience = get("JWT_AUDIENCE", "")
             ),
@@ -96,7 +96,7 @@ data class Config(
                 sendFrom = System.getenv("MAIL_FROM") ?: ""
             ),
             auth = Auth(
-                jwtSecretAccess = System.getenv("JWT_SECRET_ACCESS") ?: "",
+                jwtSecret = System.getenv("JWT_SECRET_ACCESS") ?: "",
                 jwtIssuer = System.getenv("JWT_ISSUER") ?: "",
                 jwtAudience = System.getenv("JWT_AUDIENCE") ?: ""
             ),

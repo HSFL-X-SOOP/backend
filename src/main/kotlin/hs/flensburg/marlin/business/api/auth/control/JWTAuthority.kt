@@ -25,7 +25,7 @@ object JWTAuthority {
     fun init(envConfig: Config) {
         ISSUER = envConfig.auth.jwtIssuer
         AUDIENCE = envConfig.auth.jwtAudience
-        ALGORITHM = Algorithm.HMAC256(envConfig.auth.jwtSecretAccess)
+        ALGORITHM = Algorithm.HMAC256(envConfig.auth.jwtSecret)
     }
 
     val accessVerifier: JWTVerifier by lazy {

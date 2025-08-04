@@ -2,7 +2,6 @@ package hs.flensburg.marlin.business.api.auth.boundary
 
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import hs.flensburg.marlin.Config
-import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest

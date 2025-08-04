@@ -22,12 +22,10 @@ import org.simplejavamail.mailer.MailerBuilder
 
 object EmailHandler {
     sealed class Error(private val message: String) : ServiceLayerError {
-        data class EmailNotFound(val emailId: Long) : Error("Email with ID $emailId not found")
         data class UserNotFound(val userId: Long) : Error("User with ID $userId not found")
 
         override fun toApiError(): ApiError {
             return when (this) {
-                is EmailNotFound -> ApiError.NotFound(message)
                 is UserNotFound -> ApiError.NotFound(message)
             }
         }
