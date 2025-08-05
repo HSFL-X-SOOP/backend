@@ -36,6 +36,7 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.routing
+import java.net.URLEncoder
 
 fun Application.configureAuth(envConfig: Config) {
     JWTAuthority.init(envConfig)
@@ -94,7 +95,29 @@ fun Application.configureAuth(envConfig: Config) {
 
                 val token = call.principal<OAuthAccessTokenResponse.OAuth2>() ?: error("No OAuth2 principal")
 
-                call.respondKIO(AuthService.loginGoogleUser(token))
+                val res: LoginResponse = AuthService
+                    .loginGoogleUser(token)
+                    .unsafeRunSync(call.kioEnv)
+                    .fold(
+                        onSuccess = { it },
+                        onError = { error ->
+                            val e = error.failures().first().toApiError()
+                            call.respond(e.statusCode, e.message)
+                            return@get
+                        }
+                    )
+
+                val frontBase = "${envConfig.frontendUrl}/google/callback"
+
+                val redirectUrl = buildString {
+                    append(frontBase)
+                    append("#access_token=")
+                    append(URLEncoder.encode(res.accessToken, Charsets.UTF_8))
+                    append("&refresh_token=")
+                    append(URLEncoder.encode(res.refreshToken, Charsets.UTF_8))
+                }
+
+                call.respondRedirect(redirectUrl, permanent = false)
             }
         }
 

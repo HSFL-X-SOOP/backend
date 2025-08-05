@@ -11,6 +11,13 @@ data class Config(
     val googleAuth: GoogleAuth
 ) {
 
+    val frontendUrl: String
+        get() = when (mode) {
+            Mode.DEV -> "http://localhost:5173"
+            Mode.STAGING -> "https://marlin-live.com"
+            Mode.PROD -> "https://marlin-live.com"
+        }
+
     enum class Mode {
         DEV, // Mode for local development
         STAGING, // Mode for staging environment
