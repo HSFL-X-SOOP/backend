@@ -187,7 +187,7 @@ object EmailHandler {
             <p>
               <a
                 class="button"
-                href="https://marlin-live.com/api/verify?token=${JWTAuthority.generateEmailVerificationToken(user)}"
+                href="https://marlin-live.com/verify?token=${JWTAuthority.generateEmailVerificationToken(user)}"
                 style="
                   display:inline-block;
                   padding:12px 24px;
@@ -214,7 +214,7 @@ object EmailHandler {
             <p>
               <a
                 class="button"
-                href="https://marlin-live.com/api/magic-link?token=${JWTAuthority.generateMagicLinkToken(user)}"
+                href="https://marlin-live.com/magic-link?token=${JWTAuthority.generateMagicLinkToken(user)}"
                 style="
                   display: inline-block;
                   padding: 12px 24px;
