@@ -167,7 +167,7 @@ fun Application.configureAuth(envConfig: Config) {
             val env = call.kioEnv
 
             AuthService.login(loginRequest, clientIp).unsafeRunSync(env).fold(
-                onSuccess = { it },
+                onSuccess = { call.respond(it) },
                 onError = { error ->
                     val e = error.failures().first()
                     when (e) {
