@@ -90,6 +90,12 @@
 
         <dependency>
             <groupId>io.ktor</groupId>
+            <artifactId>ktor-server-forwarded-header-jvm</artifactId>
+            <version>${ktor.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.ktor</groupId>
             <artifactId>ktor-client-core-jvm</artifactId>
             <version>${ktor.version}</version>
         </dependency>

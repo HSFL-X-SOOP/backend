@@ -13,6 +13,8 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
+import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
@@ -25,6 +27,8 @@ import kotlinx.serialization.SerializationException
 fun Application.configureRouting(env: JEnv) {
     configureAuth(env.env.config)
 
+    install(XForwardedHeaders)
+    install(ForwardedHeaders)
     install(OpenApi)
 
     install(StatusPages) {
