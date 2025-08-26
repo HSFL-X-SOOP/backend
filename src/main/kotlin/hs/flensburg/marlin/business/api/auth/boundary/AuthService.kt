@@ -31,6 +31,7 @@ object AuthService {
         object BadRequest : Error("Bad request")
         object OAuthRedirectRequired : Error("Redirect required")
         object LoginLimitExceeded : Error("Login limit exceeded, please try again later")
+        object Blacklisted : Error("You are temporarily blocked, please try again later")
 
         override fun toApiError(): ApiError {
             return when (this) {
@@ -39,6 +40,7 @@ object AuthService {
                 is BadRequest -> ApiError.BadRequest(message)
                 is OAuthRedirectRequired -> ApiError.Unauthorized(message)
                 is LoginLimitExceeded -> ApiError.TooManyRequests(message)
+                is Blacklisted -> ApiError.TooManyRequests(message)
             }
         }
     }
@@ -205,7 +207,7 @@ object AuthService {
         val blacklist = !AuthRepo.fetchUserLoginBlacklist(userId).orDie()
 
         if (blacklist != null && blacklist.blockedUntil!!.isAfter(LocalDateTime.now())) {
-            !KIO.fail(Error.LoginLimitExceeded)
+            !KIO.fail(Error.Blacklisted)
         }
 
         KIO.unit

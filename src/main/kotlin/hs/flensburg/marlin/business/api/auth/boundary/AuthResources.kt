@@ -54,13 +54,7 @@ fun Application.configureAuth(envConfig: Config) {
         }
 
         oauth("auth-oauth-google") {
-            urlProvider = {
-                if (envConfig.mode == Config.Mode.PROD) {
-                    "https://marlin-live.com/api/auth/google/callback"
-                } else {
-                    "http://localhost:8080/auth/google/callback"
-                }
-            }
+            urlProvider = { "${envConfig.backendUrl}/auth/google/callback" }
 
             providerLookup = {
                 OAuthServerSettings.OAuth2ServerSettings(
@@ -107,10 +101,10 @@ fun Application.configureAuth(envConfig: Config) {
                         }
                     )
 
-                val frontBase = "${envConfig.frontendUrl}/google/callback"
+                val callbackUrl = "${envConfig.frontendUrl}/google/callback"
 
                 val redirectUrl = buildString {
-                    append(frontBase)
+                    append(callbackUrl)
                     append("#access_token=")
                     append(URLEncoder.encode(res.accessToken, Charsets.UTF_8))
                     append("&refresh_token=")

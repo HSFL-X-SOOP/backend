@@ -1,9 +1,9 @@
-package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.boundary
+package hs.flensburg.marlin.business.schedulerJobs.httpTestJob.boundary
 
 import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.httpclient
-import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity.NominatimResponse
+import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity.NominatimResponse
 import hs.flensburg.marlin.database.generated.tables.references.LOCATION
 import io.ktor.client.call.*
 import io.ktor.client.request.*

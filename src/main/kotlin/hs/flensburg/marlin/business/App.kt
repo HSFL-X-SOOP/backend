@@ -21,9 +21,9 @@ data class Env(val config: Config) {
                 config = config
             )
 
-            return de.lambda9.tailwind.jooq.Jooq.create(
+            return Jooq.create(
                 env = env,
-                config = de.lambda9.tailwind.jooq.Jooq.Config(
+                config = Jooq.Config(
                     url = config.database.url,
                     user = config.database.user,
                     password = config.database.password,

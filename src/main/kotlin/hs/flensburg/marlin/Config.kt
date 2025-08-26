@@ -18,6 +18,13 @@ data class Config(
             Mode.PROD -> "https://marlin-live.com"
         }
 
+    val backendUrl: String
+        get() = when (mode) {
+            Mode.DEV -> "http://localhost:${http.port}"
+            Mode.STAGING -> "https://marlin-live.com/api"
+            Mode.PROD -> "https://marlin-live.com/api"
+        }
+
     enum class Mode {
         DEV, // Mode for local development
         STAGING, // Mode for staging environment

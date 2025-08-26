@@ -4,7 +4,8 @@ import de.lambda9.tailwind.core.Exit
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.exit.fold
-import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.boundary.SensorDataService
+import hs.flensburg.marlin.business.schedulerJobs.auth.AuthSchedulerService
+import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.boundary.SensorDataService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -13,6 +14,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -22,11 +24,13 @@ private val logger = KotlinLogging.logger("Scheduling")
 @OptIn(DelicateCoroutinesApi::class)
 fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
 
-
     schedule(1.minutes, true) {
         SensorDataService.getMultipleSensorData(env = env)
     }
 
+    schedule(1.minutes, true, env) {
+        AuthSchedulerService.deleteExpiredTokens(LocalDateTime.now())
+    }
 }
 
 /**
@@ -74,21 +78,19 @@ fun <E, A> CoroutineScope.schedule(
     env: JEnv,
     block: suspend CoroutineScope.() -> KIO<JEnv, E, A>,
 ): Job = launch {
-    var result: A? = null
-
     if (runAtStart) {
         val exit = block().unsafeRunSync(env)
-        result = exit.get()
+        exit.resolve()
     }
 
     while (true) {
         delay(delayMillis)
         val exit = block().unsafeRunSync(env)
-        result = exit.get()
+        exit.resolve()
     }
 }
 
-private fun <E, A> Exit<E, A>.get(): A? {
+private fun <E, A> Exit<E, A>.resolve(): A? {
     return this.fold(
         onDefect = {
             logger.error(it) { "Error while executing a scheduled task" }

@@ -1,8 +1,8 @@
-package hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.control
+package hs.flensburg.marlin.business.schedulerJobs.httpTestJob.control
 
 import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.marlin.business.App
-import hs.flensburg.marlin.business.`scheduler-jobs`.httpTestJob.entity.ThingClean
+import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity.ThingClean
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENT
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENTTYPE
 import hs.flensburg.marlin.database.generated.tables.references.SENSOR

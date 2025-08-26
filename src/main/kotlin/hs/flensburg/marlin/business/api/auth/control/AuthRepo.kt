@@ -39,4 +39,10 @@ object AuthRepo {
             .limit(1)
             .fetchOneInto(LoginBlacklist::class.java)
     }
+
+    fun deleteExpiredFailedLoginAttempts(cutoff: LocalDateTime): JIO<Unit> = Jooq.query {
+        deleteFrom(FAILED_LOGIN_ATTEMPT)
+            .where(FAILED_LOGIN_ATTEMPT.ATTEMPTED_AT.lessOrEqual(cutoff))
+            .execute()
+    }
 }
