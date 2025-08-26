@@ -27,6 +27,7 @@ import java.time.LocalDateTime
 object AuthService {
     sealed class Error(private val message: String) : ServiceLayerError {
         object Unauthorized : Error("Unauthorized access")
+        object PasswordIncorrect : Error("Email or password incorrect")
         object BadRequest : Error("Bad request")
         object OAuthRedirectRequired : Error("Redirect required")
         object LoginLimitExceeded : Error("Login limit exceeded, please try again later")
@@ -34,6 +35,7 @@ object AuthService {
         override fun toApiError(): ApiError {
             return when (this) {
                 is Unauthorized -> ApiError.Unauthorized(message)
+                is PasswordIncorrect -> ApiError.BadRequest(message)
                 is BadRequest -> ApiError.BadRequest(message)
                 is OAuthRedirectRequired -> ApiError.Unauthorized(message)
                 is LoginLimitExceeded -> ApiError.TooManyRequests(message)
@@ -70,7 +72,7 @@ object AuthService {
     }
 
     fun login(credentials: LoginRequest, ipAddress: String): App<ServiceLayerError, LoginResponse> = KIO.comprehension {
-        val user = !UserRepo.fetchByEmail(credentials.email).orDie().onNullFail { Error.Unauthorized }
+        val user = !UserRepo.fetchByEmail(credentials.email).orDie().onNullFail { Error.PasswordIncorrect }
 
         !KIO.failOn(user.password == null) { Error.OAuthRedirectRequired }
 
@@ -83,7 +85,7 @@ object AuthService {
 
             !checkFailedLoginLimitExceeded(user.id!!, ipAddress)
 
-            !KIO.fail(Error.Unauthorized)
+            !KIO.fail(Error.PasswordIncorrect)
         }
 
         val accessToken = JWTAuthority.generateAccessToken(user)
@@ -121,12 +123,12 @@ object AuthService {
         val decodedJWT = try {
             JWTAuthority.magicLinkVerifier.verify(magicLinkRequest.token)
         } catch (e: Exception) {
-            !KIO.fail(Error.Unauthorized)
+            !KIO.fail(Error.BadRequest)
         }
 
         val userId = decodedJWT.getClaim("id").asLong()
 
-        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.BadRequest }
 
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = JWTAuthority.generateRefreshToken(user)
@@ -138,15 +140,15 @@ object AuthService {
         val decodedJWT = try {
             JWTAuthority.refreshVerifier.verify(refreshTokenRequest.refreshToken)
         } catch (e: Exception) {
-            !KIO.fail(Error.Unauthorized)
+            !KIO.fail(Error.BadRequest)
         }
 
         val userId = decodedJWT.getClaim("id").asLong()
         val email = decodedJWT.getClaim("email").asString()
 
-        !KIO.failOn(userId == null || email == null) { Error.Unauthorized }
+        !KIO.failOn(userId == null || email == null) { Error.BadRequest }
 
-        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.BadRequest }
 
         val newAccessToken = JWTAuthority.generateAccessToken(user)
         val newRefreshToken = JWTAuthority.generateRefreshToken(user)
@@ -158,14 +160,14 @@ object AuthService {
         val decodedJWT = try {
             JWTAuthority.emailVerificationVerifier.verify(verifyEmailRequest.token)
         } catch (e: Exception) {
-            !KIO.fail(Error.Unauthorized)
+            !KIO.fail(Error.BadRequest)
         }
 
         val userId = decodedJWT.getClaim("id").asLong()
 
-        !KIO.failOn(userId == null) { Error.Unauthorized }
+        !KIO.failOn(userId == null) { Error.BadRequest }
 
-        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.BadRequest }
 
         if (user.verified!!.not()) !UserRepo.setEmailIsVerified(user.id!!).orDie()
 
