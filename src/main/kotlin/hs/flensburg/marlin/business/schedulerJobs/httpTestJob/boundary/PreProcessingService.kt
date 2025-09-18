@@ -5,33 +5,44 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.Collections.emptyMap
 
 object PreProcessingService {
+
     fun preProcessData(thing: ThingClean): ThingClean {
-        // read config
+        // read config from json file
         val config = readConfig()
 
-        // preprocess datastream
-        val newDatastreams = thing.datastreams.map { ds ->
-            val processedName = config[ds.observedProperty.name] ?: ds.observedProperty.name
+        // Create mappings for name and description
+        val nameMapping = config["name"] ?: emptyMap()
+        val descriptionMapping = config["description"] ?: emptyMap()
 
-            // create copy to change the name of the observed property
+        val newDatastreams = thing.datastreams.map { ds ->
+            // Preprocess the name by looking up in the mapping
+            val processedName = nameMapping[ds.observedProperty.name] ?: ds.observedProperty.name
+
+            // Optimize description by matching part of the string
+            val processedDesc = descriptionMapping.entries
+                .firstOrNull { ds.observedProperty.description.contains(it.key, ignoreCase = true) }
+                ?.value ?: ds.observedProperty.description
+
+            // Return a copy with porcessed name and description
             ds.copy(
-                observedProperty = ds.observedProperty.copy(
-                    name = processedName
-                )
+                observedProperty = ds.observedProperty.copy(name = processedName, description = processedDesc)
             )
         }
-        // return preprocessed data
+
+        // Return a new ThingClean with preprocessed datastreams
         return thing.copy(datastreams = newDatastreams)
     }
-   private fun readConfig(): Map<String, String> {
-       val resource = {}.javaClass.getResource("/SensorPreProcessing/PreProcessConfig.json")
-           ?: throw IllegalStateException("PreProcessConfig.json not found!")
 
-       val text = resource.readText()
-       // build Map from JSON to swap values
-       val json = Json.decodeFromString<Map<String, String>>(text)
-       return json
+    private fun readConfig(): Map<String, Map<String, String>> {
+        // Load the JSON configuration file from resources
+        val resource = {}.javaClass.getResource("/SensorPreProcessing/PreProcessConfig.json")
+            ?: throw IllegalStateException("PreProcessConfig.json not found!")
+
+        val text = resource.readText()
+        // Parse JSON into a nested Map: field -> mapping
+        return Json.decodeFromString(text)
     }
 }
