@@ -1,0 +1,5 @@
+{
+  "__comment__" : "[Input: Output]: This file contains the mapping of Frost Server to our DB. The FROST Server lacks a consistent naming scheme, so we have to map the names to our own scheme. It is use in the PreProcessingService",
+  "WTemp" : "Temperature, water",
+  "temperature_water [°C]": "The measured temperature in the water"
+}

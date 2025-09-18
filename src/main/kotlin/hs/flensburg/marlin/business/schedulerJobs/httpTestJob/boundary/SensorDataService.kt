@@ -3,6 +3,7 @@ package hs.flensburg.marlin.business.schedulerJobs.httpTestJob.boundary
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.httpclient
+import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.boundary.PreProcessingService.preProcessData
 import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.control.SensorDataRepo
 import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity.ThingClean
 import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity.ThingRaw
@@ -47,11 +48,15 @@ object SensorDataService {
                 val thingRaw: ThingRaw = httpclient.get(url).body()
                 val thingClean: ThingClean = thingRaw.toClean()
 
+                // Preprocess the data
+                val thingProcessed = preProcessData(thingClean)
+                println("PreProcessed: $thingProcessed")
+
                 // Save the sensor data to the database
-                val test = SensorDataRepo.saveSensorData(thingClean).unsafeRunSync(env)
+                val test = SensorDataRepo.saveSensorData(thingProcessed).unsafeRunSync(env)
 
                 // Print the station information
-                printStationInfo(id, thingClean, test)
+                printStationInfo(id, thingProcessed, test)
 
             } catch (e: Exception) {
                 println("\n=== ID $id ===")
@@ -86,5 +91,4 @@ object SensorDataService {
             }
         } ?: "Kein Tide-Datenstrom gefunden"
     }
-
 }
