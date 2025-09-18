@@ -40,7 +40,7 @@ object SensorDataService {
         }
     }
 
-    suspend fun getMultipleSensorData(idRange : IntRange = 3..12, env: JEnv) {
+    suspend fun getMultipleSensorData(idRange : IntRange = 3..14, env: JEnv) {
         for (id in idRange) {
             //  fetch sensor data for each id in the range
             try {
