@@ -8,9 +8,11 @@ import hs.flensburg.marlin.Config.Companion.parseConfig
 import hs.flensburg.marlin.business.Env
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.api.dto.LocationDTO
+import hs.flensburg.marlin.business.api.dto.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.dto.MeasurementDTO
 import hs.flensburg.marlin.business.api.dto.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.dto.SensorDTO
+import hs.flensburg.marlin.business.api.dto.mapSensorToBoxDTO
 import hs.flensburg.marlin.business.api.dto.toLocationDTO
 import hs.flensburg.marlin.business.api.dto.toMeasurementDTO
 import hs.flensburg.marlin.business.api.dto.toMeasurementTypeDTO
@@ -143,6 +145,33 @@ fun Application.modules(env: JEnv) {
                 }
             }
         }
+        route("/latestmeasurementsNEW") {
+            get {
+                val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
+                if (response.isSuccess()) {
+                    val rawLocations = response.getOrNull()!!
+
+                    val result = rawLocations.map { loc ->
+                        val boxes = loc.latestMeasurements
+                            .groupBy { it.sensor.id } // collect all measurements of the same sensor
+                            .map { (_, measurements) ->
+                                val sensor = measurements.first().sensor
+                                mapSensorToBoxDTO(sensor, measurements)
+                            }
+
+                        LocationWithBoxesDTO(
+                            location = loc.location,
+                            boxes = boxes
+                        )
+                    }
+
+                    call.respond(result)
+                } else {
+                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten $response"))
+                }
+            }
+        }
+
 
     }
 }
