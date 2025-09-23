@@ -4,13 +4,10 @@ import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.KIO.Companion.unit
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
-import de.lambda9.tailwind.core.extensions.kio.run
-import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
-import hs.flensburg.marlin.business.api.auth.control.AuthRepo
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.database.generated.enums.EmailType
