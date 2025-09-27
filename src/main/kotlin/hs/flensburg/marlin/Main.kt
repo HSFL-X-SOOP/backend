@@ -9,6 +9,7 @@ import hs.flensburg.marlin.business.Env
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.api.dto.LocationDTO
 import hs.flensburg.marlin.business.api.dto.LocationWithBoxesDTO
+import hs.flensburg.marlin.business.api.dto.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.dto.MeasurementDTO
 import hs.flensburg.marlin.business.api.dto.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.dto.SensorDTO
@@ -35,6 +36,8 @@ import hs.flensburg.marlin.plugins.configureSerialization
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.github.smiley4.ktoropenapi.get
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -81,131 +84,217 @@ fun Application.modules(env: JEnv) {
     configureRouting(env)
 
     routing {
-        route("/sensors") {
-            get {
-                // TODO: Wrap in KIO
-                // response: Exit<DataException, List<Sensor>>
-                val response = getAllSensorsFromDB().unsafeRunSync(env)
-                if (response.isSuccess()) {
-                    //sensors: List<Sensor>
-                    val sensors: List<Sensor> = response.getOrNull()!!
-                    val sensorDTOs: List<SensorDTO> = sensors.map { it.toSensorDTO() }
-                    call.respond(sensorDTOs)
-                }else{
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren ${response}"))
-                }
-            }
-        }
-        route("/measurementtypes") {
-            get {
-                // TODO: Wrap in KIO
-                val response = getAllMeasurementTypesFromDB().unsafeRunSync(env)
-                if (response.isSuccess()) {
-                    val measurementtypes: List<Measurementtype> = response.getOrNull()!!
-                    val measurementtypeDTOs: List<MeasurementTypeDTO> = measurementtypes.map { it.toMeasurementTypeDTO() }
-                    call.respond(measurementtypeDTOs)
-                }else{
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren ${response}"))
-                }
-            }
-        }
-        route("/locations") {
-            get {
-                // TODO: Wrap in KIO
-                val response = getAllLocationsFromDB().unsafeRunSync(env)
-                if (response.isSuccess()) {
-                    val locations: List<Location> = response.getOrNull()!!
-                    val locationDTOs: List<LocationDTO> = locations.map { it.toLocationDTO() }
-                    call.respond(locationDTOs)
-                }else{
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren ${response}"))
-                }
-            }
-        }
-        route("/measurements") {
-            get {
-                // TODO: Wrap in KIO
-                val response = getAllMeasurementsFromDB().unsafeRunSync(env)
-                if (response.isSuccess()) {
-                    val measurements: List<Measurement> = response.getOrNull()!!
-                    val measurementDTOs: List<MeasurementDTO> = measurements.map { it.toMeasurementDTO() }
-                    call.respond(measurementDTOs)
-                }else{
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren ${response}"))
-                }
-            }
-        }
-        route("/latestmeasurements") {
-            get {
-                val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
-                if (response.isSuccess()) {
-                    val result = response.getOrNull()!! // List<LocationWithLatestMeasurementsDTO>
-                    call.respond(result)
-                } else {
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten ${response}"))
-                }
-            }
-        }
-        route("/latestmeasurementsNEW") {
-            get {
-                val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
-                if (response.isSuccess()) {
-                    val rawLocations = response.getOrNull()!!
-
-                    val result = rawLocations.map { loc ->
-                        val boxes = loc.latestMeasurements
-                            .groupBy { it.sensor.id } // collect all measurements of the same sensor
-                            .map { (_, measurements) ->
-                                val sensor = measurements.first().sensor
-                                mapSensorToBoxDTO(sensor, measurements)
-                            }
-
-                        LocationWithBoxesDTO(
-                            location = loc.location,
-                            boxes = boxes
-                        )
+        get(
+            path = "/sensors",
+            builder = {
+                tags("raw")
+                description = "Return all sensors from the database (raw form, no aggregation)."
+                response {
+                    HttpStatusCode.OK to {
+                        description = "List of sensors"
+                        body<List<SensorDTO>>()
                     }
-
-                    call.respond(result)
-                } else {
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten $response"))
+                    HttpStatusCode.InternalServerError to {
+                        description = "Error retrieving sensors"
+                    }
                 }
             }
+        ) {
+            val response = getAllSensorsFromDB().unsafeRunSync(env)
+            if (response.isSuccess()) {
+                val sensors: List<Sensor> = response.getOrNull()!!
+                val sensorDTOs: List<SensorDTO> = sensors.map { it.toSensorDTO() }
+                call.respond(sensorDTOs)
+            } else {
+                call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren $response"))
+            }
         }
-        route("/location/{id}/measurementsWithinTimeRange/{timeRange}") {
-            get {
-                val locationID = call.parameters["id"]?.toIntOrNull()?.toLong()
-                val timeRange = call.parameters["timeRange"]?: "DEFAULT"
 
-                if (locationID == null) {
-                    call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                    return@get
+        get(
+            path = "/measurementtypes",
+            builder = {
+                tags("raw")
+                description = "Return all measurement types (raw form)."
+                response {
+                    HttpStatusCode.OK to {
+                        description = "List of measurement types"
+                        body<List<MeasurementTypeDTO>>()
+                    }
                 }
+            }
+        ) {
+            val response = getAllMeasurementTypesFromDB().unsafeRunSync(env)
+            if (response.isSuccess()) {
+                val measurementtypes: List<Measurementtype> = response.getOrNull()!!
+                val measurementtypeDTOs: List<MeasurementTypeDTO> = measurementtypes.map { it.toMeasurementTypeDTO() }
+                call.respond(measurementtypeDTOs)
+            } else {
+                call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren $response"))
+            }
+        }
 
-                val response = getLocationByIDWithMeasurementsWithinTimespan(locationID,timeRange).unsafeRunSync(env)
+        get(
+            path = "/locations",
+            builder = {
+                tags("raw")
+                description = "Return all locations (raw form)."
+                response {
+                    HttpStatusCode.OK to {
+                        description = "List of locations"
+                        body<List<LocationDTO>>()
+                    }
+                }
+            }
+        ) {
+            val response = getAllLocationsFromDB().unsafeRunSync(env)
+            if (response.isSuccess()) {
+                val locations: List<Location> = response.getOrNull()!!
+                val locationDTOs: List<LocationDTO> = locations.map { it.toLocationDTO() }
+                call.respond(locationDTOs)
+            } else {
+                call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren $response"))
+            }
+        }
 
-                if (response.isSuccess()) {
-                    val rawLocation = response.getOrNull()!!
+        get(
+            path = "/measurements",
+            builder = {
+                tags("raw")
+                description = "Return all measurements (raw form)."
+                response {
+                    HttpStatusCode.OK to {
+                        description = "List of measurements"
+                        body<List<MeasurementDTO>>()
+                    }
+                }
+            }
+        ) {
+            val response = getAllMeasurementsFromDB().unsafeRunSync(env)
+            if (response.isSuccess()) {
+                val measurements: List<Measurement> = response.getOrNull()!!
+                val measurementDTOs: List<MeasurementDTO> = measurements.map { it.toMeasurementDTO() }
+                call.respond(measurementDTOs)
+            } else {
+                call.respondKIO(KIO.ok("Fehler beim Abrufen der Sensoren $response"))
+            }
+        }
 
-                    val boxes = rawLocation.latestMeasurements
-                        .groupBy { it.sensor.id } // one box per sensor
+        get(
+            path = "/latestmeasurements",
+            builder = {
+                tags("raw")
+                description = "Return the latest measurement for each location (raw form)."
+                response {
+                    HttpStatusCode.OK to {
+                        description = "List of locations with their latest measurements"
+                        body<List<LocationWithLatestMeasurementsDTO>>()
+                    }
+                }
+            }
+        ) {
+            val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
+            if (response.isSuccess()) {
+                val result = response.getOrNull()!!
+                call.respond(result)
+            } else {
+                call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten $response"))
+            }
+        }
+
+        get(
+            path = "/latestmeasurementsNEW",
+            builder = {
+                tags("measurements")
+                description = "Get the latest measurement values for all locations. The measurement must be within the last 2 hours."
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response with latest measurements for each location"
+                        body<List<LocationWithBoxesDTO>>()
+                    }
+                    HttpStatusCode.InternalServerError to {
+                        description = "Error occurred while retrieving the latest measurements"
+                    }
+                }
+            }
+        ) {
+            val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
+
+            if (response.isSuccess()) {
+                val rawLocations = response.getOrNull()!!
+
+                val result = rawLocations.map { loc ->
+                    val boxes = loc.latestMeasurements
+                        .groupBy { it.sensor.id } // collect all measurements of the same sensor
                         .map { (_, measurements) ->
                             val sensor = measurements.first().sensor
-                            mapSensorToBoxDTO(sensor, measurements) // this function already groups by time
+                            mapSensorToBoxDTO(sensor, measurements)
                         }
 
-                    val result = LocationWithBoxesDTO(
-                        location = rawLocation.location,
+                    LocationWithBoxesDTO(
+                        location = loc.location,
                         boxes = boxes
                     )
-
-                    call.respond(result)
-                } else {
-                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten $response"))
                 }
+
+                call.respond(result)
+            } else {
+                call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten $response"))
             }
         }
+            get(
+            path = "/location/{id}/measurementsWithinTimeRange",
+            builder = {
+                tags("location")
+                description = "Get all measurements for a location within a given time range"
+                request {
+                    pathParameter<Long>("id") {
+                        description = "The location ID (not the sensor ID)"
+                    }
+                    queryParameter<String>("timeRange") {
+                        description = "Optional time range ('today', 'week', 'month', 'DEFAULT'). Defaults to 24h."
+                        required = false
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response with measurements"
+                        body<LocationWithBoxesDTO>()
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameters"
+                    }
+                }
+            }
+        ) {
+            val locationID = call.parameters["id"]?.toLongOrNull()
+            val timeRange = call.parameters["timeRange"] ?: "DEFAULT"
 
+            if (locationID == null) {
+                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
+                return@get
+            }
 
+            val response = getLocationByIDWithMeasurementsWithinTimespan(locationID, timeRange).unsafeRunSync(env)
+
+            if (response.isSuccess()) {
+                val rawLocation = response.getOrNull()!!
+
+                val boxes = rawLocation.latestMeasurements
+                    .groupBy { it.sensor.id } // one box per sensor
+                    .map { (_, measurements) ->
+                        val sensor = measurements.first().sensor
+                        mapSensorToBoxDTO(sensor, measurements) // this function already groups by time
+                    }
+
+                val result = LocationWithBoxesDTO(
+                    location = rawLocation.location,
+                    boxes = boxes
+                )
+
+                call.respond(result)
+            } else {
+                call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten $response"))
+            }
+        }
     }
 }
