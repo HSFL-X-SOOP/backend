@@ -188,17 +188,16 @@ fun Application.modules(env: JEnv) {
                     val rawLocation = response.getOrNull()!!
 
                     val boxes = rawLocation.latestMeasurements
-                        .groupBy { Pair(it.sensor.id, it.time )} // collect all measurements of the same sensor
+                        .groupBy { it.sensor.id } // one box per sensor
                         .map { (_, measurements) ->
                             val sensor = measurements.first().sensor
-                            mapSensorToBoxDTO(sensor, measurements)
+                            mapSensorToBoxDTO(sensor, measurements) // this function already groups by time
                         }
 
                     val result = LocationWithBoxesDTO(
                         location = rawLocation.location,
                         boxes = boxes
                     )
-
 
                     call.respond(result)
                 } else {
