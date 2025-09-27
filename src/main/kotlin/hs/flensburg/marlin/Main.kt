@@ -21,6 +21,7 @@ import hs.flensburg.marlin.business.api.getAllLocationsFromDB
 import hs.flensburg.marlin.business.api.getAllMeasurementTypesFromDB
 import hs.flensburg.marlin.business.api.getAllMeasurementsFromDB
 import hs.flensburg.marlin.business.api.getAllSensorsFromDB
+import hs.flensburg.marlin.business.api.getLocationByIDWithMeasurementsWithinTimespan
 import hs.flensburg.marlin.business.api.getLocationsWithLatestMeasurements
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
@@ -164,6 +165,40 @@ fun Application.modules(env: JEnv) {
                             boxes = boxes
                         )
                     }
+
+                    call.respond(result)
+                } else {
+                    call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten $response"))
+                }
+            }
+        }
+        route("/location/{id}/measurementsWithinTimeRange/{timeRange}") {
+            get {
+                val locationID = call.parameters["id"]?.toIntOrNull()?.toLong()
+                val timeRange = call.parameters["timeRange"]?: "DEFAULT"
+
+                if (locationID == null) {
+                    call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
+                    return@get
+                }
+
+                val response = getLocationByIDWithMeasurementsWithinTimespan(locationID,timeRange).unsafeRunSync(env)
+
+                if (response.isSuccess()) {
+                    val rawLocation = response.getOrNull()!!
+
+                    val boxes = rawLocation.latestMeasurements
+                        .groupBy { Pair(it.sensor.id, it.time )} // collect all measurements of the same sensor
+                        .map { (_, measurements) ->
+                            val sensor = measurements.first().sensor
+                            mapSensorToBoxDTO(sensor, measurements)
+                        }
+
+                    val result = LocationWithBoxesDTO(
+                        location = rawLocation.location,
+                        boxes = boxes
+                    )
+
 
                     call.respond(result)
                 } else {

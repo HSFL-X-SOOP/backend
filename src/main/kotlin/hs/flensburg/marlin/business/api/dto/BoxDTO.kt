@@ -13,6 +13,7 @@ data class WaterTemperatureOnlyBoxDTO(
     val name: String?,
     val description: String?,
     val isMoving: Boolean?,
+    val timestamp: kotlinx.datetime.LocalDateTime?,
     val waterTemperature: Double?
 ) : BoxDTO
 
@@ -23,6 +24,7 @@ data class WaterBoxDTO(
     val name: String?,
     val description: String?,
     val isMoving: Boolean?,
+    val timestamp: kotlinx.datetime.LocalDateTime?,
     val waterTemperature: Double?,
     val waveHeight: Double?,
     val tide: Double?,
@@ -37,6 +39,7 @@ data class AirBoxDTO(
     val name: String?,
     val description: String?,
     val isMoving: Boolean?,
+    val timestamp: kotlinx.datetime.LocalDateTime?,
     val airTemperature: Double?,
     val windSpeed: Double?,
     val windDirection: Double?,
@@ -72,6 +75,7 @@ fun mapSensorToBoxDTO(
             name = sensor.name,
             description = sensor.description,
             isMoving = sensor.isMoving,
+            timestamp = measurements.firstOrNull()?.time,
             waterTemperature = waterTemp
         )
         // Water box with multiple measurements
@@ -80,6 +84,7 @@ fun mapSensorToBoxDTO(
             name = sensor.name,
             description = sensor.description,
             isMoving = sensor.isMoving,
+            timestamp = measurements.firstOrNull()?.time,
             waterTemperature = waterTemp,
             waveHeight = waveHeight,
             tide = tide,
@@ -92,6 +97,7 @@ fun mapSensorToBoxDTO(
             name = sensor.name,
             description = sensor.description,
             isMoving = sensor.isMoving,
+            timestamp = measurements.firstOrNull()?.time,
             airTemperature = airTemp,
             windSpeed = windSpeed,
             windDirection = windDir,
