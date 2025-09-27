@@ -1,0 +1,9 @@
+{
+   "name": {
+    "WTemp" : "Temperature, water"
+  },
+  "description": {
+    "temperature_water [°C]": "The measured temperature in the water"
+  }
+
+}

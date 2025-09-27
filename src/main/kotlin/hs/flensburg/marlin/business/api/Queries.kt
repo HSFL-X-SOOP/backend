@@ -144,6 +144,96 @@ fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<Location
     ).map { (location, enrichedMeasurements) ->
         LocationWithLatestMeasurementsDTO(location, enrichedMeasurements)
     }
-
 }
+
+@OptIn(ExperimentalTime::class)
+fun getLocationByIDWithMeasurementsWithinTimespan(
+    locationId: Long,
+    timeRange: String // "today", "week", "month"
+): App<DataAccessException, LocationWithLatestMeasurementsDTO?> = Jooq.query {
+
+    val intervalCondition = when (timeRange.lowercase()) {
+        "today" -> "m.time >= date_trunc('day', NOW())"
+        "week"  -> "m.time >= date_trunc('week', NOW())"
+        "month" -> "m.time >= date_trunc('month', NOW())"
+        else    -> "m.time >= NOW() - INTERVAL '1 day'" // fallback = last 24h
+    }
+
+    val sql = """
+        SELECT
+          l.id AS loc_id,
+          l.name AS loc_name,
+          ST_Y(l.coordinates::geometry) AS latitude,
+          ST_X(l.coordinates::geometry) AS longitude,
+
+          s.id AS sensor_id,
+          s.name AS sensor_name,
+          s.description AS sensor_description,
+          s.is_moving AS sensor_is_moving,
+
+          mt.id AS type_id,
+          mt.name AS type_name,
+          mt.description AS type_description,
+          mt.unit_name,
+          mt.unit_symbol,
+          mt.unit_definition,
+
+          m.time AS meas_time,
+          m.value AS meas_value
+
+        FROM marlin.measurement AS m
+        JOIN marlin.location l ON m.location_id = l.id
+        JOIN marlin.sensor s ON m.sensor_id = s.id
+        JOIN marlin.measurementtype mt ON m.type_id = mt.id
+
+        WHERE m.location_id = $locationId
+          AND $intervalCondition
+        ORDER BY m.time DESC;
+    """.trimIndent()
+
+    val grouped = resultQuery(sql).fetchGroups(
+        { rec ->
+            LocationDTO(
+                id = rec.get("loc_id", Long::class.java)!!,
+                name = rec.get("loc_name", String::class.java),
+                coordinates = GeoPointDTO(
+                    lat = rec.get("latitude", Double::class.java)!!,
+                    lon = rec.get("longitude", Double::class.java)!!
+                )
+            )
+        },
+        { rec ->
+            val sensor = Sensor(
+                id = rec.get("sensor_id", Long::class.java),
+                name = rec.get("sensor_name", String::class.java),
+                description = rec.get("sensor_description", String::class.java),
+                isMoving = rec.get("sensor_is_moving", Boolean::class.java)
+            ).toSensorDTO()
+
+            val type = Measurementtype(
+                id = rec.get("type_id", Long::class.java),
+                name = rec.get("type_name", String::class.java),
+                description = rec.get("type_description", String::class.java),
+                unitName = rec.get("unit_name", String::class.java),
+                unitSymbol = rec.get("unit_symbol", String::class.java),
+                unitDefinition = rec.get("unit_definition", String::class.java)
+            ).toMeasurementTypeDTO()
+
+            val time = rec.get("meas_time", OffsetDateTime::class.java)
+                .toInstant()?.toKotlinInstant()?.toLocalDateTime(TimeZone.UTC)
+
+            EnrichedMeasurementDTO(
+                sensor = sensor,
+                measurementType = type,
+                time = time,
+                value = rec.get("meas_value", Double::class.java)!!
+            )
+        }
+    )
+
+    grouped.entries.firstOrNull()?.let { (location, measurements) ->
+        LocationWithLatestMeasurementsDTO(location, measurements)
+    }
+}
+
 

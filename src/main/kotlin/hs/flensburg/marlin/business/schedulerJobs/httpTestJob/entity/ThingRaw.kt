@@ -2,6 +2,9 @@ package hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 // ==== RAW DATA MODELS ====
 
@@ -42,12 +45,12 @@ data class Sensor(val name: String, val description: String, val metadata: Strin
 @Serializable
 data class ObservedProperty(val name: String, val description: String)
 @Serializable
-data class ObservationRaw(val phenomenonTime: String, val result: Double)
+data class ObservationRaw(val phenomenonTime: String, val result: JsonElement)
 
 // ==== Raw to Clean ===
 
 
-
+// Remove the entire Datastream if it doesnt measure a numeric value, such as Timestamp
 fun ThingRaw.toClean(): ThingClean {
     val coords = Locations.firstOrNull()?.location?.coordinates ?: listOf(0.0, 0.0)
     return ThingClean(
@@ -55,22 +58,29 @@ fun ThingRaw.toClean(): ThingClean {
         name = name,
         description = description,
         location = Pair(coords[0], coords[1]),
-        datastreams = Datastreams.map { it.toClean() }
+        datastreams = Datastreams.mapNotNull { it.toClean() }
     )
 }
-
-fun DatastreamRaw.toClean(): DatastreamClean {
-    return DatastreamClean(
+// Remove Datastream if it has no Measuremnt as Double
+fun DatastreamRaw.toClean(): DatastreamClean? {
+    val numericMeasurements = observations.mapNotNull { it.toClean() }
+    return if (numericMeasurements.isEmpty()) null
+    else DatastreamClean(
         name = name,
         description = description,
         unitOfMeasurement = unitOfMeasurement,
         totalTimeSpan = totalTimeSpan,
         sensor = sensor,
         observedProperty = observedProperty,
-        measurements = observations.map { it.toClean() }
+        measurements = numericMeasurements
     )
 }
+// Remove Values that are not a Double, like Timestamp
+fun ObservationRaw.toClean(): ObservationClean? {
+    val resultDouble = when (result) {
+        is JsonElement -> result.jsonPrimitive.doubleOrNull
+        else -> null
+    }
 
-fun ObservationRaw.toClean(): ObservationClean {
-    return ObservationClean(timestamp = phenomenonTime, result = result)
+    return resultDouble?.let { ObservationClean(timestamp = phenomenonTime, result = it) }
 }
