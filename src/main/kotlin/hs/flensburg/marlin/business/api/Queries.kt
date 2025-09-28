@@ -8,6 +8,7 @@ import hs.flensburg.marlin.business.api.dto.LocationDTO
 import hs.flensburg.marlin.business.api.dto.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.dto.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.dto.toSensorDTO
+import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
@@ -60,7 +61,7 @@ fun getAllMeasurementsFromDB(): App<DataAccessException, List<Measurement>> = Jo
 }
 
 @OptIn(ExperimentalTime::class)
-fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
+fun getLocationsWithLatestMeasurements(timezone: String): App<DataAccessException, List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
     // Query to fetch only the newest measurement within the last 2 hours for each location
     val sql = """
         WITH latest AS (
@@ -132,12 +133,12 @@ fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<Location
             ).toMeasurementTypeDTO()
 
             val time = rec.get("meas_time", OffsetDateTime::class.java)
-                .toInstant()?.toKotlinInstant()?.toLocalDateTime(TimeZone.UTC)
+            val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
 
             EnrichedMeasurementDTO(
                 sensor = sensor,
                 measurementType = type,
-                time = time,
+                time = localTime,
                 value = rec.get("meas_value", Double::class.java)!!
             )
         }
@@ -149,14 +150,15 @@ fun getLocationsWithLatestMeasurements(): App<DataAccessException, List<Location
 @OptIn(ExperimentalTime::class)
 fun getLocationByIDWithMeasurementsWithinTimespan(
     locationId: Long,
-    timeRange: String // "today", "week", "month"
+    timeRange: String, // "today", "week", "month"
+    timezone: String
 ): App<DataAccessException, LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
     val intervalCondition = when (timeRange.lowercase()) {
-        "today" -> "m.time >= date_trunc('day', NOW())"
-        "week"  -> "m.time >= date_trunc('week', NOW())"
-        "month" -> "m.time >= date_trunc('month', NOW())"
-        else    -> "m.time >= NOW() - INTERVAL '1 day'" // fallback = last 24h
+        "today" -> "m.time >= date_trunc('day', NOW() AT TIME ZONE '$timezone') AT TIME ZONE '$timezone'"
+        "week"  -> "m.time >= date_trunc('week', NOW() AT TIME ZONE '$timezone') AT TIME ZONE '$timezone'"
+        "month" -> "m.time >= date_trunc('month', NOW() AT TIME ZONE '$timezone') AT TIME ZONE '$timezone'"
+        else    -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '1 day'"
     }
 
     val sql = """
@@ -220,12 +222,12 @@ fun getLocationByIDWithMeasurementsWithinTimespan(
             ).toMeasurementTypeDTO()
 
             val time = rec.get("meas_time", OffsetDateTime::class.java)
-                .toInstant()?.toKotlinInstant()?.toLocalDateTime(TimeZone.UTC)
+            val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
 
             EnrichedMeasurementDTO(
                 sensor = sensor,
                 measurementType = type,
-                time = time,
+                time = localTime,
                 value = rec.get("meas_value", Double::class.java)!!
             )
         }

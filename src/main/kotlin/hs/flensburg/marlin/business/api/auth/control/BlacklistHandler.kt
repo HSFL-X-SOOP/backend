@@ -4,13 +4,9 @@ import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
-import hs.flensburg.marlin.business.api.auth.entity.IPAddressLookupResponse
+import hs.flensburg.marlin.business.api.auth.boundary.IPAddressLookupService
 import hs.flensburg.marlin.business.api.email.boundary.EmailService
-import hs.flensburg.marlin.business.httpclient
 import hs.flensburg.marlin.database.generated.tables.records.LoginBlacklistRecord
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import kotlinx.coroutines.runBlocking
 import java.time.LocalDateTime
 
 object BlacklistHandler {
@@ -21,7 +17,7 @@ object BlacklistHandler {
         ipAddress: String
     ): App<ServiceLayerError, Unit> = KIO.comprehension {
         val now = LocalDateTime.now()
-        val ipInfo = lookUpIpAddressInfo(ipAddress)
+        val ipInfo = IPAddressLookupService.lookUpIpAddressInfo(ipAddress)
 
         val record = LoginBlacklistRecord().apply {
             this.userId = userId
@@ -40,7 +36,4 @@ object BlacklistHandler {
         KIO.unit
     }
 
-    private fun lookUpIpAddressInfo(ipAddress: String): IPAddressLookupResponse = runBlocking {
-        httpclient.get("http://ip-api.com/json/$ipAddress").body<IPAddressLookupResponse>()
-    }
 }

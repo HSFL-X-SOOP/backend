@@ -31,3 +31,9 @@ data class AirMeasurementValuesDTO(
     val humidity: Double?,
     val airPressure: Double?
 ) : BoxMeasurementsDTO
+
+@Serializable
+data class TimestampedBoxMeasurementsDTO<T : BoxMeasurementsDTO>(
+    val time: LocalDateTime,
+    val measurements: T
+)
