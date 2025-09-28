@@ -9,7 +9,7 @@ object AuthSchedulerService {
 
     private const val EXPIRED_TOKEN_CLEANUP_MINUTES = 15L
 
-    fun deleteExpiredTokens(now: LocalDateTime): JIO<Unit> = KIO.comprehension {
+    fun deleteExpiredRestrictionLogs(now: LocalDateTime): JIO<Unit> = KIO.comprehension {
         val cutoff = now.minusMinutes(EXPIRED_TOKEN_CLEANUP_MINUTES)
 
         AuthRepo.deleteExpiredFailedLoginAttempts(cutoff)

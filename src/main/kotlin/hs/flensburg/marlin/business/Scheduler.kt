@@ -29,7 +29,7 @@ fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
     }
 
     schedule(1.minutes, true, env) {
-        AuthSchedulerService.deleteExpiredTokens(LocalDateTime.now())
+        AuthSchedulerService.deleteExpiredRestrictionLogs(LocalDateTime.now())
     }
 }
 
