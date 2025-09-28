@@ -14,7 +14,7 @@ data class WaterTemperatureOnlyBoxDTO(
     val name: String?,
     val description: String?,
     val isMoving: Boolean?,
-    val measurementTimes: Map<LocalDateTime, WaterTemperatureOnlyMeasurementValuesDTO>
+    val measurementTimes: List<TimestampedBoxMeasurementsDTO<WaterTemperatureOnlyMeasurementValuesDTO>>
 ) : BoxDTO
 
 
@@ -25,7 +25,7 @@ data class WaterBoxDTO(
     val name: String?,
     val description: String?,
     val isMoving: Boolean?,
-    val measurementTimes: Map<LocalDateTime, WaterMeasurementValuesDTO>
+    val measurementTimes: List<TimestampedBoxMeasurementsDTO<WaterMeasurementValuesDTO>>
 ) : BoxDTO
 
 
@@ -36,7 +36,7 @@ data class AirBoxDTO(
     val name: String?,
     val description: String?,
     val isMoving: Boolean?,
-    val measurementTimes: Map<LocalDateTime, AirMeasurementValuesDTO>
+    val measurementTimes: List<TimestampedBoxMeasurementsDTO<AirMeasurementValuesDTO>>
 ) : BoxDTO
 
 fun mapSensorToBoxDTO(
@@ -46,64 +46,70 @@ fun mapSensorToBoxDTO(
     // group measurements by timestamp
     val measurementsByTime = measurements.groupBy { it.time!! }
 
-    // build values per timestamp
-    val measurementTimes: Map<LocalDateTime, BoxMeasurementsDTO> = measurementsByTime.mapValues { (_, ms) ->
-        val waterTemp = ms.find { it.measurementType.name == "Temperature, water" }?.value
-        val waveHeight = ms.find { it.measurementType.name == "Wave Height" }?.value
-        val tide = ms.find { it.measurementType.name == "Tide" }?.value
-        val stdDev = ms.find { it.measurementType.name == "Standard deviation" }?.value
-        val battery = ms.find { it.measurementType.name == "Battery, voltage" }?.value
+// build values per timestamp
+    val measurementTimes: List<TimestampedBoxMeasurementsDTO<out BoxMeasurementsDTO>> =
+        measurementsByTime.map { (time, ms) ->
+            val waterTemp = ms.find { it.measurementType.name == "Temperature, water" }?.value
+            val waveHeight = ms.find { it.measurementType.name == "Wave Height" }?.value
+            val tide = ms.find { it.measurementType.name == "Tide" }?.value
+            val stdDev = ms.find { it.measurementType.name == "Standard deviation" }?.value
+            val battery = ms.find { it.measurementType.name == "Battery, voltage" }?.value
 
-        val airTemp = ms.find { it.measurementType.name == "Temperature, air" }?.value
-        val windSpeed = ms.find { it.measurementType.name == "Wind speed" }?.value
-        val windDir = ms.find { it.measurementType.name == "Wind direction" }?.value
-        val gustSpeed = ms.find { it.measurementType.name == "Wind speed, gust" }?.value
-        val gustDir = ms.find { it.measurementType.name == "Wind direction, gust" }?.value
-        val humidity = ms.find { it.measurementType.name == "Humidity, relative" }?.value
-        val pressure = ms.find { it.measurementType.name == "Station pressure" }?.value
+            val airTemp = ms.find { it.measurementType.name == "Temperature, air" }?.value
+            val windSpeed = ms.find { it.measurementType.name == "Wind speed" }?.value
+            val windDir = ms.find { it.measurementType.name == "Wind direction" }?.value
+            val gustSpeed = ms.find { it.measurementType.name == "Wind speed, gust" }?.value
+            val gustDir = ms.find { it.measurementType.name == "Wind direction, gust" }?.value
+            val humidity = ms.find { it.measurementType.name == "Humidity, relative" }?.value
+            val pressure = ms.find { it.measurementType.name == "Station pressure" }?.value
 
-        when {
-            // water only
-            waveHeight == null && tide == null && stdDev == null && battery == null && waterTemp != null ->
-                WaterTemperatureOnlyMeasurementValuesDTO(
-                    waterTemperature = waterTemp
-                )
+            val values: BoxMeasurementsDTO = when {
+                // water only
+                waveHeight == null && tide == null && stdDev == null && battery == null && waterTemp != null ->
+                    WaterTemperatureOnlyMeasurementValuesDTO(waterTemperature = waterTemp)
 
-            // water box
-            waterTemp != null || waveHeight != null || tide != null || stdDev != null || battery != null ->
-                WaterMeasurementValuesDTO(
-                    waterTemperature = waterTemp,
-                    waveHeight = waveHeight,
-                    tide = tide,
-                    standardDeviation = stdDev,
-                    batteryVoltage = battery
-                )
+                // water box
+                waterTemp != null || waveHeight != null || tide != null || stdDev != null || battery != null ->
+                    WaterMeasurementValuesDTO(
+                        waterTemperature = waterTemp,
+                        waveHeight = waveHeight,
+                        tide = tide,
+                        standardDeviation = stdDev,
+                        batteryVoltage = battery
+                    )
 
-            // air box
-            airTemp != null || windSpeed != null || windDir != null || gustSpeed != null ||
-                    gustDir != null || humidity != null || pressure != null ->
-                AirMeasurementValuesDTO(
-                    airTemperature = airTemp,
-                    windSpeed = windSpeed,
-                    windDirection = windDir,
-                    gustSpeed = gustSpeed,
-                    gustDirection = gustDir,
-                    humidity = humidity,
-                    airPressure = pressure
-                )
+                // air box
+                airTemp != null || windSpeed != null || windDir != null || gustSpeed != null ||
+                        gustDir != null || humidity != null || pressure != null ->
+                    AirMeasurementValuesDTO(
+                        airTemperature = airTemp,
+                        windSpeed = windSpeed,
+                        windDirection = windDir,
+                        gustSpeed = gustSpeed,
+                        gustDirection = gustDir,
+                        humidity = humidity,
+                        airPressure = pressure
+                    )
 
-            else -> throw IllegalArgumentException("Unknown sensor type for ${sensor.name}")
+                else -> throw IllegalArgumentException("Unknown sensor type for ${sensor.name}")
+            }
+
+            TimestampedBoxMeasurementsDTO(
+                time = time,
+                measurements = values
+            )
         }
-    }
 
-    // decide which box DTO to return
-    return when (measurementTimes.values.first()) {
+// decide which box DTO to return
+    return when (val first = measurementTimes.first().measurements) {
         is WaterTemperatureOnlyMeasurementValuesDTO -> WaterTemperatureOnlyBoxDTO(
             id = sensor.id,
             name = sensor.name,
             description = sensor.description,
             isMoving = sensor.isMoving,
-            measurementTimes = measurementTimes as Map<LocalDateTime, WaterTemperatureOnlyMeasurementValuesDTO>
+            measurementTimes = measurementTimes.map {
+                TimestampedBoxMeasurementsDTO(it.time, it.measurements as WaterTemperatureOnlyMeasurementValuesDTO)
+            }
         )
 
         is WaterMeasurementValuesDTO -> WaterBoxDTO(
@@ -111,7 +117,9 @@ fun mapSensorToBoxDTO(
             name = sensor.name,
             description = sensor.description,
             isMoving = sensor.isMoving,
-            measurementTimes = measurementTimes as Map<LocalDateTime, WaterMeasurementValuesDTO>
+            measurementTimes = measurementTimes.map {
+                TimestampedBoxMeasurementsDTO(it.time, it.measurements as WaterMeasurementValuesDTO)
+            }
         )
 
         is AirMeasurementValuesDTO -> AirBoxDTO(
@@ -119,9 +127,9 @@ fun mapSensorToBoxDTO(
             name = sensor.name,
             description = sensor.description,
             isMoving = sensor.isMoving,
-            measurementTimes = measurementTimes as Map<LocalDateTime, AirMeasurementValuesDTO>
+            measurementTimes = measurementTimes.map {
+                TimestampedBoxMeasurementsDTO(it.time, it.measurements as AirMeasurementValuesDTO)
+            }
         )
-
-        else -> throw IllegalArgumentException("Unsupported measurement type for ${sensor.name}")
     }
 }
