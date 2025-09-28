@@ -2,7 +2,6 @@ package hs.flensburg.marlin.plugins
 
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
-import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
 import io.github.smiley4.ktoropenapi.OpenApi
 import io.github.smiley4.ktoropenapi.get
@@ -24,12 +23,16 @@ import io.ktor.server.routing.routing
 import kotlinx.serialization.SerializationException
 
 
-fun Application.configureRouting(env: JEnv) {
-    configureAuth(env.env.config)
+fun Application.configureRouting(config: Config) {
+    configureAuth(config)
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
-    install(OpenApi)
+    install(OpenApi) {
+        server {
+            url = config.backendUrl
+        }
+    }
 
     install(StatusPages) {
         exception<BadRequestException> { call, cause ->
@@ -54,14 +57,13 @@ fun Application.configureRouting(env: JEnv) {
 
         route("/api.json") { openApi() }
 
-        if (env.env.config.mode == Config.Mode.PROD) {
+        if (config.mode == Config.Mode.PROD) {
             route("/swagger") { swaggerUI("/api/api.json") }
             get({ hidden = true }) { call.respondRedirect("/api/swagger", permanent = false) }
         } else {
             route("/swagger") { swaggerUI("/api.json") }
             get({ hidden = true }) { call.respondRedirect("/swagger", permanent = false) }
         }
-
     }
 }
 

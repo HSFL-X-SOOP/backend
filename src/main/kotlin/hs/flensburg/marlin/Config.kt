@@ -14,14 +14,14 @@ data class Config(
     val frontendUrl: String
         get() = when (mode) {
             Mode.DEV -> "http://localhost:5173"
-            Mode.STAGING -> "https://marlin-live.com"
+            Mode.STAGING -> "https://test.marlin-live.com"
             Mode.PROD -> "https://marlin-live.com"
         }
 
     val backendUrl: String
         get() = when (mode) {
             Mode.DEV -> "http://localhost:${http.port}"
-            Mode.STAGING -> "https://marlin-live.com/api"
+            Mode.STAGING -> "https://test.marlin-live.com/api"
             Mode.PROD -> "https://marlin-live.com/api"
         }
 
