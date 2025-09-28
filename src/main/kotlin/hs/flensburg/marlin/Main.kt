@@ -7,6 +7,7 @@ import de.lambda9.tailwind.core.extensions.exit.getOrNull
 import hs.flensburg.marlin.Config.Companion.parseConfig
 import hs.flensburg.marlin.business.Env
 import hs.flensburg.marlin.business.JEnv
+import hs.flensburg.marlin.business.api.auth.boundary.IPAddressLookupService
 import hs.flensburg.marlin.business.api.dto.LocationDTO
 import hs.flensburg.marlin.business.api.dto.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.dto.LocationWithLatestMeasurementsDTO
@@ -24,6 +25,7 @@ import hs.flensburg.marlin.business.api.getAllMeasurementsFromDB
 import hs.flensburg.marlin.business.api.getAllSensorsFromDB
 import hs.flensburg.marlin.business.api.getLocationByIDWithMeasurementsWithinTimespan
 import hs.flensburg.marlin.business.api.getLocationsWithLatestMeasurements
+import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
@@ -43,8 +45,6 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import org.flywaydb.core.Flyway
 import io.ktor.server.response.respond
-import io.ktor.server.routing.get
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 
 private val logger = KotlinLogging.logger { }
@@ -192,7 +192,7 @@ fun Application.modules(env: JEnv) {
                 }
             }
         ) {
-            val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
+            val response = getLocationsWithLatestMeasurements("").unsafeRunSync(env)
             if (response.isSuccess()) {
                 val result = response.getOrNull()!!
                 call.respond(result)
@@ -206,6 +206,12 @@ fun Application.modules(env: JEnv) {
             builder = {
                 tags("measurements")
                 description = "Get the latest measurement values for all locations. The measurement must be within the last 2 hours."
+                request {
+                    queryParameter<String>("timezone") {
+                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        required = false
+                    }
+                }
                 response {
                     HttpStatusCode.OK to {
                         description = "Successful response with latest measurements for each location"
@@ -217,7 +223,9 @@ fun Application.modules(env: JEnv) {
                 }
             }
         ) {
-            val response = getLocationsWithLatestMeasurements().unsafeRunSync(env)
+            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(call)
+
+            val response = getLocationsWithLatestMeasurements(timezone).unsafeRunSync(env)
 
             if (response.isSuccess()) {
                 val rawLocations = response.getOrNull()!!
@@ -241,7 +249,8 @@ fun Application.modules(env: JEnv) {
                 call.respondKIO(KIO.ok("Fehler beim Abrufen der Messdaten $response"))
             }
         }
-            get(
+
+        get(
             path = "/location/{id}/measurementsWithinTimeRange",
             builder = {
                 tags("location")
@@ -252,6 +261,10 @@ fun Application.modules(env: JEnv) {
                     }
                     queryParameter<String>("timeRange") {
                         description = "Optional time range ('today', 'week', 'month', 'DEFAULT'). Defaults to 24h."
+                        required = false
+                    }
+                    queryParameter<String>("timezone") {
+                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                 }
@@ -274,7 +287,9 @@ fun Application.modules(env: JEnv) {
                 return@get
             }
 
-            val response = getLocationByIDWithMeasurementsWithinTimespan(locationID, timeRange).unsafeRunSync(env)
+            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(call)
+
+            val response = getLocationByIDWithMeasurementsWithinTimespan(locationID, timeRange, timezone).unsafeRunSync(env)
 
             if (response.isSuccess()) {
                 val rawLocation = response.getOrNull()!!
