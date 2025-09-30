@@ -167,12 +167,6 @@
             <version>${ktor-openapi-tools.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.github.smiley4</groupId>
-            <artifactId>ktor-redoc</artifactId>
-            <version>${ktor-openapi-tools.version}</version>
-        </dependency>
-
         <!-- KIO -->
         <dependency>
             <groupId>de.lambda9.tailwind</groupId>

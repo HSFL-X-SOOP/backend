@@ -55,7 +55,7 @@ fun main(args: Array<String>) {
     logger.info { "Starting Marlin-Backend in $mode mode" }
 
     val config = when (mode) {
-        "STAGING", "DEV" -> dotenv()
+        "DEV" -> dotenv()
         else -> null
     }
 
@@ -81,7 +81,7 @@ fun Application.modules(env: JEnv) {
     configureKIO(env)
     configureScheduling(env)
     configureCORS()
-    configureRouting(env)
+    configureRouting(env.env.config)
 
     routing {
         get(
