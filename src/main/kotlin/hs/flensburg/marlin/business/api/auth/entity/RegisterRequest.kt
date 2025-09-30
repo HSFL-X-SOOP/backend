@@ -12,7 +12,7 @@ private val EMAIL_REGEX = Regex(
  * one digit and one special char from the allowed set.
  */
 private val PASSWORD_REGEX = Regex(
-    "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@\$!%*?&-])[A-Za-z\\d@\$!%*?&-]{8,64}$"
+    "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@\$!%*?&#\\-])[A-Za-z\\d@$!%*?&#\\-]{8,64}$"
 )
 
 @Serializable
@@ -25,7 +25,7 @@ data class RegisterRequest(val email: String, val password: String, val remember
         require(PASSWORD_REGEX.matches(password)) {
             "Password must be 8-64 characters long and include " +
                     "uppercase, lowercase, a digit, and a special character. " +
-                    "Allowed special characters are: @, \$, !, %, *, ?, &, -."
+                    "Allowed special characters are: @, \$, !, %, *, ?, &, #, and -."
         }
     }
 }
