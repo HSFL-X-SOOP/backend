@@ -3,6 +3,7 @@ package hs.flensburg.marlin.plugins
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
+import hs.flensburg.marlin.business.api.users.boundary.configureUsers
 import io.github.smiley4.ktoropenapi.OpenApi
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
@@ -25,6 +26,7 @@ import kotlinx.serialization.SerializationException
 
 fun Application.configureRouting(config: Config) {
     configureAuth(config)
+    configureUsers()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
@@ -57,7 +59,7 @@ fun Application.configureRouting(config: Config) {
 
         route("/api.json") { openApi() }
 
-        if (config.mode == Config.Mode.PROD) {
+        if (config.mode == Config.Mode.PROD || config.mode == Config.Mode.STAGING) {
             route("/swagger") { swaggerUI("/api/api.json") }
             get({ hidden = true }) { call.respondRedirect("/api/swagger", permanent = false) }
         } else {

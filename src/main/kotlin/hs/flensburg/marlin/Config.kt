@@ -13,7 +13,7 @@ data class Config(
 
     val frontendUrl: String
         get() = when (mode) {
-            Mode.DEV -> "http://localhost:5173"
+            Mode.DEV -> "http://localhost:8081"
             Mode.STAGING -> "https://test.marlin-live.com"
             Mode.PROD -> "https://marlin-live.com"
         }

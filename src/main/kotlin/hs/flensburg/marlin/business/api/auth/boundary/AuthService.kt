@@ -19,6 +19,7 @@ import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
 import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
 import hs.flensburg.marlin.business.api.users.control.UserRepo
+import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.jwt.JWTCredential
@@ -69,8 +70,9 @@ object AuthService {
 
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = if (credentials.rememberMe) JWTAuthority.generateRefreshToken(user) else null
+        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(accessToken, refreshToken))
+        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
     }
 
     fun login(credentials: LoginRequest, ipAddress: String): App<ServiceLayerError, LoginResponse> = KIO.comprehension {
@@ -92,8 +94,9 @@ object AuthService {
 
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = if (credentials.rememberMe) JWTAuthority.generateRefreshToken(user) else null
+        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(accessToken, refreshToken))
+        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
     }
 
     fun loginGoogleUser(authResponse: OAuthAccessTokenResponse.OAuth2): App<Error, LoginResponse> = KIO.comprehension {
@@ -117,8 +120,9 @@ object AuthService {
 
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = JWTAuthority.generateRefreshToken(user)
+        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(accessToken, refreshToken))
+        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
     }
 
     fun loginViaMagicLink(magicLinkRequest: MagicLinkLoginRequest): App<Error, LoginResponse> = KIO.comprehension {
@@ -134,8 +138,9 @@ object AuthService {
 
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = JWTAuthority.generateRefreshToken(user)
+        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(accessToken, refreshToken))
+        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
     }
 
     fun refreshToken(refreshTokenRequest: RefreshTokenRequest): App<Error, LoginResponse> = KIO.comprehension {
@@ -154,8 +159,9 @@ object AuthService {
 
         val newAccessToken = JWTAuthority.generateAccessToken(user)
         val newRefreshToken = JWTAuthority.generateRefreshToken(user)
+        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(newAccessToken, newRefreshToken))
+        KIO.ok(LoginResponse(newAccessToken, newRefreshToken, profile?.let { UserProfileResponse.from(it) }))
     }
 
     fun verifyEmail(verifyEmailRequest: VerifyEmailRequest): App<Error, Unit> = KIO.comprehension {

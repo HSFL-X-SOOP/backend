@@ -101,7 +101,8 @@ fun Application.configureAuth(envConfig: Config) {
                         }
                     )
 
-                val callbackUrl = "${envConfig.frontendUrl}/google/callback"
+                val callbackUrl =
+                    if (envConfig.mode == Config.Mode.STAGING || envConfig.mode == Config.Mode.DEV) "${envConfig.frontendUrl}/oauth-callback" else "${envConfig.frontendUrl}/google/callback"
 
                 val redirectUrl = buildString {
                     append(callbackUrl)
@@ -166,11 +167,12 @@ fun Application.configureAuth(envConfig: Config) {
                     val e = error.failures().first()
                     when (e) {
                         is AuthService.Error.OAuthRedirectRequired -> {
-                            val redirectUrl = if (envConfig.mode == Config.Mode.PROD) {
-                                "/api/login/google"
-                            } else {
-                                "/login/google"
-                            }
+                            val redirectUrl =
+                                if (envConfig.mode == Config.Mode.PROD || envConfig.mode == Config.Mode.STAGING) {
+                                    "/api/login/google"
+                                } else {
+                                    "/login/google"
+                                }
                             call.respondRedirect(redirectUrl, permanent = false)
                         }
 
