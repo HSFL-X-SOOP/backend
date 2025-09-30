@@ -12,7 +12,7 @@ private val EMAIL_REGEX = Regex(
  * one digit and one special char from the allowed set.
  */
 private val PASSWORD_REGEX = Regex(
-    "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@\$!%*?&])[A-Za-z\\d@\$!%*?&]{8,64}$"
+    "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@\$!%*?&-])[A-Za-z\\d@\$!%*?&-]{8,64}$"
 )
 
 @Serializable
