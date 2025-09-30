@@ -24,7 +24,8 @@ data class RegisterRequest(val email: String, val password: String, val remember
         require(password.isNotBlank()) { "Password must not be blank." }
         require(PASSWORD_REGEX.matches(password)) {
             "Password must be 8-64 characters long and include " +
-                    "uppercase, lowercase, a digit, and a special character."
+                    "uppercase, lowercase, a digit, and a special character. " +
+                    "Allowed special characters are: @, \$, !, %, *, ?, &, -."
         }
     }
 }
