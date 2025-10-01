@@ -7,24 +7,18 @@ import de.lambda9.tailwind.core.extensions.exit.getOrNull
 import hs.flensburg.marlin.Config.Companion.parseConfig
 import hs.flensburg.marlin.business.Env
 import hs.flensburg.marlin.business.JEnv
-import hs.flensburg.marlin.business.api.auth.boundary.IPAddressLookupService
-import hs.flensburg.marlin.business.api.dto.LocationDTO
-import hs.flensburg.marlin.business.api.dto.LocationWithBoxesDTO
-import hs.flensburg.marlin.business.api.dto.LocationWithLatestMeasurementsDTO
-import hs.flensburg.marlin.business.api.dto.MeasurementDTO
-import hs.flensburg.marlin.business.api.dto.MeasurementTypeDTO
-import hs.flensburg.marlin.business.api.dto.SensorDTO
-import hs.flensburg.marlin.business.api.dto.mapSensorToBoxDTO
-import hs.flensburg.marlin.business.api.dto.toLocationDTO
-import hs.flensburg.marlin.business.api.dto.toMeasurementDTO
-import hs.flensburg.marlin.business.api.dto.toMeasurementTypeDTO
-import hs.flensburg.marlin.business.api.dto.toSensorDTO
-import hs.flensburg.marlin.business.api.getAllLocationsFromDB
-import hs.flensburg.marlin.business.api.getAllMeasurementTypesFromDB
-import hs.flensburg.marlin.business.api.getAllMeasurementsFromDB
-import hs.flensburg.marlin.business.api.getAllSensorsFromDB
-import hs.flensburg.marlin.business.api.getLocationByIDWithMeasurementsWithinTimespan
-import hs.flensburg.marlin.business.api.getLocationsWithLatestMeasurements
+import hs.flensburg.marlin.business.api.sensors.boundary.SensorQueryService
+import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
+import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
+import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
+import hs.flensburg.marlin.business.api.sensors.entity.boxes.mapSensorToBoxDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.toLocationDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
@@ -100,7 +94,7 @@ fun Application.modules(env: JEnv) {
                 }
             }
         ) {
-            val response = getAllSensorsFromDB().unsafeRunSync(env)
+            val response = SensorQueryService.getAllSensorsFromDB().unsafeRunSync(env)
             if (response.isSuccess()) {
                 val sensors: List<Sensor> = response.getOrNull()!!
                 val sensorDTOs: List<SensorDTO> = sensors.map { it.toSensorDTO() }
@@ -123,7 +117,7 @@ fun Application.modules(env: JEnv) {
                 }
             }
         ) {
-            val response = getAllMeasurementTypesFromDB().unsafeRunSync(env)
+            val response = SensorQueryService.getAllMeasurementTypesFromDB().unsafeRunSync(env)
             if (response.isSuccess()) {
                 val measurementtypes: List<Measurementtype> = response.getOrNull()!!
                 val measurementtypeDTOs: List<MeasurementTypeDTO> = measurementtypes.map { it.toMeasurementTypeDTO() }
@@ -146,7 +140,7 @@ fun Application.modules(env: JEnv) {
                 }
             }
         ) {
-            val response = getAllLocationsFromDB().unsafeRunSync(env)
+            val response = SensorQueryService.getAllLocationsFromDB().unsafeRunSync(env)
             if (response.isSuccess()) {
                 val locations: List<Location> = response.getOrNull()!!
                 val locationDTOs: List<LocationDTO> = locations.map { it.toLocationDTO() }
@@ -169,7 +163,7 @@ fun Application.modules(env: JEnv) {
                 }
             }
         ) {
-            val response = getAllMeasurementsFromDB().unsafeRunSync(env)
+            val response = SensorQueryService.getAllMeasurementsFromDB().unsafeRunSync(env)
             if (response.isSuccess()) {
                 val measurements: List<Measurement> = response.getOrNull()!!
                 val measurementDTOs: List<MeasurementDTO> = measurements.map { it.toMeasurementDTO() }
@@ -192,7 +186,7 @@ fun Application.modules(env: JEnv) {
                 }
             }
         ) {
-            val response = getLocationsWithLatestMeasurements("").unsafeRunSync(env)
+            val response = SensorQueryService.getLocationsWithLatestMeasurements("").unsafeRunSync(env)
             if (response.isSuccess()) {
                 val result = response.getOrNull()!!
                 call.respond(result)
@@ -225,7 +219,7 @@ fun Application.modules(env: JEnv) {
         ) {
             val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(call)
 
-            val response = getLocationsWithLatestMeasurements(timezone).unsafeRunSync(env)
+            val response = SensorQueryService.getLocationsWithLatestMeasurements(timezone).unsafeRunSync(env)
 
             if (response.isSuccess()) {
                 val rawLocations = response.getOrNull()!!
@@ -289,7 +283,7 @@ fun Application.modules(env: JEnv) {
 
             val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(call)
 
-            val response = getLocationByIDWithMeasurementsWithinTimespan(locationID, timeRange, timezone).unsafeRunSync(env)
+            val response = SensorQueryService.getLocationByIDWithMeasurementsWithinTimespan(locationID, timeRange, timezone).unsafeRunSync(env)
 
             if (response.isSuccess()) {
                 val rawLocation = response.getOrNull()!!
