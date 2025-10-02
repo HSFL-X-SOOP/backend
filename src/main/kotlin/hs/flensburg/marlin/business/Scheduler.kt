@@ -5,7 +5,7 @@ import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.exit.fold
 import hs.flensburg.marlin.business.schedulerJobs.auth.AuthSchedulerService
-import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.boundary.SensorDataService
+import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.SensorDataService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi

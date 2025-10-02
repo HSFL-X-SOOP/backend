@@ -1,10 +1,7 @@
-package hs.flensburg.marlin.business.schedulerJobs.httpTestJob.boundary
+package hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary
 
-import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity.ThingClean
+import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingClean
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
-import java.nio.file.Path
-import java.nio.file.Paths
 import java.util.Collections.emptyMap
 
 object PreProcessingService {

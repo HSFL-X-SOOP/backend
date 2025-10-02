@@ -1,43 +1,17 @@
-package hs.flensburg.marlin.business.api.dto
+package hs.flensburg.marlin.business.api.sensors.entity.boxes
 
-import kotlinx.serialization.SerialName
+import hs.flensburg.marlin.business.api.sensors.entity.boxes.measurements.AirMeasurementValuesDTO
+import hs.flensburg.marlin.business.api.sensors.entity.boxes.measurements.BoxMeasurementsDTO
+import hs.flensburg.marlin.business.api.sensors.entity.boxes.measurements.TimestampedBoxMeasurementsDTO
+import hs.flensburg.marlin.business.api.sensors.entity.boxes.measurements.WaterMeasurementValuesDTO
+import hs.flensburg.marlin.business.api.sensors.entity.boxes.measurements.WaterTemperatureOnlyMeasurementValuesDTO
+import hs.flensburg.marlin.business.api.sensors.entity.EnrichedMeasurementDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
 import kotlinx.serialization.Serializable
-import kotlinx.datetime.LocalDateTime
 
 @Serializable
 sealed interface BoxDTO
 
-@Serializable
-@SerialName("WaterTemperatureOnlyBox")
-data class WaterTemperatureOnlyBoxDTO(
-    val id: Long?,
-    val name: String?,
-    val description: String?,
-    val isMoving: Boolean?,
-    val measurementTimes: List<TimestampedBoxMeasurementsDTO<WaterTemperatureOnlyMeasurementValuesDTO>>
-) : BoxDTO
-
-
-@Serializable
-@SerialName("WaterBox")
-data class WaterBoxDTO(
-    val id: Long?,
-    val name: String?,
-    val description: String?,
-    val isMoving: Boolean?,
-    val measurementTimes: List<TimestampedBoxMeasurementsDTO<WaterMeasurementValuesDTO>>
-) : BoxDTO
-
-
-@Serializable
-@SerialName("AirBox")
-data class AirBoxDTO(
-    val id: Long?,
-    val name: String?,
-    val description: String?,
-    val isMoving: Boolean?,
-    val measurementTimes: List<TimestampedBoxMeasurementsDTO<AirMeasurementValuesDTO>>
-) : BoxDTO
 
 fun mapSensorToBoxDTO(
     sensor: SensorDTO,

@@ -1,4 +1,4 @@
-package hs.flensburg.marlin.business.api.dto
+package hs.flensburg.marlin.business.api.sensors.entity.raw
 
 import kotlinx.serialization.Serializable
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
@@ -7,7 +7,6 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
-import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 
 

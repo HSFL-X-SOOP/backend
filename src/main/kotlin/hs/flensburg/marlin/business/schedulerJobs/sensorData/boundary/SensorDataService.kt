@@ -1,13 +1,13 @@
-package hs.flensburg.marlin.business.schedulerJobs.httpTestJob.boundary
+package hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary
 
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.httpclient
-import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.boundary.PreProcessingService.preProcessData
-import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.control.SensorDataRepo
-import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity.ThingClean
-import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity.ThingRaw
-import hs.flensburg.marlin.business.schedulerJobs.httpTestJob.entity.toClean
+import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.PreProcessingService.preProcessData
+import hs.flensburg.marlin.business.schedulerJobs.sensorData.control.SensorDataRepo
+import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingClean
+import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingRaw
+import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.toClean
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 
@@ -50,7 +50,6 @@ object SensorDataService {
 
                 // Preprocess the data
                 val thingProcessed = preProcessData(thingClean)
-                println("PreProcessed: $thingProcessed")
 
                 // Save the sensor data to the database
                 val test = SensorDataRepo.saveSensorData(thingProcessed).unsafeRunSync(env)
