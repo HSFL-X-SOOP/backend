@@ -21,7 +21,7 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementDTO
 
 object SensorService {
     sealed class Error(private val message: String) : ServiceLayerError {
-        object NotFound : Error("Sensor not found")
+        object NotFound : Error("Location, Sensor or measurement not found")
         object BadRequest : Error("Bad request")
 
         override fun toApiError(): ApiError {
