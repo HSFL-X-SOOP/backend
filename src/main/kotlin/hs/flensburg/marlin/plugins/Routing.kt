@@ -3,6 +3,7 @@ package hs.flensburg.marlin.plugins
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
+import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
 import hs.flensburg.marlin.business.api.users.boundary.configureUsers
 import io.github.smiley4.ktoropenapi.OpenApi
 import io.github.smiley4.ktoropenapi.get
@@ -27,6 +28,7 @@ import kotlinx.serialization.SerializationException
 fun Application.configureRouting(config: Config) {
     configureAuth(config)
     configureUsers()
+    configureSensors()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)

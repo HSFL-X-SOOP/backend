@@ -1,7 +1,7 @@
-package hs.flensburg.marlin.business.api.sensors.boundary
+package hs.flensburg.marlin.business.api.sensors.control
 
+import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
-import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.api.sensors.entity.EnrichedMeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.GeoPointDTO
@@ -17,22 +17,20 @@ import hs.flensburg.marlin.database.generated.tables.references.LOCATION
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENT
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENTTYPE
 import hs.flensburg.marlin.database.generated.tables.references.SENSOR
-import org.jooq.exception.DataAccessException
 import org.jooq.impl.DSL
 import java.time.OffsetDateTime
-import kotlin.time.ExperimentalTime
 
-object SensorQueryService {
+object SensorRepo {
 
-    fun getAllSensorsFromDB(): App<DataAccessException, List<Sensor>> = Jooq.Companion.query {
+    fun fetchAllSensors(): JIO<List<Sensor>> = Jooq.query {
         selectFrom(SENSOR).fetchInto(Sensor::class.java)
     }
 
-    fun getAllMeasurementTypesFromDB(): App<DataAccessException, List<Measurementtype>> = Jooq.Companion.query {
+    fun fetchAllMeasurementTypes(): JIO<List<Measurementtype>> = Jooq.query {
         selectFrom(MEASUREMENTTYPE).fetchInto(Measurementtype::class.java)
     }
 
-    fun getAllLocationsFromDB(): App<DataAccessException, List<Location>> = Jooq.Companion.query {
+    fun fetchAllLocations(): JIO<List<Location>> = Jooq.query {
         select(
             LOCATION.ID,
             LOCATION.NAME,
@@ -44,7 +42,7 @@ object SensorQueryService {
                 Location(
                     id = it[LOCATION.ID],
                     name = it[LOCATION.NAME],
-                    // compine latitude and longitude into a Pair
+                    // combine latitude and longitude into a Pair
                     coordinates = it.get("latitude", Double::class.java)?.let { lat ->
                         it.get("longitude", Double::class.java)?.let { lon ->
                             Pair(lat, lon)
@@ -54,15 +52,15 @@ object SensorQueryService {
             }
     }
 
-    fun getAllMeasurementsFromDB(): App<DataAccessException, List<Measurement>> = Jooq.Companion.query {
-        selectFrom(MEASUREMENT).fetchInto(Measurement::class.java)
+    fun fetchAllMeasurements(): JIO<List<Measurement>> = Jooq.query {
+        selectFrom(MEASUREMENT)
+            .orderBy(MEASUREMENT.TIME.desc())
+            .fetchInto(Measurement::class.java)
     }
 
-    @OptIn(ExperimentalTime::class)
-    fun getLocationsWithLatestMeasurements(timezone: String): App<DataAccessException, List<LocationWithLatestMeasurementsDTO>> =
-        Jooq.Companion.query {
-            // Query to fetch only the newest measurement within the last 2 hours for each location
-            val sql = """
+    fun fetchLocationsWithLatestMeasurements(timezone: String): JIO<List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
+        // Query to fetch only the newest measurement within the last 2 hours for each location
+        val sql = """
         WITH latest AS (
           SELECT DISTINCT ON (m.location_id, m.type_id)
             m.sensor_id,
@@ -144,14 +142,13 @@ object SensorQueryService {
             ).map { (location, enrichedMeasurements) ->
                 LocationWithLatestMeasurementsDTO(location, enrichedMeasurements)
             }
-        }
+    }
 
-    @OptIn(ExperimentalTime::class)
-    fun getLocationByIDWithMeasurementsWithinTimespan(
+    fun fetchLocationByIDWithMeasurementsWithinTimespan(
         locationId: Long,
         timeRange: String, // "today", "week", "month"
         timezone: String
-    ): App<DataAccessException, LocationWithLatestMeasurementsDTO?> = Jooq.Companion.query {
+    ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
         val intervalCondition = when (timeRange.lowercase()) {
             "today" -> "m.time >= date_trunc('day', NOW() AT TIME ZONE '$timezone') AT TIME ZONE '$timezone'"
