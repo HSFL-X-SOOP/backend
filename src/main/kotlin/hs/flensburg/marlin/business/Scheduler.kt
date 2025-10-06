@@ -29,8 +29,8 @@ fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
         SensorDataService.getMultipleSensorData(env = env)
     }
 
-    schedule(10.minutes, true) {
-        PotentialSensorService.getAllPotentialSensors(env)
+    schedule(10.minutes, true, env) {
+        PotentialSensorService.getAllPotentialSensors()
     }
 
     schedule(1.minutes, true, env) {

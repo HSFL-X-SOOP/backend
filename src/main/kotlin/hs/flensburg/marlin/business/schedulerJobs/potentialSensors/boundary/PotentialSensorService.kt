@@ -16,10 +16,11 @@ import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.entity.Potent
 import hs.flensburg.marlin.database.generated.tables.pojos.PotentialSensor
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import kotlinx.coroutines.runBlocking
 
 object PotentialSensorService {
     sealed class Error(private val message: String) : ServiceLayerError {
-        object NotFound : Error("User profile not found")
+        object NotFound : Error("Sensor not found")
         object BadRequest : Error("Bad request")
 
         override fun toApiError(): ApiError {
@@ -29,27 +30,32 @@ object PotentialSensorService {
             }
         }
     }
-    suspend fun getAllPotentialSensors(env: JEnv){
-        try {
-            // all things with id, name, description, without links
-            val url = "https://timeseries.geomar.de/soop/FROST-Server/v1.1/Things?\$select=@iot.id,name,description"
-            // Response is wrapped in "value"
-            val frostResponse: FrostResponse<PotentialSensorResponse> = httpclient.get(url).body()
-            val sensors: List<PotentialSensorResponse> = frostResponse.value
-            // Set 'isSensor' flag
-            val markedSensors = markSensors(sensors)
-            markedSensors.forEach {
-                println("ID: ${it.id}, Name: ${it.name}, isSensor: ${it.isSensor}")
-            }
-            //save sensors
-            val result = savePotentialSensors(markedSensors).unsafeRunSync(env)
-            if (result.isSuccess()){
-                println("Gespeichert: $result")
-            }
-        } catch (e: Exception) {
-            println("Fehler bei der Abfrage: ${e.message}")
-        }
+
+    fun fetchPotentialSensorsFrostServer(): FrostResponse<PotentialSensorResponse> = runBlocking {
+        // all things with id, name, description, without links
+        val url = "https://timeseries.geomar.de/soop/FROST-Server/v1.1/Things?\$select=@iot.id,name,description"
+        httpclient.get(url).body<FrostResponse<PotentialSensorResponse>>()
     }
+
+    fun getAllPotentialSensors(): App<Error, Unit> = KIO.comprehension {
+        // Fetch from FROST server
+        // Response is wrapped in 'value'
+        val sensors = fetchPotentialSensorsFrostServer().value
+
+        // Set 'isSensor' flag
+        val markedSensors = markSensors(sensors)
+
+        // Save to DB
+        val newSensors = !savePotentialSensors(markedSensors)
+
+        // TODO: Notification if new sensors were added
+        newSensors.forEach {
+            println("\u001B[36mNew Potential Sensor - ID: ${it.id}, Name: ${it.name}, isActive: ${it.isActive}\u001B[0m")
+        }
+
+        KIO.unit
+    }
+
 
     fun savePotentialSensors(
         sensors: List<PotentialSensorResponse>
@@ -57,11 +63,10 @@ object PotentialSensorService {
 
         val maxId = !PotentialSensorRepo.fetchMaxPotentialSensorId().orDie()
 
-        val newSensors = if (maxId != null) {
-            println("Max ID in DB: $maxId")
+        val newSensors =
+            if (maxId != null) {
             sensors.filter { it.id > maxId }
         } else {
-            println("No sensors in DB yet.")
             sensors
         }
 
@@ -81,9 +86,6 @@ object PotentialSensorService {
         val ids = !PotentialSensorRepo.fetchActivePotentialSensorIds().orDie().onNullFail { Error.NotFound }
         KIO.ok(ids)
     }
-
-
-
 
     // Filters the list to only include items that look like sensors
     fun filterForSensors(sensors: List<PotentialSensorResponse>): List<PotentialSensorResponse> =
