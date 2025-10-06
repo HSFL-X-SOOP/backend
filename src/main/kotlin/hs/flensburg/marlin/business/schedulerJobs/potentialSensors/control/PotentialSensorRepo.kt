@@ -2,7 +2,8 @@ package hs.flensburg.marlin.business.schedulerJobs.potentialSensors.control
 
 import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
-import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.entity.PotentialSensor
+import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.entity.PotentialSensorResponse
+import hs.flensburg.marlin.database.generated.tables.pojos.PotentialSensor
 import hs.flensburg.marlin.database.generated.tables.references.POTENTIAL_SENSOR
 import org.jooq.impl.DSL.max
 
@@ -13,6 +14,12 @@ object PotentialSensorRepo {
             .fetchOne(0, Long::class.java)
     }
 
+    fun fetchActivePotentialSensorIds(): JIO<List<Long>> = Jooq.query {
+        select(POTENTIAL_SENSOR.ID)
+            .from(POTENTIAL_SENSOR)
+            .where(POTENTIAL_SENSOR.IS_ACTIVE.eq(true))
+            .fetchInto(Long::class.java)
+    }
 
     fun insertPotentialSensor(
         id: Long,

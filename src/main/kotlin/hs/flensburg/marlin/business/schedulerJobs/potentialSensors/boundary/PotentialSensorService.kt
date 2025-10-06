@@ -3,22 +3,17 @@ package hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary
 import de.lambda9.tailwind.core.Exit.Companion.isSuccess
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
-import de.lambda9.tailwind.core.Task
-import de.lambda9.tailwind.core.extensions.exit.fold
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
-import de.lambda9.tailwind.core.extensions.kio.run
-import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
-import hs.flensburg.marlin.business.api.users.boundary.UserService
-import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
 import hs.flensburg.marlin.business.httpclient
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.control.PotentialSensorRepo
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.entity.FrostResponse
-import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.entity.PotentialSensor
+import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.entity.PotentialSensorResponse
+import hs.flensburg.marlin.database.generated.tables.pojos.PotentialSensor
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 
@@ -39,8 +34,8 @@ object PotentialSensorService {
             // all things with id, name, description, without links
             val url = "https://timeseries.geomar.de/soop/FROST-Server/v1.1/Things?\$select=@iot.id,name,description"
             // Response is wrapped in "value"
-            val frostResponse: FrostResponse<PotentialSensor> = httpclient.get(url).body()
-            val sensors: List<PotentialSensor> = frostResponse.value
+            val frostResponse: FrostResponse<PotentialSensorResponse> = httpclient.get(url).body()
+            val sensors: List<PotentialSensorResponse> = frostResponse.value
             // Set 'isSensor' flag
             val markedSensors = markSensors(sensors)
             markedSensors.forEach {
@@ -57,7 +52,7 @@ object PotentialSensorService {
     }
 
     fun savePotentialSensors(
-        sensors: List<PotentialSensor>
+        sensors: List<PotentialSensorResponse>
     ): App<Error, List<PotentialSensor>> = KIO.comprehension {
 
         val maxId = !PotentialSensorRepo.fetchMaxPotentialSensorId().orDie()
@@ -82,15 +77,20 @@ object PotentialSensorService {
         KIO.ok(inserted)
     }
 
+    fun getActivePotentialSensorIds(): App<Error, List<Long>> = KIO.comprehension {
+        val ids = !PotentialSensorRepo.fetchActivePotentialSensorIds().orDie().onNullFail { Error.NotFound }
+        KIO.ok(ids)
+    }
+
 
 
 
     // Filters the list to only include items that look like sensors
-    fun filterForSensors(sensors: List<PotentialSensor>): List<PotentialSensor> =
+    fun filterForSensors(sensors: List<PotentialSensorResponse>): List<PotentialSensorResponse> =
         sensors.filter { looksLikeSensor(it.name, it.description) }
 
     // Sets isSensor flag based on heuristics
-    private fun markSensors(sensors: List<PotentialSensor>): List<PotentialSensor> =
+    private fun markSensors(sensors: List<PotentialSensorResponse>): List<PotentialSensorResponse> =
         sensors.map { sensor ->
             sensor.copy(isSensor = looksLikeSensor(sensor.name, sensor.description))
         }

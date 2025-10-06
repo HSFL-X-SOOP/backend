@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PotentialSensor(
+data class PotentialSensorResponse(
     @SerialName("@iot.id") val id: Int,
     val name: String,
     val description: String,
