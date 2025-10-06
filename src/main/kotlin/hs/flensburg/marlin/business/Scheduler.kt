@@ -27,7 +27,7 @@ private val logger = KotlinLogging.logger("Scheduling")
 fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
 
     schedule(10.minutes, true, env) {
-        PotentialSensorService.getAllPotentialSensors()
+        PotentialSensorService.getAndSaveAllPotentialSensors()
     }
 
     schedule(1.minutes, true, env) {

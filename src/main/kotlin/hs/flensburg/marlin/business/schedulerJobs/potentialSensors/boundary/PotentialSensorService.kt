@@ -1,14 +1,13 @@
 package hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary
 
-import de.lambda9.tailwind.core.Exit.Companion.isSuccess
 import de.lambda9.tailwind.core.KIO
-import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
-import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
+import hs.flensburg.marlin.business.api.potentialSensors.entity.PotentialSensorDTO
+import hs.flensburg.marlin.business.api.potentialSensors.entity.toDTO
 import hs.flensburg.marlin.business.httpclient
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.control.PotentialSensorRepo
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.entity.FrostResponse
@@ -37,7 +36,7 @@ object PotentialSensorService {
         httpclient.get(url).body<FrostResponse<PotentialSensorResponse>>()
     }
 
-    fun getAllPotentialSensors(): App<Error, Unit> = KIO.comprehension {
+    fun getAndSaveAllPotentialSensors(): App<Error, Unit> = KIO.comprehension {
         // Fetch from FROST server
         // Response is wrapped in 'value'
         val sensors = fetchPotentialSensorsFrostServer().value
@@ -82,9 +81,19 @@ object PotentialSensorService {
         KIO.ok(inserted)
     }
 
+    fun getAllPotentialSensors(): App<Error, List<PotentialSensorDTO>> = KIO.comprehension {
+        val sensors = !PotentialSensorRepo.fetchAllPotentialSensors().orDie().onNullFail { Error.NotFound }
+        KIO.ok(sensors.map { it.toDTO() })
+    }
+
     fun getActivePotentialSensorIds(): App<Error, List<Long>> = KIO.comprehension {
         val ids = !PotentialSensorRepo.fetchActivePotentialSensorIds().orDie().onNullFail { Error.NotFound }
         KIO.ok(ids)
+    }
+
+    fun toggleIsActive(id: Long): App<Error, PotentialSensorDTO> = KIO.comprehension {
+        val sensor = !PotentialSensorRepo.updateIsActive(id).orDie().onNullFail { Error.NotFound }
+        KIO.ok(sensor.toDTO())
     }
 
     // Filters the list to only include items that look like sensors
