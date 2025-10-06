@@ -80,7 +80,8 @@ fun Route.authenticate(realm: Realm, block: Route.() -> Unit) {
 }
 
 enum class Realm(val value: String) {
-    COMMON("common");
+    COMMON("common"),
+    ADMIN("admin");
 
     override fun toString(): String = value
 }

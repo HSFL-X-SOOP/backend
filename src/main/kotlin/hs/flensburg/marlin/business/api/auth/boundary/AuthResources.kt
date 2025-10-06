@@ -53,6 +53,17 @@ fun Application.configureAuth(envConfig: Config) {
             }
         }
 
+        jwt(Realm.ADMIN.value) {
+            realm = "ADMIN-Realm"
+            verifier(JWTAuthority.accessVerifier)
+            validate { credential ->
+                AuthService.validateAdminRealmAccess(credential).unsafeRunSync(kioEnv).fold(
+                    onSuccess = { it },
+                    onError = { null }
+                )
+            }
+        }
+
         oauth("auth-oauth-google") {
             urlProvider = { "${envConfig.backendUrl}/auth/google/callback" }
 
@@ -160,6 +171,8 @@ fun Application.configureAuth(envConfig: Config) {
             val loginRequest = call.receive<LoginRequest>()
             val clientIp = call.request.origin.remoteAddress
             val env = call.kioEnv
+
+            println(loginRequest)
 
             AuthService.login(loginRequest, clientIp).unsafeRunSync(env).fold(
                 onSuccess = { call.respond(it) },
