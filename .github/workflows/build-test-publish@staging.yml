@@ -9,6 +9,21 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
 
+    services:
+      db-marlin:
+        image: timescale/timescaledb:pg17
+        ports:
+          - 6000:5432
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: sql
+          POSTGRES_DB: marlin
+        options: >-
+          --health-cmd="pg_isready -U user -d marlin"
+          --health-interval=3s
+          --health-timeout=3s
+          --health-retries=30
+
     env:
       IMAGE_NAME: marlin_backend_beta
       REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
@@ -20,13 +35,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
+          cache: 'maven'
 
       - name: Start Docker Compose services
         run: docker compose up -d
