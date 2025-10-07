@@ -40,7 +40,7 @@ import io.ktor.server.routing.routing
 import java.net.URLEncoder
 
 fun Application.configureAuth(envConfig: Config) {
-    JWTAuthority.init(envConfig)
+    JWTAuthority.init(envConfig.auth)
 
     install(Authentication) {
         jwt(Realm.COMMON.value) {

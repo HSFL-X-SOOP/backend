@@ -7,8 +7,7 @@ import io.ktor.client.request.get
 import kotlinx.coroutines.runBlocking
 
 object IPAddressLookupService {
-
     fun lookUpIpAddressInfo(ipAddress: String): IPAddressLookupResponse = runBlocking {
-        httpclient.get("http://ip-api.com/json/$ipAddress").body<IPAddressLookupResponse>()
+        httpclient.get("https://ipapi.co/$ipAddress/json/").body<IPAddressLookupResponse>()
     }
 }

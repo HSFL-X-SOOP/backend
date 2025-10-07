@@ -22,10 +22,10 @@ object JWTAuthority {
     private const val MAGIC_LINK_SUBJECT = "Magic Link"
     private const val EMAIL_VERIFICATION_SUBJECT = "Email Verification"
 
-    fun init(envConfig: Config) {
-        ISSUER = envConfig.auth.jwtIssuer
-        AUDIENCE = envConfig.auth.jwtAudience
-        ALGORITHM = Algorithm.HMAC256(envConfig.auth.jwtSecret)
+    fun init(config: Config.Auth) {
+        ISSUER = config.jwtIssuer
+        AUDIENCE = config.jwtAudience
+        ALGORITHM = Algorithm.HMAC256(config.jwtSecret)
     }
 
     val accessVerifier: JWTVerifier by lazy {
