@@ -18,6 +18,7 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toLocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementDTO
+import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 
 object SensorService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -58,9 +59,14 @@ object SensorService {
         KIO.ok(latestMeasurements)
     }
 
-    fun getLocationWithLatestMeasurementsNEW(timezone: String): App<Error, List<LocationWithBoxesDTO>> =
+    fun getLocationWithLatestMeasurementsNEW(
+        timezone: String,
+        ipAddress: String
+    ): App<Error, List<LocationWithBoxesDTO>> =
         KIO.comprehension {
-            val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(timezone).orDie().onNullFail { Error.NotFound }
+            val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
+                !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
+            ).orDie().onNullFail { Error.NotFound }
             KIO.ok(rawLocations.map { it.mapToLocationWithBoxesDTO() })
         }
 
@@ -68,9 +74,14 @@ object SensorService {
     fun getLocationByIDWithMeasurementsWithinTimespan(
         locationId: Long,
         timeRange: String, // "today", "week", "month"
-        timezone: String
+        timezone: String,
+        ipAddress: String
     ): App<Error, LocationWithBoxesDTO?> = KIO.comprehension {
-        val rawLocation = !SensorRepo.fetchLocationByIDWithMeasurementsWithinTimespan(locationId, timeRange, timezone).orDie().onNullFail { Error.NotFound }
+        val rawLocation = !SensorRepo.fetchLocationByIDWithMeasurementsWithinTimespan(
+            locationId,
+            timeRange,
+            !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
+        ).orDie().onNullFail { Error.NotFound }
         KIO.ok(rawLocation.mapToLocationWithBoxesDTO())
     }
 

@@ -8,7 +8,8 @@ data class Config(
     val database: Database,
     val mail: Mail,
     val auth: Auth,
-    val googleAuth: GoogleAuth
+    val googleAuth: GoogleAuth,
+    val ipInfo: IPInfo
 ) {
     val frontendUrl: String
         get() = when (mode) {
@@ -60,6 +61,10 @@ data class Config(
         val clientSecret: String,
     )
 
+    data class IPInfo(
+        val token: String
+    )
+
     companion object {
         fun Dotenv.parseConfig(): Config = Config(
             mode = Mode.valueOf(get("MODE", "DEV").uppercase()),
@@ -87,6 +92,9 @@ data class Config(
             googleAuth = GoogleAuth(
                 clientId = get("GOOGLE_CLIENT_ID", ""),
                 clientSecret = get("GOOGLE_CLIENT_SECRET", "")
+            ),
+            ipInfo = IPInfo(
+                token = get("IPINFO_TOKEN", "")
             )
         )
 
@@ -116,6 +124,9 @@ data class Config(
             googleAuth = GoogleAuth(
                 clientId = System.getenv("GOOGLE_CLIENT_ID") ?: "",
                 clientSecret = System.getenv("GOOGLE_CLIENT_SECRET") ?: ""
+            ),
+            ipInfo = IPInfo(
+                token = System.getenv("IPINFO_TOKEN") ?: ""
             )
         )
     }
