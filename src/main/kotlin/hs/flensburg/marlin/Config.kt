@@ -10,7 +10,6 @@ data class Config(
     val auth: Auth,
     val googleAuth: GoogleAuth
 ) {
-
     val frontendUrl: String
         get() = when (mode) {
             Mode.DEV -> "http://localhost:8081"

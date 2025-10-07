@@ -2,8 +2,8 @@ package hs.flensburg.marlin.business.api.auth.entity
 
 import kotlinx.serialization.Serializable
 
+// RFC-5322 subset: local@domain.tld
 private val EMAIL_REGEX = Regex(
-    // RFC-5322 subset: local@domain.tld
     "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
 )
 

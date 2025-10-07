@@ -51,9 +51,6 @@ object AuthService {
     fun register(credentials: RegisterRequest): App<Error, LoginResponse> = KIO.comprehension {
         val email = credentials.email
         val password = credentials.password
-
-        !KIO.failOn(email.isBlank() || password.isBlank()) { Error.BadRequest }
-
         val existingUser = !UserRepo.fetchByEmail(email).orDie()
 
         !KIO.failOn(existingUser != null) { Error.BadRequest }
