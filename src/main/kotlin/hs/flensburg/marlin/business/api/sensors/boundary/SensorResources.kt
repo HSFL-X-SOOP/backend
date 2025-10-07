@@ -17,8 +17,10 @@ import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.plugins.origin
 import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
+import kotlin.text.get
 
 fun Application.configureSensors() {
     routing {
@@ -127,9 +129,12 @@ fun Application.configureSensors() {
                 }
             }
         ) {
-            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(call)
-
-            call.respondKIO(SensorService.getLocationWithLatestMeasurementsNEW(timezone))
+            call.respondKIO(
+                SensorService.getLocationWithLatestMeasurementsNEW(
+                    call.parameters["timezone"] ?: "DEFAULT",
+                    call.request.origin.remoteAddress
+                )
+            )
         }
 
         get(
@@ -168,10 +173,14 @@ fun Application.configureSensors() {
                 call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
                 return@get
             }
-
-            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(call)
-
-            call.respondKIO(SensorService.getLocationByIDWithMeasurementsWithinTimespan(locationID, timeRange, timezone))
+            call.respondKIO(
+                SensorService.getLocationByIDWithMeasurementsWithinTimespan(
+                    locationID,
+                    timeRange,
+                    call.parameters["timezone"] ?: "DEFAULT",
+                    call.request.origin.remoteAddress
+                )
+            )
         }
     }
 }

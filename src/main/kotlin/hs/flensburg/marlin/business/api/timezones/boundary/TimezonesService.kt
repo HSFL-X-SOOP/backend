@@ -1,5 +1,8 @@
 package hs.flensburg.marlin.business.api.timezones.boundary
 
+import de.lambda9.tailwind.core.KIO
+import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.api.auth.boundary.IPAddressLookupService
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.origin
@@ -28,24 +31,24 @@ object TimezonesService {
         return instant.toLocalDateTime(zone)
     }
 
-    fun getClientTimeZoneFromIPOrQueryParam(call: ApplicationCall): String {
-        // optional query param overwrites IP-based timezone
-        val timezone = call.parameters["timezone"] ?: "DEFAULT"
-        if (timezone != "DEFAULT" && isValidTimezone(timezone)) {
-            return timezone
-        }
+    fun getClientTimeZoneFromIPOrQueryParam(timezone: String, clientIp: String): App<Nothing, String> =
+        KIO.comprehension {
+            // optional query param overwrites IP-based timezone
+            if (timezone != "DEFAULT" && isValidTimezone(timezone)) {
+                KIO.ok(timezone)
+            }
 
-        // IP based timezone
-        val clientIp = call.request.origin.remoteAddress
-        //val clientIp = "178.238.11.6" //uk // "85.214.132.117" //german //testing
-        val ipInfo = IPAddressLookupService.lookUpIpAddressInfo(clientIp)
-        if (ipInfo.timezone != null && isValidTimezone(ipInfo.timezone)) {
-            return ipInfo.timezone
-        }
+            // IP based timezone
+            //val clientIp = "178.238.11.6" //uk // "85.214.132.117" //german //testing
+            val (_, env) = !KIO.access<JEnv>()
+            val ipInfo = IPAddressLookupService.lookUpIpAddressInfo(clientIp, env.config.ipInfo)
+            if (ipInfo.timezone != null && isValidTimezone(ipInfo.timezone)) {
+                KIO.ok(ipInfo.timezone)
+            }
 
-        // fallback to UTC
-        return "UTC"
-    }
+            // fallback to UTC
+            KIO.ok("UTC")
+        }
 
 
     private fun isValidTimezone(tz: String): Boolean =
