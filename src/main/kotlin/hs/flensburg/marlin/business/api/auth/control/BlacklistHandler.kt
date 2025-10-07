@@ -23,7 +23,7 @@ object BlacklistHandler {
             this.userId = userId
             this.ipAddress = ipAddress
             this.country = ipInfo.country
-            this.region = ipInfo.regionName
+            this.region = ipInfo.region
             this.city = ipInfo.city
             this.blockedAt = now
             this.blockedUntil = now.plusMinutes(LOGIN_BLACKLIST_DURATION_MINUTES)
