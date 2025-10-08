@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.business.schedulerJobs.sensorData.control
 
+import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingClean
@@ -11,7 +12,7 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 object SensorDataRepo {
-    fun saveSensorData(thing: ThingClean): App<DataAccessException, Unit> = Jooq.query {
+    fun saveSensorData(thing: ThingClean): JIO<Unit> = Jooq.query {
         // save Sensor
         val sensorId = insertInto(SENSOR)
             .columns(
