@@ -1,6 +1,8 @@
 package hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary
 
 import de.lambda9.tailwind.core.KIO
+import de.lambda9.tailwind.core.extensions.kio.fold
+import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.httpclient
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
@@ -62,7 +64,7 @@ object SensorDataService {
             val thingProcessed = preProcessData(thingClean)
 
             // Save the sensor data to the database
-            SensorDataRepo.saveSensorData(thingProcessed)
+            !SensorDataRepo.saveSensorData(thingProcessed).orDie()
 
             // Print the station information
             printStationInfo(id, thingProcessed)
