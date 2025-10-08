@@ -1,16 +1,20 @@
 package hs.flensburg.marlin.business.api.auth.entity
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+
+// Further documentation under https://ipapi.co/api/#complete-location
 @Serializable
 data class IPAddressLookupResponse(
-    val status: String,
-    val message: String? = null,
-    val country: String? = null,
-    val regionName: String? = null,
+    val ip: String? = null,
+    val hostname: String? = null,
     val city: String? = null,
-    val lat: Double? = null,
-    val lon: Double? = null,
+    val region: String? = null,
+    val country: String? = null,
+    val loc: String? = null,
+    val org: String? = null,
+    val postal: String? = null,
     val timezone: String? = null,
-    val query: String? = null
+    val anycast: Boolean? = null
 )

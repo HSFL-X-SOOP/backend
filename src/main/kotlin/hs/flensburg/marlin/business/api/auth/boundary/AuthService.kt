@@ -52,9 +52,6 @@ object AuthService {
     fun register(credentials: RegisterRequest): App<Error, LoginResponse> = KIO.comprehension {
         val email = credentials.email
         val password = credentials.password
-
-        !KIO.failOn(email.isBlank() || password.isBlank()) { Error.BadRequest }
-
         val existingUser = !UserRepo.fetchByEmail(email).orDie()
 
         !KIO.failOn(existingUser != null) { Error.BadRequest }
@@ -102,28 +99,11 @@ object AuthService {
 
     fun loginGoogleUser(authResponse: OAuthAccessTokenResponse.OAuth2): App<Error, LoginResponse> = KIO.comprehension {
         val identificationToken = authResponse.extraParameters["id_token"]
+        loginWithGoogleIdToken(identificationToken!!)
+    }
 
-        val credentials = JWT.decode(identificationToken)
-        val email = credentials.getClaim("email").asString()
-
-        val user = (!UserRepo.fetchByEmail(email).orDie()).let {
-            if (it == null) {
-                val userRecord = UserRecord().apply {
-                    this.email = email
-                    this.verified = credentials.getClaim("email_verified").asBoolean()
-                }
-
-                !UserRepo.insert(userRecord).orDie()
-            } else {
-                it
-            }
-        }
-
-        val accessToken = JWTAuthority.generateAccessToken(user)
-        val refreshToken = JWTAuthority.generateRefreshToken(user)
-        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
-
-        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
+    fun loginGoogleUser(idToken: String): App<Error, LoginResponse> = KIO.comprehension {
+        loginWithGoogleIdToken(idToken)
     }
 
     fun loginViaMagicLink(magicLinkRequest: MagicLinkLoginRequest): App<Error, LoginResponse> = KIO.comprehension {
@@ -206,6 +186,38 @@ object AuthService {
         !KIO.failOn(user.role != UserAuthorityRole.ADMIN) { Error.Unauthorized }
 
         KIO.ok(LoggedInUser(userId, email))
+    }
+
+    private fun loginWithGoogleIdToken(idToken: String): App<Error, LoginResponse> = KIO.comprehension {
+        val credentials = try {
+            JWT.decode(idToken)
+        } catch (e: Exception) {
+            !KIO.fail(Error.BadRequest)
+        }
+
+        val email = credentials.getClaim("email").asString()
+        val emailVerified = credentials.getClaim("email_verified").asBoolean()
+
+        !KIO.failOn(email.isNullOrBlank()) { Error.BadRequest }
+
+        val user = (!UserRepo.fetchByEmail(email).orDie()).let {
+            if (it == null) {
+                val userRecord = UserRecord().apply {
+                    this.email = email
+                    this.verified = emailVerified ?: false
+                }
+
+                !UserRepo.insert(userRecord).orDie()
+            } else {
+                it
+            }
+        }
+
+        val accessToken = JWTAuthority.generateAccessToken(user)
+        val refreshToken = JWTAuthority.generateRefreshToken(user)
+        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
     }
 
     private fun checkFailedLoginLimitExceeded(

@@ -20,11 +20,24 @@ import org.simplejavamail.mailer.MailerBuilder
 object EmailHandler {
     sealed class Error(private val message: String) : ServiceLayerError {
         data class UserNotFound(val userId: Long) : Error("User with ID $userId not found")
+        data class TemplateNotFound(val templateName: String) : Error("Email template '$templateName' not found")
 
         override fun toApiError(): ApiError {
             return when (this) {
                 is UserNotFound -> ApiError.NotFound(message)
+                is TemplateNotFound -> ApiError.Unknown(message)
             }
+        }
+    }
+
+    private val templateCache = mutableMapOf<String, String>()
+
+    private fun loadTemplate(templateName: String): String {
+        return templateCache.getOrPut(templateName) {
+            EmailHandler::class.java.getResourceAsStream("/email-templates/$templateName.html")
+                ?.bufferedReader()
+                ?.use { it.readText() }
+                ?: throw IllegalStateException("Template $templateName not found")
         }
     }
 
@@ -61,203 +74,45 @@ object EmailHandler {
             EmailType.WELCOME -> "Welcome to Marlin"
             EmailType.EMAIL_VERIFICATION -> "Marlin - Email Verification"
             EmailType.MAGIC_LINK -> "Marlin - Magic Link Login"
-            EmailType.TOO_MANY_FAILED_LOGIN_ATTEMPTS -> "Marlin - Too Many Failed Login Attempts"
+            EmailType.TOO_MANY_FAILED_LOGIN_ATTEMPTS -> "Marlin - Failed Login Attempts"
         }
     }
 
-    private fun body(email: Email, user: User, vararg infoFields: Pair<String, String>): String = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <title>${subject(email.type!!)}</title>
-        
-          <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
-        
-          <style>
-            body{
-              margin:0;
-              padding:0;
-              font-family:'Montserrat',Arial,sans-serif;
-              background:#f4f4f5;
-              color:#000000;
-            }
-            .wrapper{
-              max-width:560px;
-              margin:auto;
-              background:#ffffff;
-              padding:32px;
-              border-radius:8px;
-              border:1px solid #d4d4d8;
-            }
-            h1{
-              margin-top:0;
-              font-size:24px;
-              color:#053246;
-            }
-            p{
-              line-height:1.55;
-            }
-            a{
-              color:#053246;
-            }
-            a.button{
-              display:inline-block;
-              margin-top:24px;
-              padding:12px 24px;
-              border-radius:4px;
-              text-decoration:none;
-              background:#78d278;
-              color:#000000;
-              font-weight:600;
-            }
-            small{
-              color:#8a8a8c;
-            }
-        
-            @media (prefers-color-scheme: dark) {
-              body{
-                background:#000000;
-                color:#ffffff;
-              }
-              .wrapper{
-                background:#18181b;
-                border:1px solid #3f3f46;
-              }
-              h1{
-                color:#eef9ee;
-              }
-              a{
-                color:#78d278;
-              }
-              a.button{
-                background:#78d278;
-                color:#000000;
-              }
-              small{
-                color:#8c8c90;
-              }
-            }
-          </style>
-        </head>
-        
-        <body>
-          <div class="wrapper">
-            <h1>Hello ${user.email}</h1>
-            ${message(email.type!!, user, *infoFields)}
-          </div>
-        </body>
-        </html>
-        """.trimIndent()
+    private fun body(email: Email, user: User, vararg infoFields: Pair<String, String>): String {
+        val baseTemplate = loadTemplate("base")
+        val contentTemplate = loadTemplate(templateNameForType(email.type!!))
 
-    private fun message(type: EmailType, user: User, vararg infoFields: Pair<String, String>): String = when (type) {
-        EmailType.WELCOME -> """
-            <p>Thanks for joining <strong>Marlin</strong>—we’re happy you’re here!</p>
-            
-            <p>
-              <a
-                class="button"
-                href="https://marlin-live.com"
-                style="
-                  display:inline-block;
-                  padding:12px 24px;
-                  font-size:16px;
-                  line-height:20px;
-                  text-decoration:none;
-                  color:#fff;
-                  background-color:#2563eb;
-                  border-radius:6px;
-                "
-              >Go to your dashboard</a>
-            </p>
-            
-            ${infoFields.toList().toInfoListHtml()}
-            
-            <p style="font-size:0.875rem;color:#64748b;">
-              Need help? Just reply to this email and we’ll get back to you.
-            </p>
-        """.trimIndent()
+        val token = when (email.type) {
+            EmailType.EMAIL_VERIFICATION -> JWTAuthority.generateEmailVerificationToken(user)
+            EmailType.MAGIC_LINK -> JWTAuthority.generateMagicLinkToken(user)
+            else -> ""
+        }
 
-        EmailType.EMAIL_VERIFICATION -> """
-            <p>Please verify your email address to activate your account:</p>
-            
-            <p>
-              <a
-                class="button"
-                href="https://marlin-live.com/verify?token=${JWTAuthority.generateEmailVerificationToken(user)}"
-                style="
-                  display:inline-block;
-                  padding:12px 24px;
-                  font-size:16px;
-                  line-height:20px;
-                  text-decoration:none;
-                  color:#fff;
-                  background-color:#16a34a;
-                  border-radius:6px;
-                "
-              >Verify now</a>
-            </p>
-            
-            ${infoFields.toList().toInfoListHtml()}
-            
-            <p style="font-size:0.875rem;color:#64748b;">
-              If you didn’t create an account with Marlin, you can safely ignore this message.
-            </p>
-        """.trimIndent()
+        val content = contentTemplate
+            .replace("{{token}}", token)
+            .replace("{{infoFields}}", infoFields.toList().toInfoListHtml())
 
-        EmailType.MAGIC_LINK -> """
-            <p>Click the button below to sign in to your account:</p>
-            
-            <p>
-              <a
-                class="button"
-                href="https://marlin-live.com/magic-link?token=${JWTAuthority.generateMagicLinkToken(user)}"
-                style="
-                  display: inline-block;
-                  padding: 12px 24px;
-                  font-size: 16px;
-                  line-height: 20px;
-                  text-decoration: none;
-                  color: #fff;
-                  background-color: #2563eb;
-                  border-radius: 6px;
-                "
-              >Log in</a>
-            </p>
-            
-            <p>This link will expire in <strong>30&nbsp;minutes</strong>.</p>
-            
-            ${infoFields.toList().toInfoListHtml()}
-            
-            <p style="font-size: 0.875rem; color: #64748b;">
-              If you didn’t request this email, you can safely ignore it.
-            </p>
-        """.trimIndent()
+        return baseTemplate
+            .replace("{{subject}}", subject(email.type!!))
+            .replace("{{email}}", user.email ?: "")
+            .replace("{{content}}", content)
+    }
 
-        EmailType.TOO_MANY_FAILED_LOGIN_ATTEMPTS -> """
-            <p>We’ve detected several failed login attempts on your account.</p>
-            <p>As a precaution, we’ve temporarily blocked further password logins.</p>
-            
-            ${infoFields.toList().toInfoListHtml()}
-            
-            <p>You can still get in right away by either:</p>
-            <ul>
-              <li>requesting a <strong>magic-link</strong>, or</li>
-              <li>signing in with your <strong>Google account</strong>.</li>
-            </ul>
-            
-            <p>If you weren’t trying to log in, you don’t need to do anything, your account remains secure.</p>
-            <p>Questions? Reply to this email and our team will help.</p>
-        """.trimIndent()
+    private fun templateNameForType(type: EmailType): String = when (type) {
+        EmailType.WELCOME -> "welcome"
+        EmailType.EMAIL_VERIFICATION -> "email-verification"
+        EmailType.MAGIC_LINK -> "magic-link"
+        EmailType.TOO_MANY_FAILED_LOGIN_ATTEMPTS -> "too-many-failed-login-attempts"
     }
 
     private fun List<Pair<String, String>>.toInfoListHtml(): String =
         if (isEmpty()) ""
         else buildString {
-            appendLine("<ul style=\"margin:1em 0 0 0;padding:0 0 0 1.25em;\">")
+            appendLine("<hr style=\"border: none; border-top: 1px solid #3f3f46; margin: 24px 0;\">")
+            appendLine("<ul style=\"margin: 16px 0 0 0; padding: 0 0 0 20px; font-family: 'Oswald', sans-serif; font-size: 14px; line-height: 1.6;\">")
             for ((label, value) in this@toInfoListHtml) {
                 appendLine(
-                    "<li><strong>${label.escape()}</strong>: ${value.escape()}</li>"
+                    "<li style=\"margin-bottom: 8px; color: #ffffff;\"><strong style=\"color: #ffffff;\">${label.escape()}</strong>: <span style=\"color: #78d278;\">${value.escape()}</span></li>"
                 )
             }
             appendLine("</ul>")

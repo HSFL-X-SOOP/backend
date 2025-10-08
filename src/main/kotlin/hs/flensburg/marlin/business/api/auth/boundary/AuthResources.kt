@@ -3,6 +3,7 @@ package hs.flensburg.marlin.business.api.auth.boundary
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
+import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginResponse
@@ -39,7 +40,7 @@ import io.ktor.server.routing.routing
 import java.net.URLEncoder
 
 fun Application.configureAuth(envConfig: Config) {
-    JWTAuthority.init(envConfig)
+    JWTAuthority.init(envConfig.auth)
 
     install(Authentication) {
         jwt(Realm.COMMON.value) {
@@ -191,6 +192,29 @@ fun Application.configureAuth(envConfig: Config) {
                     }
                 }
             )
+        }
+
+        post(
+            path = "/login/google/android",
+            builder = {
+                description = "Login with Google ID token from Android"
+                tags("auth")
+                request {
+                    body<GoogleLoginRequest>()
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        body<LoginResponse>()
+                    }
+                    HttpStatusCode.BadRequest to {
+                        body<String>()
+                    }
+                }
+            }
+        ) {
+            val googleLoginRequest = call.receive<GoogleLoginRequest>()
+
+            call.respondKIO(AuthService.loginGoogleUser(googleLoginRequest.idToken))
         }
 
         post(

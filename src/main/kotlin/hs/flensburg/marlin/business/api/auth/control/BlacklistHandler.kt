@@ -3,6 +3,7 @@ package hs.flensburg.marlin.business.api.auth.control
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.boundary.IPAddressLookupService
 import hs.flensburg.marlin.business.api.email.boundary.EmailService
@@ -17,13 +18,15 @@ object BlacklistHandler {
         ipAddress: String
     ): App<ServiceLayerError, Unit> = KIO.comprehension {
         val now = LocalDateTime.now()
-        val ipInfo = IPAddressLookupService.lookUpIpAddressInfo(ipAddress)
+
+        val (_, env) = !KIO.access<JEnv>()
+        val ipInfo = IPAddressLookupService.lookUpIpAddressInfo(ipAddress, env.config.ipInfo)
 
         val record = LoginBlacklistRecord().apply {
             this.userId = userId
             this.ipAddress = ipAddress
             this.country = ipInfo.country
-            this.region = ipInfo.regionName
+            this.region = ipInfo.region
             this.city = ipInfo.city
             this.blockedAt = now
             this.blockedUntil = now.plusMinutes(LOGIN_BLACKLIST_DURATION_MINUTES)
