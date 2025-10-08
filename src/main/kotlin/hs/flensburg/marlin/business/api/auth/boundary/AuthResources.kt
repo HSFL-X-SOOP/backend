@@ -172,8 +172,6 @@ fun Application.configureAuth(envConfig: Config) {
             val clientIp = call.request.origin.remoteAddress
             val env = call.kioEnv
 
-            println(loginRequest)
-
             AuthService.login(loginRequest, clientIp).unsafeRunSync(env).fold(
                 onSuccess = { call.respond(it) },
                 onError = { error ->
