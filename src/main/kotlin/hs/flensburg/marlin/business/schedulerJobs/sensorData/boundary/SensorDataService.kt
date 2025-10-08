@@ -1,8 +1,9 @@
 package hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary
 
-import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
-import hs.flensburg.marlin.business.JEnv
+import de.lambda9.tailwind.core.KIO
+import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.httpclient
+import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.PreProcessingService.preProcessData
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.control.SensorDataRepo
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingClean
@@ -10,6 +11,7 @@ import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingRaw
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.toClean
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import kotlinx.coroutines.runBlocking
 
 object SensorDataService {
     suspend fun getSensorData(id : Int=10){
@@ -40,39 +42,42 @@ object SensorDataService {
         }
     }
 
-    suspend fun getMultipleSensorData(idRange : IntRange = 3..14, env: JEnv) {
-        for (id in idRange) {
-            //  fetch sensor data for each id in the range
-            try {
-                val url = "https://timeseries.geomar.de/soop/FROST-Server/v1.1/Things($id)?\$expand=Locations(\$select=location),Datastreams(\$select=name,description,unitOfMeasurement,phenomenonTime,resultTime;\$expand=Sensor(\$select=name,description,metadata),ObservedProperty(\$select=name,description),Observations(\$orderby=phenomenonTime+desc;\$top=1;\$select=phenomenonTime,result))"
-                val thingRaw: ThingRaw = httpclient.get(url).body()
-                val thingClean: ThingClean = thingRaw.toClean()
-
-                // Preprocess the data
-                val thingProcessed = preProcessData(thingClean)
-
-                // Save the sensor data to the database
-                val test = SensorDataRepo.saveSensorData(thingProcessed).unsafeRunSync(env)
-
-                // Print the station information
-                printStationInfo(id, thingProcessed, test)
-
-            } catch (e: Exception) {
-                println("\n=== ID $id ===")
-                println("Fehler bei der Abfrage: ${e.message}")
-            }
-        }
-        // fetch names for locations
-        val test = ReverseGeoCodingService.updateLocationNames().unsafeRunSync(env)
+    fun getSensorDataFromActiveSensors(): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
+        val activeSensorIds = !PotentialSensorService.getActivePotentialSensorIds()
+        getAndSaveAllSensorsData(activeSensorIds)
     }
 
-    private fun printStationInfo(id: Int, thingClean: ThingClean, test: Any) {
-        println("Test: $test")
+    fun fetchSensorDataFrostServer(id: Long): ThingRaw = runBlocking {
+        val url = "https://timeseries.geomar.de/soop/FROST-Server/v1.1/Things($id)?\$expand=Locations(\$select=location),Datastreams(\$select=name,description,unitOfMeasurement,phenomenonTime,resultTime;\$expand=Sensor(\$select=name,description,metadata),ObservedProperty(\$select=name,description),Observations(\$orderby=phenomenonTime+desc;\$top=1;\$select=phenomenonTime,result))"
+        httpclient.get(url).body<ThingRaw>()
+    }
+
+    fun getAndSaveAllSensorsData(ids: List<Long>): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
+        ids.forEach { id ->
+            // Fetch Frost Server
+            // Response to clean
+            val thingClean = fetchSensorDataFrostServer(id).toClean()
+
+            // Preprocess the data
+            val thingProcessed = preProcessData(thingClean)
+
+            // Save the sensor data to the database
+            SensorDataRepo.saveSensorData(thingProcessed)
+
+            // Print the station information
+            printStationInfo(id, thingProcessed)
+
+        }
+        KIO.unit
+    }
+
+
+    private fun printStationInfo(id: Long, thingClean: ThingClean) {
         println("\n=== Station ${thingClean.name} (ID: $id) ===")
 
         val tideMeasurement = formatTideMeasurement(thingClean)
         println(tideMeasurement)
-        println("Position: ${thingClean.location}")
+        println("Position: ${thingClean.location} \n")
     }
 
     private fun formatTideMeasurement(thingClean: ThingClean): String {

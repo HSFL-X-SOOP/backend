@@ -5,6 +5,8 @@ import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.exit.fold
 import hs.flensburg.marlin.business.schedulerJobs.auth.AuthSchedulerService
+import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
+import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.ReverseGeoCodingService
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.SensorDataService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
@@ -24,8 +26,16 @@ private val logger = KotlinLogging.logger("Scheduling")
 @OptIn(DelicateCoroutinesApi::class)
 fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
 
-    schedule(1.minutes, true) {
-        SensorDataService.getMultipleSensorData(env = env)
+    schedule(10.minutes, true, env) {
+        PotentialSensorService.getAndSaveAllPotentialSensors()
+    }
+
+    schedule(1.minutes, true, env) {
+        SensorDataService.getSensorDataFromActiveSensors()
+    }
+
+    schedule(1.minutes, true, env) {
+        ReverseGeoCodingService.updateLocationNames()
     }
 
     schedule(1.minutes, true, env) {

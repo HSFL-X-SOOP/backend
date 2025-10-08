@@ -20,6 +20,7 @@ import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
+import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.jwt.JWTCredential
@@ -169,6 +170,20 @@ object AuthService {
         !KIO.failOn(userId == null || email == null) { Error.Unauthorized }
 
         !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
+
+        KIO.ok(LoggedInUser(userId, email))
+    }
+
+    fun validateAdminRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> = KIO.comprehension {
+        val userId = credentials.payload.getClaim("id").asLong()
+        val email = credentials.payload.getClaim("email").asString()
+
+        !KIO.failOn(userId == null || email == null) { Error.Unauthorized }
+
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
+
+        // Additional Admin role check
+        !KIO.failOn(user.role != UserAuthorityRole.ADMIN) { Error.Unauthorized }
 
         KIO.ok(LoggedInUser(userId, email))
     }
