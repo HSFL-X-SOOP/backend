@@ -64,9 +64,8 @@ object SensorService {
         ipAddress: String
     ): App<Error, List<LocationWithBoxesDTO>> =
         KIO.comprehension {
-            val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
-                !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
-            ).orDie().onNullFail { Error.NotFound }
+            val clientTimeZone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
+            val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(clientTimeZone).orDie().onNullFail { Error.NotFound }
             KIO.ok(rawLocations.map { it.mapToLocationWithBoxesDTO() })
         }
 
