@@ -23,7 +23,9 @@ import java.time.OffsetDateTime
 object SensorRepo {
 
     fun fetchAllSensors(): JIO<List<Sensor>> = Jooq.query {
-        selectFrom(SENSOR).fetchInto(Sensor::class.java)
+        selectFrom(SENSOR)
+            .orderBy(SENSOR.ID.asc())
+            .fetchInto(Sensor::class.java)
     }
 
     fun fetchAllMeasurementTypes(): JIO<List<Measurementtype>> = Jooq.query {
@@ -146,15 +148,15 @@ object SensorRepo {
 
     fun fetchLocationByIDWithMeasurementsWithinTimespan(
         locationId: Long,
-        timeRange: String, // "today", "week", "month"
+        timeRange: String,
         timezone: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
         val intervalCondition = when (timeRange.lowercase()) {
-            "today" -> "m.time >= date_trunc('day', NOW() AT TIME ZONE '$timezone') AT TIME ZONE '$timezone'"
-            "week" -> "m.time >= date_trunc('week', NOW() AT TIME ZONE '$timezone') AT TIME ZONE '$timezone'"
-            "month" -> "m.time >= date_trunc('month', NOW() AT TIME ZONE '$timezone') AT TIME ZONE '$timezone'"
-            else -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '1 day'"
+            "48h" -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '48 hours'"
+            "7d" -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '7 days'"
+            "30d" -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '30 days'"
+            else -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '24 hours'"
         }
 
         val sql = """
