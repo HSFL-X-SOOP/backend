@@ -147,7 +147,7 @@ fun Application.configureSensors() {
                         description = "The location ID (not the sensor ID)"
                     }
                     queryParameter<String>("timeRange") {
-                        description = "Optional time range ('today', 'week', 'month', 'DEFAULT'). Defaults to 24h."
+                        description = "Optional time range ('48h', '7d', '30d'). Defaults to 24h."
                         required = false
                     }
                     queryParameter<String>("timezone") {
