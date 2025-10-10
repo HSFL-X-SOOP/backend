@@ -153,11 +153,12 @@ object SensorRepo {
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
         val intervalCondition = when (timeRange.lowercase()) {
-            "48h" -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '48 hours'"
-            "7d" -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '7 days'"
-            "30d" -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '30 days'"
-            else -> "m.time >= (NOW() AT TIME ZONE '$timezone') - INTERVAL '24 hours'"
+            "48h" -> "m.time >= NOW() - INTERVAL '48 hours'"
+            "7d" -> "m.time >= NOW() - INTERVAL '7 days'"
+            "30d" -> "m.time >= NOW() - INTERVAL '30 days'"
+            else -> "m.time >= NOW() - INTERVAL '24 hours'"
         }
+
 
         val sql = """
         SELECT
