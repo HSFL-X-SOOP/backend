@@ -182,5 +182,53 @@ fun Application.configureSensors() {
                 )
             )
         }
+        //testing purposes
+        //TODO: remove
+        get(
+            path = "/location/{id}/measurementsWithinTimeRangeFAST",
+            builder = {
+                tags("location")
+                description = "Get all measurements for a location within a given time range"
+                request {
+                    pathParameter<Long>("id") {
+                        description = "The location ID (not the sensor ID)"
+                    }
+                    queryParameter<String>("timeRange") {
+                        description = "Optional time range ('48h', '7d', '30d'). Defaults to 24h."
+                        required = false
+                    }
+                    queryParameter<String>("timezone") {
+                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        required = false
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response with measurements"
+                        body<LocationWithBoxesDTO>()
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameters"
+                    }
+                }
+            }
+        ) {
+            val locationID = call.parameters["id"]?.toLongOrNull()
+            val timeRange = call.parameters["timeRange"] ?: "DEFAULT"
+
+            if (locationID == null) {
+                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
+                return@get
+            }
+            call.respondKIO(
+                SensorService.getLocationByIDWithMeasurementsWithinTimespanFAST(
+                    locationID,
+                    timeRange,
+                    call.parameters["timezone"] ?: "DEFAULT",
+                    call.request.origin.remoteAddress
+                )
+            )
+        }
+
     }
 }
