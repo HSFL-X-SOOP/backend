@@ -35,7 +35,8 @@ object TimezonesService {
         KIO.comprehension {
             // optional query param overwrites IP-based timezone
             if (timezone != "DEFAULT" && isValidTimezone(timezone)) {
-                KIO.ok(timezone)
+                // Early return
+                return@comprehension KIO.ok(timezone)
             }
 
             // IP based timezone
@@ -43,7 +44,8 @@ object TimezonesService {
             val (_, env) = !KIO.access<JEnv>()
             val ipInfo = IPAddressLookupService.lookUpIpAddressInfo(clientIp, env.config.ipInfo)
             if (ipInfo.timezone != null && isValidTimezone(ipInfo.timezone)) {
-                KIO.ok(ipInfo.timezone)
+                // Early return
+                return@comprehension KIO.ok(ipInfo.timezone)
             }
 
             // fallback to UTC

@@ -16,7 +16,6 @@ data class GeoPointDTO(
     val lon: Double
 )
 
-// Annahme: Location.coordinates ist ein org.postgis.Point oder null
 fun Location.toLocationDTO() = LocationDTO(
     id = this.id ?: 0L,
     name = this.name,

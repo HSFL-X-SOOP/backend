@@ -54,6 +54,17 @@ fun Application.configureAuth(envConfig: Config) {
             }
         }
 
+        jwt(Realm.ADMIN.value) {
+            realm = "ADMIN-Realm"
+            verifier(JWTAuthority.accessVerifier)
+            validate { credential ->
+                AuthService.validateAdminRealmAccess(credential).unsafeRunSync(kioEnv).fold(
+                    onSuccess = { it },
+                    onError = { null }
+                )
+            }
+        }
+
         oauth("auth-oauth-google") {
             urlProvider = { "${envConfig.backendUrl}/auth/google/callback" }
 

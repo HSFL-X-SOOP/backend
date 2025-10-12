@@ -80,6 +80,7 @@ object JWTAuthority {
         .withSubject(subject)
         .withClaim("id", user.id)
         .withClaim("email", user.email)
+        .withClaim("role", user.role.toString())
         .withClaim("issuedAt", System.currentTimeMillis())
         .withIssuer(ISSUER)
         .withAudience(AUDIENCE)
