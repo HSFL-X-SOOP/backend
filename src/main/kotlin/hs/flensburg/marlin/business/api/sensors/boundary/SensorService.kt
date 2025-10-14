@@ -61,7 +61,8 @@ object SensorService {
 
     fun getLocationWithLatestMeasurementsNEW(
         timezone: String,
-        ipAddress: String
+        ipAddress: String,
+        units: String
     ): App<Error, List<LocationWithBoxesDTO>> =
         KIO.comprehension {
             val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(

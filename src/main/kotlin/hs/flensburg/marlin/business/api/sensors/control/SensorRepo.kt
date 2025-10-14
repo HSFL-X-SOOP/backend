@@ -226,6 +226,8 @@ object SensorRepo {
                     time = localTime,
                     value = rec.get("meas_value", Double::class.java)!!
                 )
+
+
             }
         )
 
