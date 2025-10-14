@@ -156,6 +156,8 @@ object SensorRepo {
             "48h" -> "m.time >= NOW() - INTERVAL '48 hours'"
             "7d" -> "m.time >= NOW() - INTERVAL '7 days'"
             "30d" -> "m.time >= NOW() - INTERVAL '30 days'"
+            "90d" -> "m.time >= NOW() - INTERVAL '90 days'"
+            "180d" -> "m.time >= NOW() - INTERVAL '180 days'"
             "1y" -> "m.time >= NOW() - INTERVAL '1 years'"
             else -> "m.time >= NOW() - INTERVAL '24 hours'"
         }
@@ -244,44 +246,74 @@ object SensorRepo {
         timezone: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
-        val intervalCondition = when (timeRange.lowercase()) {
-            "48h" -> "m.time >= NOW() - INTERVAL '48 hours'"
-            "7d" -> "m.time >= NOW() - INTERVAL '7 days'"
-            "30d" -> "m.time >= NOW() - INTERVAL '30 days'"
-            "1y" -> "m.time >= NOW() - INTERVAL '1 years'"
-            else -> "m.time >= NOW() - INTERVAL '24 hours'"
+        val (useRaw, bucketWidth, intervalCondition) = when (timeRange.lowercase()) {
+            "24h" -> Triple(true, null, "m.time >= NOW() - INTERVAL '24 hours'")
+            "48h" -> Triple(true, null, "m.time >= NOW() - INTERVAL '48 hours'")
+            "7d"  -> Triple(false, "2 hours", "m.time >= NOW() - INTERVAL '7 days'")
+            "30d" -> Triple(false, "6 hours", "m.time >= NOW() - INTERVAL '30 days'")
+            "90d"  -> Triple(false, "12 hours","m.time >= NOW() - INTERVAL '90 days'")
+            "180d" -> Triple(false, "1 day",   "m.time >= NOW() - INTERVAL '180 days'")
+            "1y"  -> Triple(false, "2 day", "m.time >= NOW() - INTERVAL '1 years'")
+            else  -> Triple(true, null, "m.time >= NOW() - INTERVAL '24 hours'")
         }
 
-        val sql = """
+        val sql =
+            if (useRaw)
+        // Fetch with raw sql
+    """
         SELECT
-            l.id AS loc_id,
-            l.name AS loc_name,
-            ST_Y(l.coordinates::geometry) AS latitude,
-            ST_X(l.coordinates::geometry) AS longitude,
-
-            s.id AS sensor_id,
-            s.name AS sensor_name,
-            s.description AS sensor_description,
-            s.is_moving AS sensor_is_moving,
-
-            mt.id AS type_id,
-            mt.name AS type_name,
-            mt.description AS type_description,
-            mt.unit_name,
-            mt.unit_symbol,
-            mt.unit_definition,
-
-            public.time_bucket(INTERVAL '30 minutes', m.time) AS bucket,
-            AVG(m.value) AS avg_value
-
+          l.id AS loc_id,
+          l.name AS loc_name,
+          ST_Y(l.coordinates::geometry) AS latitude,
+          ST_X(l.coordinates::geometry) AS longitude,
+          s.id AS sensor_id,
+          s.name AS sensor_name,
+          s.description AS sensor_description,
+          s.is_moving AS sensor_is_moving,
+          mt.id AS type_id,
+          mt.name AS type_name,
+          mt.description AS type_description,
+          mt.unit_name,
+          mt.unit_symbol,
+          mt.unit_definition,
+          m.time AS meas_time,
+          m.value AS meas_value
         FROM marlin.measurement AS m
         JOIN marlin.location l ON m.location_id = l.id
         JOIN marlin.sensor s ON m.sensor_id = s.id
         JOIN marlin.measurementtype mt ON m.type_id = mt.id
         WHERE m.location_id = $locationId
           AND $intervalCondition
-        GROUP BY l.id, s.id, mt.id, bucket
-        ORDER BY bucket DESC, mt.id;
+        ORDER BY m.time DESC;
+    """.trimIndent()
+        else
+        // fetch with time_buckets to get average
+    """
+        SELECT
+          l.id AS loc_id,
+          l.name AS loc_name,
+          ST_Y(l.coordinates::geometry) AS latitude,
+          ST_X(l.coordinates::geometry) AS longitude,
+          s.id AS sensor_id,
+          s.name AS sensor_name,
+          s.description AS sensor_description,
+          s.is_moving AS sensor_is_moving,
+          mt.id AS type_id,
+          mt.name AS type_name,
+          mt.description AS type_description,
+          mt.unit_name,
+          mt.unit_symbol,
+          mt.unit_definition,
+          public.time_bucket(INTERVAL '$bucketWidth', m.time) AS meas_time,
+          ROUND(AVG(m.value)::numeric, 2) AS meas_value
+        FROM marlin.measurement AS m
+        JOIN marlin.location l ON m.location_id = l.id
+        JOIN marlin.sensor s ON m.sensor_id = s.id
+        JOIN marlin.measurementtype mt ON m.type_id = mt.id
+        WHERE m.location_id = $locationId
+          AND $intervalCondition
+        GROUP BY l.id, s.id, mt.id, meas_time
+        ORDER BY meas_time DESC, mt.id;
     """.trimIndent()
 
         val grouped = resultQuery(sql).fetchGroups(
@@ -313,14 +345,14 @@ object SensorRepo {
                     unitDefinition = rec.get("unit_definition", String::class.java)
                 ).toMeasurementTypeDTO()
 
-                val bucketTime = rec.get("bucket", OffsetDateTime::class.java)
-                val localTime = TimezonesService.toLocalDateTimeInZone(bucketTime, timezone)
+                val time = rec.get("meas_time", OffsetDateTime::class.java)
+                val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
 
                 EnrichedMeasurementDTO(
                     sensor = sensor,
                     measurementType = type,
                     time = localTime,
-                    value = rec.get("avg_value", Double::class.java)!!
+                    value = rec.get("meas_value", Double::class.java)!!
                 )
             }
         )
