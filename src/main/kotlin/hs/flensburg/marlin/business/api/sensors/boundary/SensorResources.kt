@@ -147,7 +147,7 @@ fun Application.configureSensors() {
                         description = "The location ID (not the sensor ID)"
                     }
                     queryParameter<String>("timeRange") {
-                        description = "Optional time range ('48h', '7d', '30d'). Defaults to 24h."
+                        description = "Optional time range ('48h', '7d', '30d', '90d', '180d' '1y'). Defaults to 24h. Warning: '90d', '180d' and '1y' can take a while to load."
                         required = false
                     }
                     queryParameter<String>("timezone") {
@@ -194,7 +194,15 @@ fun Application.configureSensors() {
                         description = "The location ID (not the sensor ID)"
                     }
                     queryParameter<String>("timeRange") {
-                        description = "Optional time range ('48h', '7d', '30d'). Defaults to 24h."
+                        description = """Optional time range ('48h', '7d', '30d', '1y'). Defaults to 24h.
+                            |           "24h" -> raw;
+                                        "48h" -> raw;
+                                        "7d"  -> avg: 2 hours;
+                                        "30d" -> avg: 6 hours;
+                                        "90d"  -> avg: 12 hours;
+                                        "180d" -> avg: 1 day;
+                                        "1y"  -> avg: 2 days;
+                        """.trimMargin()
                         required = false
                     }
                     queryParameter<String>("timezone") {
