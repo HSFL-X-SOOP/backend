@@ -25,10 +25,10 @@ jobs:
           --health-retries=30
 
     env:
-      IMAGE_NAME: marlin_backend_beta
-      REGISTRY_URL: ${{ secrets.REGISTRY_URL }}
-      REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-      REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+      CONTAINER_IMAGE_NAME: marlin-backend
+      CONTAINER_REGISTRY_URL: docker.io
+      CONTAINER_REGISTRY_USERNAME: marlinlive
+      CONTAINER_REGISTRY_TOKEN: ${{ secrets.CONTAINER_REGISTRY_ACCESS_TOKEN }}
       SERVER_IP: ${{ secrets.SERVER_IP }}
       SERVER_USER: ${{ secrets.SERVER_USER }}
       DEPLOY_KEY: ${{ secrets.MARLIN_DEPLOY_KEY }}
@@ -50,9 +50,9 @@ jobs:
       - name: Login to container registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY_URL }}
-          username: ${{ env.REGISTRY_USERNAME }}
-          password: ${{ env.REGISTRY_TOKEN }}
+          registry: ${{ env.CONTAINER_REGISTRY_URL }}
+          username: ${{ env.CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ env.CONTAINER_REGISTRY_TOKEN }}
 
       - name: Build & push Docker image
         uses: docker/build-push-action@v6
@@ -61,8 +61,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.CONTAINER_REGISTRY_USERNAME }}/${{ env.CONTAINER_IMAGE_NAME }}:beta
+          cache-from: type=registry,ref=${{ env.CONTAINER_REGISTRY_USERNAME }}/${{ env.CONTAINER_IMAGE_NAME }}:beta
           cache-to: type=inline
 
       - name: Deploy to server
@@ -73,5 +73,5 @@ jobs:
           key: ${{ env.DEPLOY_KEY }}
           script: |
             sudo systemctl stop marlin-test.service
-            docker pull ${{ env.REGISTRY_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+            docker pull ${{ env.CONTAINER_REGISTRY_USERNAME }}/${{ env.CONTAINER_IMAGE_NAME }}:beta
             sudo systemctl start marlin-test.service
