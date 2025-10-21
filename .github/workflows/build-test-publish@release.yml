@@ -28,7 +28,7 @@ jobs:
       CONTAINER_IMAGE_NAME: marlin-backend
       CONTAINER_REGISTRY_URL: docker.io
       CONTAINER_REGISTRY_USERNAME: marlinlive
-      CONTAINER_REGISTRY_TOKEN: ${{ secrets.DOCKER_REGISTRY_ACCESS_TOKEN }}
+      CONTAINER_REGISTRY_TOKEN: ${{ secrets.CONTAINER_REGISTRY_ACCESS_TOKEN }}
       SERVER_IP: ${{ secrets.SERVER_IP }}
       SERVER_USER: ${{ secrets.SERVER_USER }}
       DEPLOY_KEY: ${{ secrets.MARLIN_DEPLOY_KEY }}
