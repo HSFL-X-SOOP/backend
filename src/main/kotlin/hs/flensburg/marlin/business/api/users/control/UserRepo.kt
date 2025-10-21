@@ -73,4 +73,10 @@ object UserRepo {
             .returning()
             .fetchOneInto(UserProfile::class.java)
     }
+
+    fun deleteById(id: Long): JIO<Unit> = Jooq.query {
+        deleteFrom(USER)
+            .where(USER.ID.eq(id))
+            .execute()
+    }
 }
