@@ -9,11 +9,6 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.toDetailedLocationDTO
-import hs.flensburg.marlin.business.api.sensors.control.SensorRepo
-import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.toLocationDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 
 object LocationService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -30,7 +25,6 @@ object LocationService {
 
     fun getLocationByID(id: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
         val location = !LocationRepo.fetchLocationByID(id).orDie().onNullFail { Error.NotFound }
-        print(location)
         KIO.ok(location.toDetailedLocationDTO())
     }
 }

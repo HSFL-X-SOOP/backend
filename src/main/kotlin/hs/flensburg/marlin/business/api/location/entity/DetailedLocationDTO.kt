@@ -1,9 +1,7 @@
 package hs.flensburg.marlin.business.api.location.entity
 
-import hs.flensburg.marlin.business.api.sensors.entity.raw.GeoPointDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
+import hs.flensburg.marlin.business.api.location.boundary.GeoPoint
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.toKotlinLocalTime
 import kotlinx.serialization.Serializable
@@ -16,7 +14,7 @@ data class DetailedLocationDTO(
     val address: String?,
     val openingTime: LocalTime?,
     val closingTime: LocalTime?,
-    val coordinates: GeoPointDTO?
+    val coordinates: GeoPoint?
 )
 
 fun Location.toDetailedLocationDTO() = DetailedLocationDTO(
@@ -26,5 +24,5 @@ fun Location.toDetailedLocationDTO() = DetailedLocationDTO(
     address = this.address,
     openingTime = this.openingTime?.toKotlinLocalTime(),
     closingTime = this.closingTime?.toKotlinLocalTime(),
-    coordinates = (this.coordinates as? Pair<Double, Double>)?.let {GeoPointDTO(it.first, it.second)}
+    coordinates = this.coordinates
 )
