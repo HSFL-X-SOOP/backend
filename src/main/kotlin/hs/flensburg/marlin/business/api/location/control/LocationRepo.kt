@@ -3,7 +3,10 @@ package hs.flensburg.marlin.business.api.location.control
 import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
+import hs.flensburg.marlin.database.generated.tables.pojos.LocationImage
 import hs.flensburg.marlin.database.generated.tables.references.LOCATION
+import hs.flensburg.marlin.database.generated.tables.references.LOCATION_IMAGE
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 object LocationRepo {
@@ -32,4 +35,27 @@ object LocationRepo {
             .returning()
             .fetchOneInto(Location::class.java)
     }
+
+    fun insertLocationImage(id: Long, imageBytes: ByteArray): JIO<Unit> = Jooq.query {
+        insertInto(LOCATION_IMAGE)
+            .set(LOCATION_IMAGE.LOCATION_ID, id)
+            .set(LOCATION_IMAGE.IMAGE, imageBytes)
+            .execute()
+    }
+
+    fun updateLocationImage(id: Long, imageBytes: ByteArray): JIO<Unit> = Jooq.query {
+        update(LOCATION_IMAGE)
+            .set(LOCATION_IMAGE.IMAGE, imageBytes)
+            .set(LOCATION_IMAGE.UPLOADED_AT, LocalDateTime.now())
+            .where(LOCATION_IMAGE.LOCATION_ID.eq(id))
+            .execute()
+    }
+
+    fun fetchLocationImage(id: Long): JIO<LocationImage?> = Jooq.query {
+        select(LOCATION_IMAGE.IMAGE)
+            .from(LOCATION_IMAGE)
+            .where(LOCATION_IMAGE.LOCATION_ID.eq(id))
+            .fetchOneInto(LocationImage::class.java)
+    }
+
 }

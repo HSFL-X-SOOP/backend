@@ -41,4 +41,25 @@ object LocationService {
         ).orDie().onNullFail { Error.NotFound }
         KIO.ok(location.toDetailedLocationDTO())
     }
+
+    fun getLocationImage(id: Long): App<Error, ByteArray?> = KIO.comprehension {
+        val locationImage = !LocationRepo.fetchLocationImage(id = id).orDie().onNullFail { Error.NotFound }
+        KIO.ok(locationImage.image)
+    }
+
+    fun updateLocationImage(id: Long, imageBytes: ByteArray): App<Error, Unit> = KIO.comprehension {
+        !LocationRepo.updateLocationImage(
+            id = id,
+            imageBytes = imageBytes
+        ).orDie().onNullFail { Error.NotFound }
+        KIO.unit
+    }
+
+    fun createLocationImage(id: Long, imageBytes: ByteArray): App<Error, Unit> = KIO.comprehension {
+        !LocationRepo.insertLocationImage(
+            id = id,
+            imageBytes = imageBytes
+        ).orDie().onNullFail { Error.NotFound }
+        KIO.unit
+    }
 }

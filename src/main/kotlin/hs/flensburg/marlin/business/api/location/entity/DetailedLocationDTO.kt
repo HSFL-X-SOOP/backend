@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DetailedLocationDTO(
-    val id: Long,
+    val id: Long?,
     val name: String?,
     val description: String?,
     val address: String?,
@@ -18,7 +18,7 @@ data class DetailedLocationDTO(
 )
 
 fun Location.toDetailedLocationDTO() = DetailedLocationDTO(
-    id = this.id ?: 0L,
+    id = this.id,
     name = this.name,
     description = this.description,
     address = this.address,
