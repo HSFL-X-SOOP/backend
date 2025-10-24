@@ -8,7 +8,9 @@ import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
+import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
 import hs.flensburg.marlin.business.api.location.entity.toDetailedLocationDTO
+import hs.flensburg.marlin.business.api.timezones.boundary.toJavaLocalTime
 
 object LocationService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -25,6 +27,18 @@ object LocationService {
 
     fun getLocationByID(id: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
         val location = !LocationRepo.fetchLocationByID(id).orDie().onNullFail { Error.NotFound }
+        KIO.ok(location.toDetailedLocationDTO())
+    }
+
+    fun updateLocationByID(id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> = KIO.comprehension {
+        val location = !LocationRepo.updateLocation(
+            id = id,
+            name = request.name,
+            description = request.description,
+            address = request.address,
+            openingTime = request.openingTime?.toJavaLocalTime(),
+            closingTime = request.closingTime?.toJavaLocalTime()
+        ).orDie().onNullFail { Error.NotFound }
         KIO.ok(location.toDetailedLocationDTO())
     }
 }
