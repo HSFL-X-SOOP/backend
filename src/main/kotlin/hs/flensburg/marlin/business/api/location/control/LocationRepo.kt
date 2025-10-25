@@ -57,5 +57,10 @@ object LocationRepo {
             .where(LOCATION_IMAGE.LOCATION_ID.eq(id))
             .fetchOneInto(LocationImage::class.java)
     }
+    fun deleteLocationImage(id: Long): JIO<Unit> = Jooq.query {
+        deleteFrom(LOCATION_IMAGE)
+            .where(LOCATION_IMAGE.LOCATION_ID.eq(id))
+            .execute()
+    }
 
 }
