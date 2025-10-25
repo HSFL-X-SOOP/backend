@@ -17,6 +17,14 @@ object LocationRepo {
             .fetchOneInto(Location::class.java)
     }
 
+    fun fetchLocationsWithoutNameOrAdressButCoordinates(): JIO<List<Location>> = Jooq.query {
+        selectFrom(LOCATION)
+            .where(LOCATION.NAME.isNull)
+            .or(LOCATION.ADDRESS.isNull)
+            .and(LOCATION.COORDINATES.isNotNull)
+            .fetchInto(Location::class.java)
+    }
+
     fun updateLocation(
         id: Long,
         name: String?,
@@ -35,6 +43,8 @@ object LocationRepo {
             .returning()
             .fetchOneInto(Location::class.java)
     }
+
+    // IMAGE
 
     fun insertLocationImage(id: Long, imageBytes: ByteArray): JIO<Unit> = Jooq.query {
         insertInto(LOCATION_IMAGE)
