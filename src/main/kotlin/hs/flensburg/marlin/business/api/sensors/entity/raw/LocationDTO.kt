@@ -1,6 +1,6 @@
 package hs.flensburg.marlin.business.api.sensors.entity.raw
 
-import hs.flensburg.marlin.business.api.location.boundary.GeoPoint
+import hs.flensburg.marlin.business.api.location.entity.GeoPoint
 import kotlinx.serialization.Serializable
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 

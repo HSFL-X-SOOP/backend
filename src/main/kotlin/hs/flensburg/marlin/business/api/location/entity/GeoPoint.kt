@@ -1,4 +1,4 @@
-package hs.flensburg.marlin.business.api.location.boundary
+package hs.flensburg.marlin.business.api.location.entity
 
 import kotlinx.serialization.Serializable
 

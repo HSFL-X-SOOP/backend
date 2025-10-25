@@ -415,8 +415,8 @@
 
                             <forcedTypes>
                                 <forcedType>
-                                    <userType>hs.flensburg.marlin.business.api.location.boundary.GeoPoint</userType>
-                                    <binding>hs.flensburg.marlin.business.api.location.boundary.GeoPointBinding</binding>
+                                    <userType>hs.flensburg.marlin.business.api.location.entity.GeoPoint</userType>
+                                    <binding>hs.flensburg.marlin.business.api.location.entity.GeoPointBinding</binding>
                                     <includeTypes>GEOGRAPHY</includeTypes>
                                 </forcedType>
                             </forcedTypes>

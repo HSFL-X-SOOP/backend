@@ -2,7 +2,7 @@ package hs.flensburg.marlin.business.api.sensors.control
 
 import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
-import hs.flensburg.marlin.business.api.location.boundary.GeoPoint
+import hs.flensburg.marlin.business.api.location.entity.GeoPoint
 import hs.flensburg.marlin.business.api.sensors.entity.EnrichedMeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO

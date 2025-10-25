@@ -1,9 +1,11 @@
-package hs.flensburg.marlin.business.api.location.boundary
+package hs.flensburg.marlin.business.api.location.entity
 
 import org.jooq.*
 import org.jooq.impl.DSL
 import java.sql.*
 import org.postgresql.util.PGobject
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 
 class GeoPointBinding : Binding<Any, GeoPoint> {
@@ -45,12 +47,12 @@ class GeoPointBinding : Binding<Any, GeoPoint> {
     private fun parseWKB(hexString: String): GeoPoint? {
         try {
             val bytes = hexString.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-            val buffer = java.nio.ByteBuffer.wrap(bytes)
+            val buffer = ByteBuffer.wrap(bytes)
             
             // Read byte order (1 = little endian, 0 = big endian)
             val byteOrder = buffer.get()
             if (byteOrder == 1.toByte()) {
-                buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                buffer.order(ByteOrder.LITTLE_ENDIAN)
             }
             
             // Read geometry type (should be 0x20000001 for POINT with SRID)
@@ -66,7 +68,7 @@ class GeoPointBinding : Binding<Any, GeoPoint> {
             val lat = buffer.getDouble()
             
             return GeoPoint(lat, lon)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             return null
         }
     }
@@ -91,7 +93,7 @@ class GeoPointBinding : Binding<Any, GeoPoint> {
         if (value == null) {
             ctx.statement().setNull(ctx.index(), Types.OTHER)
         } else {
-            val obj = org.postgresql.util.PGobject().apply {
+            val obj = PGobject().apply {
                 type = "geography"
                 this.value = "SRID=4326;POINT(${value.lon} ${value.lat})"
             }

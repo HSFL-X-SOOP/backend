@@ -1,6 +1,5 @@
 package hs.flensburg.marlin.business.api.location.entity
 
-import hs.flensburg.marlin.business.api.location.boundary.GeoPoint
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.toKotlinLocalTime
