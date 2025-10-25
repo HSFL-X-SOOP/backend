@@ -1,6 +1,5 @@
 package hs.flensburg.marlin.business.api.location.boundary
 
-import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
 import hs.flensburg.marlin.plugins.respondKIO
@@ -9,13 +8,10 @@ import io.github.smiley4.ktoropenapi.post
 import io.github.smiley4.ktoropenapi.put
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
 import io.ktor.server.application.Application
 import io.ktor.server.request.receive
-import io.ktor.server.request.receiveMultipart
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
-import io.ktor.utils.io.readRemaining
-import kotlinx.io.readByteArray
 
 fun Application.configureLocation() {
     routing {
@@ -40,14 +36,10 @@ fun Application.configureLocation() {
                 }
             }
         ) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
+            val id = call.parameters["id"]?.toLongOrNull()
+                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@get
-            }
-
-            call.respondKIO(LocationService.getLocationByID(locationID))
+            call.respondKIO(LocationService.getLocationByID(id))
         }
 
         put(
@@ -71,16 +63,12 @@ fun Application.configureLocation() {
                 }
             }
         ) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
-
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@put
-            }
+            val id = call.parameters["id"]?.toLongOrNull()
+                ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
             val request = call.receive<UpdateLocationRequest>()
 
-            call.respondKIO(LocationService.updateLocationByID(locationID, request))
+            call.respondKIO(LocationService.updateLocationByID(id, request))
         }
 
         get(
@@ -104,14 +92,10 @@ fun Application.configureLocation() {
                 }
             }
         ) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
+            val id = call.parameters["id"]?.toLongOrNull()
+                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@get
-            }
-
-            call.respondKIO(LocationService.getLocationImage(locationID))
+            call.respondKIO(LocationService.getLocationImage(id))
         }
 
         post("/location/{id}/image", {
@@ -136,39 +120,17 @@ fun Application.configureLocation() {
                 }
             }
         }) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
+            val id = call.parameters["id"]?.toLongOrNull()
+                ?: return@post call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@post
+            try {
+                val imageBytes = call.receiveImageFile()
+                call.respondKIO(LocationService.createLocationImage(id, imageBytes))
+            } catch (e: BadRequestException) {
+                call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
+            } catch (e: UnsupportedMediaTypeException) {
+                call.respondText(e.message ?: "Unsupported media type", status = HttpStatusCode.UnsupportedMediaType)
             }
-
-            var imageBytes: ByteArray? = null
-            var contentType: String? = null
-
-            val multipart = call.receiveMultipart()
-            multipart.forEachPart { part ->
-                if (part is PartData.FileItem && part.name == "image") {
-                    contentType = part.contentType?.toString()
-
-                    if (contentType?.startsWith("image/") != true) {
-                        part.dispose()
-                        call.respondKIO(KIO.ok("Only image files are allowed (received: $contentType)"))
-                        return@forEachPart
-                    }
-
-                    imageBytes = part.provider().readRemaining().readByteArray()
-                }
-                part.dispose()
-            }
-
-            if (imageBytes == null) {
-                call.respondKIO(KIO.ok("No image file provided"))
-                return@post
-            }
-
-
-            call.respondKIO(LocationService.createLocationImage(locationID, imageBytes))
         }
 
         put("/location/{id}/image", {
@@ -193,39 +155,17 @@ fun Application.configureLocation() {
                 }
             }
         }) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
+            val id = call.parameters["id"]?.toLongOrNull()
+                ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@put
+            try {
+                val imageBytes = call.receiveImageFile()
+                call.respondKIO(LocationService.updateLocationImage(id, imageBytes))
+            } catch (e: BadRequestException) {
+                call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
+            } catch (e: UnsupportedMediaTypeException) {
+                call.respondText(e.message ?: "Unsupported media type", status = HttpStatusCode.UnsupportedMediaType)
             }
-
-            var imageBytes: ByteArray? = null
-            var contentType: String? = null
-
-            val multipart = call.receiveMultipart()
-            multipart.forEachPart { part ->
-                if (part is PartData.FileItem && part.name == "image") {
-                    contentType = part.contentType?.toString()
-
-                    if (contentType?.startsWith("image/") != true) {
-                        part.dispose()
-                        call.respondKIO(KIO.ok("Only image files are allowed (received: $contentType)"))
-                        return@forEachPart
-                    }
-
-                    imageBytes = part.provider().readRemaining().readByteArray()
-                }
-                part.dispose()
-            }
-
-            if (imageBytes == null) {
-                call.respondKIO(KIO.ok("No image file provided"))
-                return@put
-            }
-
-            call.respondKIO(LocationService.updateLocationImage(locationID, imageBytes))
         }
-
     }
 }
