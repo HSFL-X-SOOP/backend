@@ -1,10 +1,7 @@
 package hs.flensburg.marlin.business.api.potentialSensors.boundary
 
-import de.lambda9.tailwind.core.KIO
-import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.api.potentialSensors.entity.PotentialSensorDTO
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
-import hs.flensburg.marlin.database.generated.tables.pojos.PotentialSensor
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.respondKIO
@@ -16,7 +13,6 @@ import io.ktor.server.routing.routing
 
 fun Application.configurePotentialSensors() {
     routing {
-        // TODO: ADMIN Authentication
         authenticate(Realm.ADMIN) {
             get(
                 path = "/potential-sensors",

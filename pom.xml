@@ -412,6 +412,15 @@
                             <excludes/>
                             <inputSchema>${database.schemas}</inputSchema>
                             <outputSchemaToDefault>false</outputSchemaToDefault>
+
+                            <forcedTypes>
+                                <forcedType>
+                                    <userType>hs.flensburg.marlin.business.api.location.entity.GeoPoint</userType>
+                                    <binding>hs.flensburg.marlin.business.api.location.entity.GeoPointBinding</binding>
+                                    <includeTypes>GEOGRAPHY</includeTypes>
+                                </forcedType>
+                            </forcedTypes>
+
                         </database>
                         <target>
                             <packageName>${database.generated.package}</packageName>

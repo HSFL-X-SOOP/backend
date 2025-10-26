@@ -54,6 +54,17 @@ fun Application.configureAuth(envConfig: Config) {
             }
         }
 
+        jwt(Realm.HARBOUR_CONTROL.value) {
+            realm = "Harbor-Control-Realm"
+            verifier(JWTAuthority.accessVerifier)
+            validate { credential ->
+                AuthService.validateHarborControlRealmAccess(credential).unsafeRunSync(kioEnv).fold(
+                    onSuccess = { it },
+                    onError = { null }
+                )
+            }
+        }
+
         jwt(Realm.ADMIN.value) {
             realm = "ADMIN-Realm"
             verifier(JWTAuthority.accessVerifier)
