@@ -9,7 +9,7 @@ data class MeasurementTypeDTO(
     val name: String,
     val description: String?,
     val unitName: String?,
-    val unitSymbol: String?,
+    var unitSymbol: String?,
     val unitDefinition: String?
 )
 

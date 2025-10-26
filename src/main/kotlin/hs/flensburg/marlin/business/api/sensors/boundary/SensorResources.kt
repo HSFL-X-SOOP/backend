@@ -137,7 +137,42 @@ fun Application.configureSensors() {
                 SensorService.getLocationWithLatestMeasurementsNEW(
                     call.parameters["timezone"] ?: "DEFAULT",
                     call.request.origin.remoteAddress,
-                    call.parameters["units"] ?: "DEFAULT"
+                    call.parameters["units"] ?: "metric"
+                )
+            )
+        }
+
+        get(
+            path = "/latestmeasurements_v3",
+            builder = {
+                tags("measurements")
+                description = "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
+                request {
+                    queryParameter<String>("timezone") {
+                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        required = false
+                    }
+                    queryParameter<String>("units") {
+                        description = "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        required = false
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response with latest measurements for each location"
+                        body<List<LocationWithBoxesDTO>>()
+                    }
+                    HttpStatusCode.InternalServerError to {
+                        description = "Error occurred while retrieving the latest measurements"
+                    }
+                }
+            }
+        ) {
+            call.respondKIO(
+                SensorService.getLocationWithLatestMeasurementsV3(
+                    call.parameters["timezone"] ?: "DEFAULT",
+                    call.request.origin.remoteAddress,
+                    call.parameters["units"] ?: "metric"
                 )
             )
         }

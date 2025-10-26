@@ -9,6 +9,7 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
+import hs.flensburg.marlin.business.api.units.boundary.UnitsService
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
@@ -58,7 +59,7 @@ object SensorRepo {
             .fetchInto(Measurement::class.java)
     }
 
-    fun fetchLocationsWithLatestMeasurements(timezone: String): JIO<List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
+    fun fetchLocationsWithLatestMeasurements(timezone: String, units: String): JIO<List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
         // Query to fetch only the newest measurement within the last 2 hours for each location
         val sql = """
         WITH latest AS (
@@ -132,11 +133,16 @@ object SensorRepo {
                     val time = rec.get("meas_time", OffsetDateTime::class.java)
                     val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
 
+                    val (valueConverted, unit) = UnitsService.convert(rec.get("meas_value", Double::class.java)!!,
+                        type, units)
+
+                    type.unitSymbol = unit
+
                     EnrichedMeasurementDTO(
                         sensor = sensor,
                         measurementType = type,
                         time = localTime,
-                        value = rec.get("meas_value", Double::class.java)!!
+                        value = valueConverted
                     )
                 }
             ).map { (location, enrichedMeasurements) ->
