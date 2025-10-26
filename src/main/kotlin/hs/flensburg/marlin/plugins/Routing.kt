@@ -3,6 +3,7 @@ package hs.flensburg.marlin.plugins
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
+import hs.flensburg.marlin.business.api.location.boundary.configureLocation
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
 import hs.flensburg.marlin.business.api.users.boundary.configureUsers
@@ -31,6 +32,7 @@ fun Application.configureRouting(config: Config) {
     configureUsers()
     configureSensors()
     configurePotentialSensors()
+    configureLocation()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
@@ -81,7 +83,8 @@ fun Route.authenticate(realm: Realm, block: Route.() -> Unit) {
 
 enum class Realm(val value: String) {
     COMMON("common"),
-    ADMIN("admin");
+    ADMIN("admin"),
+    HARBOUR_CONTROL("harbor_control");
 
     override fun toString(): String = value
 }
