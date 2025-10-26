@@ -2,6 +2,8 @@ package hs.flensburg.marlin.business.api.location.boundary
 
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
+import hs.flensburg.marlin.plugins.Realm
+import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.delete
 import io.github.smiley4.ktoropenapi.get
@@ -43,35 +45,6 @@ fun Application.configureLocation() {
             call.respondKIO(LocationService.getLocationByID(id))
         }
 
-        put(
-            path = "/location/{id}",
-            builder = {
-                description = "Update the location information"
-                tags("location")
-                request {
-                    pathParameter<Long>("id") {
-                        description = "The location ID (not the sensor ID)"
-                    }
-                    body<UpdateLocationRequest>()
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<DetailedLocationDTO>()
-                    }
-                    HttpStatusCode.NotFound to {
-                        body<String>()
-                    }
-                }
-            }
-        ) {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
-
-            val request = call.receive<UpdateLocationRequest>()
-
-            call.respondKIO(LocationService.updateLocationByID(id, request))
-        }
-
         get(
             path = "/location/{id}/image",
             builder = {
@@ -99,100 +72,140 @@ fun Application.configureLocation() {
             call.respondKIO(LocationService.getLocationImage(id))
         }
 
-        post("/location/{id}/image", {
-            description = "Create the image of a location"
-            tags("location")
-            request {
-                pathParameter<Long>("id") {
-                    description = "The location ID"
-                }
-                multipartBody {
-                    part<PartData.FileItem>("image") {
-                        required = true
+        authenticate(Realm.HARBOUR_CONTROL) {
+
+            put(
+                path = "/location/{id}",
+                builder = {
+                    description = "Update the location information"
+                    tags("location")
+                    request {
+                        pathParameter<Long>("id") {
+                            description = "The location ID (not the sensor ID)"
+                        }
+                        body<UpdateLocationRequest>()
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            body<DetailedLocationDTO>()
+                        }
+                        HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
                     }
                 }
-            }
-            response {
-                HttpStatusCode.OK to {
-                    body<Unit>()
-                }
-                HttpStatusCode.NotFound to {
-                    body<String>()
-                }
-            }
-        }) {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@post call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
+            ) {
+                val id = call.parameters["id"]?.toLongOrNull()
+                    ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            try {
-                val imageBytes = call.receiveImageFile()
-                call.respondKIO(LocationService.createLocationImage(id, imageBytes))
-            } catch (e: BadRequestException) {
-                call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
-            } catch (e: UnsupportedMediaTypeException) {
-                call.respondText(e.message ?: "Unsupported media type", status = HttpStatusCode.UnsupportedMediaType)
-            }
-        }
+                val request = call.receive<UpdateLocationRequest>()
 
-        put("/location/{id}/image", {
-            description = "Update the image of a location"
-            tags("location")
-            request {
-                pathParameter<Long>("id") {
-                    description = "The location ID"
-                }
-                multipartBody {
-                    part<PartData.FileItem>("image") {
-                        required = true
-                    }
-                }
+                call.respondKIO(LocationService.updateLocationByID(id, request))
             }
-            response {
-                HttpStatusCode.OK to {
-                    body<Unit>()
-                }
-                HttpStatusCode.NotFound to {
-                    body<String>()
-                }
-            }
-        }) {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            try {
-                val imageBytes = call.receiveImageFile()
-                call.respondKIO(LocationService.updateLocationImage(id, imageBytes))
-            } catch (e: BadRequestException) {
-                call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
-            } catch (e: UnsupportedMediaTypeException) {
-                call.respondText(e.message ?: "Unsupported media type", status = HttpStatusCode.UnsupportedMediaType)
-            }
-        }
 
-        delete(
-            path = "/location/{id}/image",
-            builder = {
+
+            post("/location/{id}/image", {
+                description = "Create the image of a location"
                 tags("location")
-                description = "Delete a location"
                 request {
                     pathParameter<Long>("id") {
-                        description = "The location ID (not the sensor ID)"
+                        description = "The location ID"
+                    }
+                    multipartBody {
+                        part<PartData.FileItem>("image") {
+                            required = true
+                        }
                     }
                 }
                 response {
                     HttpStatusCode.OK to {
                         body<Unit>()
                     }
-                    HttpStatusCode.BadRequest to {
-                        description = "Invalid parameters"
+                    HttpStatusCode.NotFound to {
+                        body<String>()
                     }
                 }
-            }
-        ) {
-            val id = call.parameters["id"]?.toLongOrNull()
-                ?: return@delete call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
+            }) {
+                val id = call.parameters["id"]?.toLongOrNull()
+                    ?: return@post call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            call.respondKIO(LocationService.deleteLocationImage(id))
+                try {
+                    val imageBytes = call.receiveImageFile()
+                    call.respondKIO(LocationService.createLocationImage(id, imageBytes))
+                } catch (e: BadRequestException) {
+                    call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
+                } catch (e: UnsupportedMediaTypeException) {
+                    call.respondText(
+                        e.message ?: "Unsupported media type",
+                        status = HttpStatusCode.UnsupportedMediaType
+                    )
+                }
+            }
+
+            put("/location/{id}/image", {
+                description = "Update the image of a location"
+                tags("location")
+                request {
+                    pathParameter<Long>("id") {
+                        description = "The location ID"
+                    }
+                    multipartBody {
+                        part<PartData.FileItem>("image") {
+                            required = true
+                        }
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        body<Unit>()
+                    }
+                    HttpStatusCode.NotFound to {
+                        body<String>()
+                    }
+                }
+            }) {
+                val id = call.parameters["id"]?.toLongOrNull()
+                    ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
+
+                try {
+                    val imageBytes = call.receiveImageFile()
+                    call.respondKIO(LocationService.updateLocationImage(id, imageBytes))
+                } catch (e: BadRequestException) {
+                    call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
+                } catch (e: UnsupportedMediaTypeException) {
+                    call.respondText(
+                        e.message ?: "Unsupported media type",
+                        status = HttpStatusCode.UnsupportedMediaType
+                    )
+                }
+            }
+
+            delete(
+                path = "/location/{id}/image",
+                builder = {
+                    tags("location")
+                    description = "Delete a location"
+                    request {
+                        pathParameter<Long>("id") {
+                            description = "The location ID (not the sensor ID)"
+                        }
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            body<Unit>()
+                        }
+                        HttpStatusCode.BadRequest to {
+                            description = "Invalid parameters"
+                        }
+                    }
+                }
+            ) {
+                val id = call.parameters["id"]?.toLongOrNull()
+                    ?: return@delete call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
+
+                call.respondKIO(LocationService.deleteLocationImage(id))
+            }
         }
     }
 }

@@ -21,6 +21,7 @@ import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
+import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.jwt.JWTCredential
@@ -163,18 +164,23 @@ object AuthService {
         KIO.unit
     }
 
-    fun validateCommonRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> = KIO.comprehension {
-        val userId = credentials.payload.getClaim("id").asLong()
-        val email = credentials.payload.getClaim("email").asString()
+    fun validateCommonRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> =
+        validateRealmAccess(credentials)
 
-        !KIO.failOn(userId == null || email == null) { Error.Unauthorized }
+    fun validateHarborControlRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> =
+        validateRealmAccess(credentials) { user ->
+            user.role in listOf(UserAuthorityRole.ADMIN, UserAuthorityRole.HARBOR_MASTER)
+        }
 
-        !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
+    fun validateAdminRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> =
+        validateRealmAccess(credentials) { user ->
+            user.role == UserAuthorityRole.ADMIN
+        }
 
-        KIO.ok(LoggedInUser(userId, email))
-    }
-
-    fun validateAdminRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> = KIO.comprehension {
+    private fun validateRealmAccess(
+        credentials: JWTCredential,
+        hasAccess: ((User) -> Boolean)? = null
+    ): App<Error, LoggedInUser> = KIO.comprehension {
         val userId = credentials.payload.getClaim("id").asLong()
         val email = credentials.payload.getClaim("email").asString()
 
@@ -182,8 +188,10 @@ object AuthService {
 
         val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
 
-        // Additional Admin role check
-        !KIO.failOn(user.role != UserAuthorityRole.ADMIN) { Error.Unauthorized }
+        if (hasAccess != null) {
+            // Invert 'hasAccess', for better readability
+            !KIO.failOn(!hasAccess(user)) { Error.Unauthorized }
+        }
 
         KIO.ok(LoggedInUser(userId, email))
     }
