@@ -165,7 +165,7 @@ object AuthService {
     }
 
     fun validateCommonRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> =
-        validateRealmAccess(credentials)
+        validateRealmAccess(credentials) { true }
 
     fun validateHarborControlRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> =
         validateRealmAccess(credentials) { user ->
@@ -179,7 +179,7 @@ object AuthService {
 
     private fun validateRealmAccess(
         credentials: JWTCredential,
-        hasAccess: ((User) -> Boolean)? = null
+        predict: ((User) -> Boolean)
     ): App<Error, LoggedInUser> = KIO.comprehension {
         val userId = credentials.payload.getClaim("id").asLong()
         val email = credentials.payload.getClaim("email").asString()
@@ -187,11 +187,8 @@ object AuthService {
         !KIO.failOn(userId == null || email == null) { Error.Unauthorized }
 
         val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
-
-        if (hasAccess != null) {
-            // Invert 'hasAccess', for better readability
-            !KIO.failOn(!hasAccess(user)) { Error.Unauthorized }
-        }
+        // Invert input, for better readability
+        !KIO.failOn(!predict(user)) { Error.Unauthorized }
 
         KIO.ok(LoggedInUser(userId, email))
     }
