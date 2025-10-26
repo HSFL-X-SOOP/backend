@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 
-// Further documentation under https://ipapi.co/api/#complete-location
+// Further documentation under https://ipinfo.io/developers/lite-api
 @Serializable
 data class IPAddressLookupResponse(
     val ip: String? = null,

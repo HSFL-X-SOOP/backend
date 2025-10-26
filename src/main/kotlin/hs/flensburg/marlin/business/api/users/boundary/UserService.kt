@@ -6,11 +6,12 @@ import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
+import hs.flensburg.marlin.business.api.auth.boundary.AuthService
+import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.business.api.users.entity.CreateUserProfileRequest
 import hs.flensburg.marlin.business.api.users.entity.UpdateUserProfileRequest
 import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
-import hs.flensburg.marlin.database.generated.enums.UserActivityRole
 
 object UserService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -47,5 +48,11 @@ object UserService {
         ).orDie().onNullFail { Error.NotFound }
 
         KIO.ok(UserProfileResponse.from(profile))
+    }
+
+    fun deleteProfile(loggedInUser: LoggedInUser): App<AuthService.Error, Unit> = KIO.comprehension {
+        val user = !UserRepo.fetchById(loggedInUser.id).orDie().onNullFail { AuthService.Error.BadRequest }
+
+        UserRepo.deleteById(user.id!!).orDie()
     }
 }

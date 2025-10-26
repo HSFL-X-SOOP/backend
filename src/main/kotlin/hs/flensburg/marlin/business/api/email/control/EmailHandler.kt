@@ -74,7 +74,7 @@ object EmailHandler {
             EmailType.WELCOME -> "Welcome to Marlin"
             EmailType.EMAIL_VERIFICATION -> "Marlin - Email Verification"
             EmailType.MAGIC_LINK -> "Marlin - Magic Link Login"
-            EmailType.TOO_MANY_FAILED_LOGIN_ATTEMPTS -> "Marlin - Failed Login Attempts"
+            EmailType.TOO_MANY_FAILED_LOGIN_ATTEMPTS -> "Marlin - Suspicious Activity"
         }
     }
 

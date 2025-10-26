@@ -7,6 +7,7 @@ import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.respondKIO
+import io.github.smiley4.ktoropenapi.delete
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.post
 import io.github.smiley4.ktoropenapi.put
@@ -82,6 +83,23 @@ fun Application.configureUsers() {
                 val user = call.principal<LoggedInUser>()!!
                 val request = call.receive<UpdateUserProfileRequest>()
                 call.respondKIO(UserService.updateProfile(user.id, request))
+            }
+
+            delete(
+                path = "/user-profile",
+                builder = {
+                    description = "Delete the authenticated user's profile"
+                    tags("user-profile")
+                    response {
+                        HttpStatusCode.NoContent to {}
+                        HttpStatusCode.BadRequest to {
+                            body<String>()
+                        }
+                    }
+                }
+            ) {
+                val user = call.principal<LoggedInUser>()!!
+                call.respondKIO(UserService.deleteProfile(user))
             }
         }
     }
