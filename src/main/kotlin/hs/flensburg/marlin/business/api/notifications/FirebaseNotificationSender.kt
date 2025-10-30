@@ -6,39 +6,31 @@ import com.google.firebase.FirebaseOptions
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.Notification
-import java.io.File
+import hs.flensburg.marlin.Config
+import io.ktor.server.application.Application
 import java.io.FileInputStream
 
-class FirebaseNotificationSender {
-    private val staticFcmToken = "Here Token vom Gerät ergänzen"
-    private val firebaseServiceAccountKeyPath = "Pfad zur Datei angeben"
-    private val projectId = "Firebase Cloud Messaging Project Id"
+fun Application.configureFirebase(config: Config.FirebaseInfo) {
+    val serviceAccount = FileInputStream(config.firebaseServiceAccountKeyPath)
 
-    init {
-        val serviceAccount = FileInputStream(firebaseServiceAccountKeyPath)
+    val options = FirebaseOptions.builder()
+        .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+        .setDatabaseUrl("https://${config.firebaseCloudMessagingProjectID}.firebaseio.com")
+        .build()
 
-        val options = FirebaseOptions.builder()
-            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-            .setDatabaseUrl("https://$projectId.firebaseio.com")
-            .build()
+    FirebaseApp.initializeApp(options)
+}
 
-        // Überprüft, ob die Firebase App bereits initialisiert wurde
-        if (FirebaseApp.getApps().isEmpty()) {
-            FirebaseApp.initializeApp(options)
-            println("Firebase Admin initialisiert.")
-        } else {
-            println("Firebase Admin bereits initialisiert.")
-        }
-    }
+object FirebaseNotificationSender {
 
-    fun sendNotification() {
+    fun sendNotification(token: String) {
         val notification = Notification.builder()
             .setTitle("Title")
             .setBody("Message")
             .build()
 
         val message = Message.builder()
-            .setToken(staticFcmToken)
+            .setToken(token)
             .setNotification(notification)
             // .putData("key1", "value1") falls daten mitgegeben werden müssen, kann man diese anhängen
             .build()
