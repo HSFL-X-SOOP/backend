@@ -12,7 +12,7 @@ import java.io.FileInputStream
 class FirebaseNotificationSender {
     private val staticFcmToken = "Here Token vom Gerät ergänzen"
     private val firebaseServiceAccountKeyPath = "Pfad zur Datei angeben"
-    private val projectId = "marlin-live-notify"
+    private val projectId = "Firebase Cloud Messaging Project Id"
 
     init {
         val serviceAccount = FileInputStream(firebaseServiceAccountKeyPath)
