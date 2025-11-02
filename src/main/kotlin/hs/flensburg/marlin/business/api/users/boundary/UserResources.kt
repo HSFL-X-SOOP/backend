@@ -29,7 +29,7 @@ fun Application.configureUsers() {
                 path = "/admin/user-profiles",
                 builder = {
                     description = "Get all user profiles (Admin only)"
-                    tags("user-profile", "admin")
+                    tags("admin")
                     request {
                         queryParameter<Long>("id") {
                             description = "Filter by user ID"
@@ -106,7 +106,7 @@ fun Application.configureUsers() {
                 path = "/admin/user-profiles/{userId}",
                 builder = {
                     description = "Get a user's profile by user ID (Admin only)"
-                    tags("user-profile", "admin")
+                    tags("admin")
                     request {
                         pathParameter<Long>("userId") {
                             description = "ID of the user"
@@ -130,7 +130,7 @@ fun Application.configureUsers() {
                 path = "/admin/user-profiles/{userId}/recent-activity",
                 builder = {
                     description = "Get a user's recent activity by user ID (Admin only)"
-                    tags("user-profile", "admin")
+                    tags("admin")
                     request {
                         pathParameter<Long>("userId") {
                             description = "ID of the user"
@@ -154,7 +154,7 @@ fun Application.configureUsers() {
                 path = "/admin/user-profiles/block",
                 builder = {
                     description = "Add a user to the login blacklist (Admin only)"
-                    tags("user-profile", "admin")
+                    tags("admin")
                     request {
                         body<BlacklistUserRequest>()
                     }
@@ -176,7 +176,7 @@ fun Application.configureUsers() {
                 path = "/admin/user-profiles",
                 builder = {
                     description = "Update a user's profile by user ID (Admin only)"
-                    tags("user-profile", "admin")
+                    tags("admin")
                     request {
                         body<UpdateUserRequest>()
                     }
@@ -198,7 +198,7 @@ fun Application.configureUsers() {
                 path = "/admin/user-profiles/{userId}",
                 builder = {
                     description = "Delete a user's profile by user ID (Admin only)"
-                    tags("user-profile", "admin")
+                    tags("admin")
                     request {
                         pathParameter<Long>("userId") {
                             description = "ID of the user"
