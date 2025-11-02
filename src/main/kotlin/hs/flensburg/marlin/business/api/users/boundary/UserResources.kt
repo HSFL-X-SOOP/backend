@@ -30,6 +30,64 @@ fun Application.configureUsers() {
                 builder = {
                     description = "Get all user profiles (Admin only)"
                     tags("user-profile", "admin")
+                    request {
+                        queryParameter<Long>("id") {
+                            description = "Filter by user ID"
+                            required = false
+                        }
+                        queryParameter<String>("email") {
+                            description = "Filter by email (case-insensitive like match)"
+                            required = false
+                        }
+                        queryParameter<Boolean>("verified") {
+                            description = "Filter by verification status"
+                            required = false
+                        }
+                        queryParameter<String>("authorityRole") {
+                            description = "Filter by authority role (USER, ADMIN, etc.)"
+                            required = false
+                        }
+                        queryParameter<List<String>>("activityRoles") {
+                            description = "Filter by activity roles (can provide multiple)"
+                            required = false
+                        }
+                        queryParameter<String>("language") {
+                            description = "Filter by preferred language"
+                            required = false
+                        }
+                        queryParameter<String>("measurementSystem") {
+                            description = "Filter by measurement system"
+                            required = false
+                        }
+                        queryParameter<String>("userCreatedAt") {
+                            description = "Filter by user creation timestamp (ISO-8601 format)"
+                            required = false
+                        }
+                        queryParameter<String>("userUpdatedAt") {
+                            description = "Filter by user update timestamp (ISO-8601 format)"
+                            required = false
+                        }
+                        queryParameter<String>("profileCreatedAt") {
+                            description = "Filter by profile creation timestamp (ISO-8601 format)"
+                            required = false
+                        }
+                        queryParameter<String>("profileUpdatedAt") {
+                            description = "Filter by profile update timestamp (ISO-8601 format)"
+                            required = false
+                        }
+                        queryParameter<String>("sort") {
+                            description = "Sort field in snake_case. Use 'field.asc' or 'field.desc' (e.g., 'id.asc')."
+                            required = false
+                        }
+                        queryParameter<Long>("limit") {
+                            description = "Sort field in snake_case. Use 'field.asc' or 'field.desc' (e.g., 'id.asc')."
+                            required = false
+                        }
+                        queryParameter<Long>("offset") {
+                            description = "Sort field in snake_case. Use 'field.asc' or 'field.desc' (e.g., 'id.asc')."
+                            required = false
+                        }
+                    }
                     response {
                         HttpStatusCode.OK to {
                             body<PageResult<UserProfile>>()
@@ -135,6 +193,28 @@ fun Application.configureUsers() {
                 val request = call.receive<UpdateUserRequest>()
                 call.respondKIO(UserService.updateProfile(request))
             }
+
+            delete(
+                path = "/admin/user-profiles/{userId}",
+                builder = {
+                    description = "Delete a user's profile by user ID (Admin only)"
+                    tags("user-profile", "admin")
+                    request {
+                        pathParameter<Long>("userId") {
+                            description = "ID of the user"
+                        }
+                    }
+                    response {
+                        HttpStatusCode.NoContent to {}
+                        HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
+                    }
+                }
+            ) {
+                val userId = call.parameters["userId"]!!.toLong()
+                call.respondKIO(UserService.deleteUser(userId))
+            }
         }
 
         authenticate(Realm.COMMON) {
@@ -206,7 +286,7 @@ fun Application.configureUsers() {
             delete(
                 path = "/user-profile",
                 builder = {
-                    description = "Delete the authenticated user's profile"
+                    description = "Delete the authenticated user from the system"
                     tags("user-profile")
                     response {
                         HttpStatusCode.NoContent to {}
@@ -217,7 +297,7 @@ fun Application.configureUsers() {
                 }
             ) {
                 val user = call.principal<LoggedInUser>()!!
-                call.respondKIO(UserService.deleteProfile(user))
+                call.respondKIO(UserService.deleteUser(user))
             }
         }
     }
