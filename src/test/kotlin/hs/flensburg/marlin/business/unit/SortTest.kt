@@ -11,11 +11,11 @@ class SortTest {
 
     @Test
     fun `test Sort toSortField with ascending order`() {
-        val sort = OrderBy("EMAIL", ascending = true)
+        val sort = OrderBy("email", ascending = true)
         val sortField = sort.toOrderField()
 
         val sqlString = sortField.toString()
-        assertTrue(sqlString.contains("EMAIL"), "Sort field should contain 'EMAIL'")
+        assertTrue(sqlString.contains("email"), "Sort field should contain 'email'")
         assertTrue(sqlString.contains("asc"), "Sort field should be ascending")
 
         println("Ascending sort SQL: $sqlString")
@@ -37,7 +37,7 @@ class SortTest {
     fun `test Sort parse with asc modifier`() {
         val sort = OrderBy.parse("email.asc")
 
-        assertEquals("EMAIL", sort.orderBy, "Sort field should be 'EMAIL'")
+        assertEquals("email", sort.orderBy, "Sort field should be 'EMAIL'")
         assertEquals(true, sort.ascending, "Sort should be ascending")
     }
 
@@ -45,7 +45,7 @@ class SortTest {
     fun `test Sort parse with desc modifier`() {
         val sort = OrderBy.parse("created_at.desc")
 
-        assertEquals("CREATED_AT", sort.orderBy, "Sort field should be 'CREATED_AT'")
+        assertEquals("created_at", sort.orderBy, "Sort field should be 'CREATED_AT'")
         assertEquals(false, sort.ascending, "Sort should be descending")
     }
 
@@ -53,7 +53,7 @@ class SortTest {
     fun `test Sort parse without modifier defaults to asc`() {
         val sort = OrderBy.parse("username")
 
-        assertEquals("USERNAME", sort.orderBy, "Sort field should be 'USERNAME'")
+        assertEquals("username", sort.orderBy, "Sort field should be 'username'")
         assertEquals(true, sort.ascending, "Sort should default to ascending")
     }
 
@@ -61,13 +61,13 @@ class SortTest {
     fun `test Sort parse with invalid modifier defaults to asc`() {
         val sort = OrderBy.parse("email.invalid")
 
-        assertEquals("EMAIL", sort.orderBy, "Sort field should be 'EMAIL'")
+        assertEquals("email", sort.orderBy, "Sort field should be 'EMAIL'")
         assertEquals(true, sort.ascending, "Invalid modifier should default to ascending")
     }
 
     @Test
     fun `test Sort toSortField generates valid jOOQ OrderField`() {
-        val sortAsc = OrderBy("EMAIL", ascending = true)
+        val sortAsc = OrderBy("email", ascending = true)
         val sortDesc = OrderBy("ID", ascending = false)
 
         val sortFieldAsc = sortAsc.toOrderField()

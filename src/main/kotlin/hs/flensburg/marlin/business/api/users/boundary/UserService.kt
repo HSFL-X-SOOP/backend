@@ -84,8 +84,14 @@ object UserService {
         )
     }
 
-    fun deleteProfile(loggedInUser: LoggedInUser): App<Error, Unit> = KIO.comprehension {
+    fun deleteUser(loggedInUser: LoggedInUser): App<Error, Unit> = KIO.comprehension {
         val user = !UserRepo.fetchById(loggedInUser.id).orDie().onNullFail { Error.BadRequest }
+
+        UserRepo.deleteById(user.id!!).orDie()
+    }
+
+    fun deleteUser(userId: Long): App<Error, Unit> = KIO.comprehension {
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.BadRequest }
 
         UserRepo.deleteById(user.id!!).orDie()
     }
