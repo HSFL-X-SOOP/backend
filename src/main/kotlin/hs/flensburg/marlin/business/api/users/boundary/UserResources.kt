@@ -80,11 +80,11 @@ fun Application.configureUsers() {
                             required = false
                         }
                         queryParameter<Long>("limit") {
-                            description = "Sort field in snake_case. Use 'field.asc' or 'field.desc' (e.g., 'id.asc')."
+                            description = "Maximum number of results to return"
                             required = false
                         }
                         queryParameter<Long>("offset") {
-                            description = "Sort field in snake_case. Use 'field.asc' or 'field.desc' (e.g., 'id.asc')."
+                            description = "The offset from the start of the results"
                             required = false
                         }
                     }
