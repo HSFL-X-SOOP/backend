@@ -8,7 +8,7 @@ import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.control.AuthRepo
-import hs.flensburg.marlin.business.api.auth.control.BlacklistHandler
+import hs.flensburg.marlin.business.api.auth.boundary.BlacklistHandler
 import hs.flensburg.marlin.business.api.auth.control.Hashing
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
@@ -19,7 +19,7 @@ import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
 import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
 import hs.flensburg.marlin.business.api.users.control.UserRepo
-import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
+import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
@@ -35,6 +35,7 @@ object AuthService {
         object OAuthRedirectRequired : Error("Redirect required")
         object LoginLimitExceeded : Error("Login limit exceeded, please try again later")
         object Blacklisted : Error("You are temporarily blocked, please try again later")
+        object Unknown : Error("Unknown error")
 
         override fun toApiError(): ApiError {
             return when (this) {
@@ -44,6 +45,7 @@ object AuthService {
                 is OAuthRedirectRequired -> ApiError.Unauthorized(message)
                 is LoginLimitExceeded -> ApiError.TooManyRequests(message)
                 is Blacklisted -> ApiError.TooManyRequests(message)
+                is Unknown -> ApiError.Unknown(message)
             }
         }
     }
@@ -65,21 +67,22 @@ object AuthService {
             this.verified = false
         }
 
-        val user = !UserRepo.insert(userRecord).orDie()
+        val userID = !UserRepo.insert(userRecord).orDie().map { it.id!! }
 
-        val accessToken = JWTAuthority.generateAccessToken(user)
+        val user = !UserRepo.fetchViewById(userID).orDie()
+
+        val accessToken = JWTAuthority.generateAccessToken(user!!)
         val refreshToken = if (credentials.rememberMe) JWTAuthority.generateRefreshToken(user) else null
-        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user)))
     }
 
     fun login(credentials: LoginRequest, ipAddress: String): App<ServiceLayerError, LoginResponse> = KIO.comprehension {
-        val user = !UserRepo.fetchByEmail(credentials.email).orDie().onNullFail { Error.PasswordIncorrect }
+        val user = !UserRepo.fetchViewByEmail(credentials.email).orDie().onNullFail { Error.PasswordIncorrect }
 
         !KIO.failOn(user.password == null) { Error.OAuthRedirectRequired }
 
-        !checkUserIsNotBlacklisted(user.id!!)
+        !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
 
         val passwordValid = Hashing.verifyPassword(credentials.password, user.password!!)
 
@@ -93,9 +96,8 @@ object AuthService {
 
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = if (credentials.rememberMe) JWTAuthority.generateRefreshToken(user) else null
-        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user)))
     }
 
     fun loginGoogleUser(authResponse: OAuthAccessTokenResponse.OAuth2): App<Error, LoginResponse> = KIO.comprehension {
@@ -116,13 +118,14 @@ object AuthService {
 
         val userId = decodedJWT.getClaim("id").asLong()
 
-        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.BadRequest }
+        val user = !UserRepo.fetchViewById(userId).orDie().onNullFail { Error.BadRequest }
+
+        !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
 
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = JWTAuthority.generateRefreshToken(user)
-        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user)))
     }
 
     fun refreshToken(refreshTokenRequest: RefreshTokenRequest): App<Error, LoginResponse> = KIO.comprehension {
@@ -137,13 +140,14 @@ object AuthService {
 
         !KIO.failOn(userId == null || email == null) { Error.BadRequest }
 
-        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.BadRequest }
+        val user = !UserRepo.fetchViewById(userId).orDie().onNullFail { Error.BadRequest }
+
+        !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
 
         val newAccessToken = JWTAuthority.generateAccessToken(user)
         val newRefreshToken = JWTAuthority.generateRefreshToken(user)
-        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(newAccessToken, newRefreshToken, profile?.let { UserProfileResponse.from(it) }))
+        KIO.ok(LoginResponse(newAccessToken, newRefreshToken, UserProfile.from(user)))
     }
 
     fun verifyEmail(verifyEmailRequest: VerifyEmailRequest): App<Error, Unit> = KIO.comprehension {
@@ -190,6 +194,8 @@ object AuthService {
         // Invert input, for better readability
         !KIO.failOn(!predict(user)) { Error.Unauthorized }
 
+        !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
+
         KIO.ok(LoggedInUser(userId, email))
     }
 
@@ -218,11 +224,15 @@ object AuthService {
             }
         }
 
-        val accessToken = JWTAuthority.generateAccessToken(user)
-        val refreshToken = JWTAuthority.generateRefreshToken(user)
-        val profile = !UserRepo.fetchProfileByUserId(user.id!!).orDie()
 
-        KIO.ok(LoginResponse(accessToken, refreshToken, profile?.let { UserProfileResponse.from(it) }))
+        val userView = !UserRepo.fetchViewById(user.id!!).orDie().onNullFail { Error.Unknown }
+
+        !BlacklistHandler.checkUserIsNotBlacklisted(userView.id!!)
+
+        val accessToken = JWTAuthority.generateAccessToken(userView)
+        val refreshToken = JWTAuthority.generateRefreshToken(userView)
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(userView)))
     }
 
     private fun checkFailedLoginLimitExceeded(
@@ -237,17 +247,5 @@ object AuthService {
         } else {
             KIO.unit
         }
-    }
-
-    private fun checkUserIsNotBlacklisted(
-        userId: Long
-    ): App<Error, Unit> = KIO.comprehension {
-        val blacklist = !AuthRepo.fetchUserLoginBlacklist(userId).orDie()
-
-        if (blacklist != null && blacklist.blockedUntil!!.isAfter(LocalDateTime.now())) {
-            !KIO.fail(Error.Blacklisted)
-        }
-
-        KIO.unit
     }
 }

@@ -5,13 +5,18 @@ import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.Page
+import hs.flensburg.marlin.business.PageResult
 import hs.flensburg.marlin.business.ServiceLayerError
-import hs.flensburg.marlin.business.api.auth.boundary.AuthService
+import hs.flensburg.marlin.business.api.auth.boundary.BlacklistHandler
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.users.control.UserRepo
+import hs.flensburg.marlin.business.api.users.entity.BlacklistUserRequest
 import hs.flensburg.marlin.business.api.users.entity.CreateUserProfileRequest
 import hs.flensburg.marlin.business.api.users.entity.UpdateUserProfileRequest
-import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
+import hs.flensburg.marlin.business.api.users.entity.UpdateUserRequest
+import hs.flensburg.marlin.business.api.users.entity.UserProfile
+import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
 
 object UserService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -26,32 +31,61 @@ object UserService {
         }
     }
 
-    fun getProfile(userId: Long): App<Error, UserProfileResponse> = KIO.comprehension {
-        val profile = !UserRepo.fetchProfileByUserId(userId).orDie().onNullFail { Error.NotFound }
-        KIO.ok(UserProfileResponse.from(profile))
+    fun getProfiles(page: Page<UserSearchParameters>): App<Error, PageResult<UserProfile>> = KIO.comprehension {
+        UserRepo.fetch(page).orDie()
+    }
+
+    fun getProfile(userId: Long): App<Error, UserProfile> = KIO.comprehension {
+        UserRepo.fetchViewById(userId).orDie().onNullFail { Error.NotFound }.map { UserProfile.from(it) }
+    }
+
+    fun getRecentActivity(userId: Long): App<Error, PageResult<String>> = KIO.comprehension {
+        UserRepo.fetchRecentActivity(userId).orDie()
     }
 
     fun createProfile(
         userId: Long,
         profile: CreateUserProfileRequest
-    ): App<Error, UserProfileResponse> = KIO.comprehension {
-        val created = !UserRepo.insertProfile(userId, profile.roles, profile.language, profile.measurementSystem).orDie()
-        KIO.ok(UserProfileResponse.from(created))
+    ): App<Error, UserProfile> = KIO.comprehension {
+        !UserRepo.insertProfile(userId, profile.roles, profile.language, profile.measurementSystem).orDie()
+        UserRepo.fetchViewById(userId).orDie().onNullFail { Error.NotFound }.map { UserProfile.from(it) }
     }
 
-    fun updateProfile(userId: Long, request: UpdateUserProfileRequest): App<Error, UserProfileResponse> = KIO.comprehension {
-        val profile = !UserRepo.updateProfile(
+    fun updateProfile(userId: Long, request: UpdateUserProfileRequest): App<Error, UserProfile> = KIO.comprehension {
+        !UserRepo.updateProfile(
             userId = userId,
             language = request.language,
             roles = request.roles,
             measurementSystem = request.measurementSystem
         ).orDie().onNullFail { Error.NotFound }
 
-        KIO.ok(UserProfileResponse.from(profile))
+        UserRepo.fetchViewById(userId).orDie().onNullFail { Error.NotFound }.map { UserProfile.from(it) }
     }
 
-    fun deleteProfile(loggedInUser: LoggedInUser): App<AuthService.Error, Unit> = KIO.comprehension {
-        val user = !UserRepo.fetchById(loggedInUser.id).orDie().onNullFail { AuthService.Error.BadRequest }
+    fun updateProfile(
+        request: UpdateUserRequest
+    ): App<Error, Unit> = KIO.comprehension {
+        UserRepo.updateUser(
+            request.userId,
+            request.authorityRole,
+            request.verified
+        ).orDie().onNullFail { Error.NotFound }.map { }
+    }
+
+    fun addUserToBlacklist(
+        request: BlacklistUserRequest
+    ): App<ServiceLayerError, Unit> = KIO.comprehension {
+        BlacklistHandler.addUserToBlacklist(
+            request.userId,
+            ipAddress = null,
+            note = request.reason,
+            durationMinutes = request.blockUntil,
+            sendNotificationEmail = false
+        )
+    }
+
+    fun deleteProfile(loggedInUser: LoggedInUser): App<Error, Unit> = KIO.comprehension {
+        val user = !UserRepo.fetchById(loggedInUser.id).orDie().onNullFail { Error.BadRequest }
 
         UserRepo.deleteById(user.id!!).orDie()
     }
