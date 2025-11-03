@@ -16,6 +16,7 @@ import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
 import hs.flensburg.marlin.database.generated.tables.references.LOCATION
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENT
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENTTYPE
+import hs.flensburg.marlin.database.generated.tables.references.POTENTIAL_SENSOR
 import hs.flensburg.marlin.database.generated.tables.references.SENSOR
 import java.time.OffsetDateTime
 
@@ -43,9 +44,10 @@ object SensorRepo {
             .fetchInto(Measurement::class.java)
     }
 
-    fun fetchLocationsWithLatestMeasurements(timezone: String): JIO<List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
-        // Query to fetch only the newest measurement within the last 2 hours for each location
-        val sql = """
+    fun fetchLocationsWithLatestMeasurements(timezone: String): JIO<List<LocationWithLatestMeasurementsDTO>> =
+        Jooq.query {
+            // Query to fetch only the newest measurement within the last 2 hours for each location
+            val sql = """
         WITH latest AS (
           SELECT DISTINCT ON (m.location_id, m.type_id)
             m.sensor_id,
@@ -127,7 +129,7 @@ object SensorRepo {
             ).map { (location, enrichedMeasurements) ->
                 LocationWithLatestMeasurementsDTO(location, enrichedMeasurements)
             }
-    }
+        }
 
     fun fetchLocationByIDWithMeasurementsWithinTimespan(
         locationId: Long,
@@ -232,18 +234,18 @@ object SensorRepo {
         val (useRaw, bucketWidth, intervalCondition) = when (timeRange.lowercase()) {
             "24h" -> Triple(true, null, "m.time >= NOW() - INTERVAL '24 hours'")
             "48h" -> Triple(true, null, "m.time >= NOW() - INTERVAL '48 hours'")
-            "7d"  -> Triple(false, "2 hours", "m.time >= NOW() - INTERVAL '7 days'")
+            "7d" -> Triple(false, "2 hours", "m.time >= NOW() - INTERVAL '7 days'")
             "30d" -> Triple(false, "6 hours", "m.time >= NOW() - INTERVAL '30 days'")
-            "90d"  -> Triple(false, "12 hours","m.time >= NOW() - INTERVAL '90 days'")
-            "180d" -> Triple(false, "1 day",   "m.time >= NOW() - INTERVAL '180 days'")
-            "1y"  -> Triple(false, "2 day", "m.time >= NOW() - INTERVAL '1 years'")
-            else  -> Triple(true, null, "m.time >= NOW() - INTERVAL '24 hours'")
+            "90d" -> Triple(false, "12 hours", "m.time >= NOW() - INTERVAL '90 days'")
+            "180d" -> Triple(false, "1 day", "m.time >= NOW() - INTERVAL '180 days'")
+            "1y" -> Triple(false, "2 day", "m.time >= NOW() - INTERVAL '1 years'")
+            else -> Triple(true, null, "m.time >= NOW() - INTERVAL '24 hours'")
         }
 
         val sql =
             if (useRaw)
-        // Fetch with raw sql
-    """
+            // Fetch with raw sql
+                """
         SELECT
           l.id AS loc_id,
           l.name AS loc_name,
@@ -269,9 +271,9 @@ object SensorRepo {
           AND $intervalCondition
         ORDER BY m.time DESC;
     """.trimIndent()
-        else
-        // fetch with time_buckets to get average
-    """
+            else
+            // fetch with time_buckets to get average
+                """
         SELECT
           l.id AS loc_id,
           l.name AS loc_name,
@@ -343,6 +345,24 @@ object SensorRepo {
         grouped.entries.firstOrNull()?.let { (location, measurements) ->
             LocationWithLatestMeasurementsDTO(location, measurements)
         }
+    }
+
+    fun countAllActiveSensors(): JIO<Int> = Jooq.query {
+        selectCount()
+            .from(POTENTIAL_SENSOR)
+            .where(POTENTIAL_SENSOR.IS_ACTIVE.eq(true))
+            .fetchOneInto(Int::class.java) ?: 0
+    }
+
+    fun countAllMeasurementsToday(): JIO<Int> = Jooq.query {
+        selectCount()
+            .from(MEASUREMENT)
+            .where(
+                MEASUREMENT.TIME.greaterOrEqual(
+                    OffsetDateTime.now().toLocalDate().atStartOfDay().atOffset(OffsetDateTime.now().offset)
+                )
+            )
+            .fetchOneInto(Int::class.java) ?: 0
     }
 
 }
