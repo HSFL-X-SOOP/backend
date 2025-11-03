@@ -35,7 +35,7 @@ fun main(args: Array<String>) {
         Flyway.configure()
             .driver("org.postgresql.Driver")
             .dataSource(dsl)
-            .locations("filesystem:src/main/resources/db/migration", "filesystem:src/main/resources/db/views")
+            .locations("classpath:db/migration", "classpath:db/views")
             .schemas("marlin")
     ).migrate()
 
