@@ -24,6 +24,12 @@ object LocationRepo {
             .fetchInto(Location::class.java)
     }
 
+    fun countAllLocations(): JIO<Int> = Jooq.query {
+        selectCount()
+            .from(LOCATION)
+            .fetchOneInto(Int::class.java) ?: 0
+    }
+
     fun updateLocation(
         id: Long,
         name: String?,
@@ -70,6 +76,7 @@ object LocationRepo {
             .where(LOCATION_IMAGE.LOCATION_ID.eq(id))
             .fetchOneInto(LocationImage::class.java)
     }
+
     fun deleteLocationImage(id: Long): JIO<Unit> = Jooq.query {
         deleteFrom(LOCATION_IMAGE)
             .where(LOCATION_IMAGE.LOCATION_ID.eq(id))

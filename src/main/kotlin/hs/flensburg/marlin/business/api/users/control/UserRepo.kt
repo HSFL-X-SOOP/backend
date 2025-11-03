@@ -111,6 +111,12 @@ object UserRepo {
         )
     }
 
+    fun countAllUsers(): JIO<Int> = Jooq.query {
+        selectCount()
+            .from(USER)
+            .fetchOneInto(Int::class.java) ?: 0
+    }
+
     fun insertProfile(
         userId: Long,
         roles: List<UserActivityRole>,

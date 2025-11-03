@@ -15,11 +15,13 @@ fun Application.configurePotentialSensors() {
     routing {
         authenticate(Realm.ADMIN) {
             get(
-                path = "/potential-sensors",
+                path = "/admin/potential-sensors",
                 builder = {
                     description = "Get all potential sensors. Requires admin role."
                     tags("admin", "potential-sensors")
                     securitySchemeNames("BearerAuthAdmin")
+                    description = "Get all potential sensors"
+                    tags("admin")
                     response {
                         HttpStatusCode.OK to {
                             description = "List of potential sensors"
@@ -38,7 +40,7 @@ fun Application.configurePotentialSensors() {
                 call.respondKIO(PotentialSensorService.getAllPotentialSensors())
             }
             get(
-                path = "/potential-sensors-toggle/{id}",
+                path = "/admin/potential-sensors-toggle/{id}",
                 builder = {
                     description = "Toggle active state of potential sensors. Requires admin role."
                     tags("admin", "potential-sensors")
