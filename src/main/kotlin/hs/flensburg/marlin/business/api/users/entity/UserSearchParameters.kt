@@ -48,8 +48,7 @@ data class UserSearchParameters(
                 email = queryParams["email"],
                 verified = queryParams["verified"]?.toBooleanStrictOrNull(),
                 authorityRole = queryParams["authorityRole"]?.let { UserAuthorityRole.valueOf(it.uppercase()) },
-                activityRoles = queryParams.getAll("activityRoles")?.map { UserActivityRole.valueOf(it.uppercase()) }
-                    ?: emptyList(),
+                activityRoles = queryParams.getAll("activityRoles")?.map { UserActivityRole.valueOf(it.uppercase()) } ?: emptyList(),
                 language = queryParams["language"]?.let { Language.valueOf(it) },
                 measurementSystem = queryParams["measurementSystem"]?.let { MeasurementSystem.valueOf(it) },
                 userCreatedAt = queryParams["userCreatedAt"]?.let { LocalDateTime.parse(it) },

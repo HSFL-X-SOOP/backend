@@ -31,7 +31,7 @@ object UserRepo {
 
     fun fetch(page: Page<UserSearchParameters>): JIO<PageResult<UserProfile>> = Jooq.query {
         val user = selectFrom(USER_VIEW)
-            .where(page.queryParameters.toCondition())
+            .where(page.parameterWrapper.toCondition())
             .orderBy(page.order.toOrderField())
             .limit(page.limit)
             .offset(page.offset)
@@ -40,7 +40,7 @@ object UserRepo {
 
         val count = selectCount()
             .from(USER_VIEW)
-            .where(page.queryParameters.toCondition())
+            .where(page.parameterWrapper.toCondition())
             .fetchOne(0, Long::class.java)!!
 
         val totalCount = selectCount()

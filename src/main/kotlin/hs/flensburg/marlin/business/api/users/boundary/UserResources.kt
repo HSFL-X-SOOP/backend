@@ -97,7 +97,7 @@ fun Application.configureUsers() {
             ) {
                 call.respondKIO(
                     UserService.getProfiles(
-                        Page.from<UserSearchParameters>(call.request.queryParameters)
+                        Page.from(call.request.queryParameters, UserSearchParameters)
                     )
                 )
             }
