@@ -22,7 +22,7 @@ fun Application.configureAdmin() {
                     tags("admin")
                     response {
                         HttpStatusCode.OK to {
-                            body<PageResult<Dashboard.DashboardInfo>>()
+                            body<Dashboard.DashboardInfo>()
                         }
                     }
                 }
