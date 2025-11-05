@@ -25,11 +25,16 @@ fun Application.configureUsers() {
                 builder = {
                     description = "Get the authenticated user's profile"
                     tags("user-profile")
+                    securitySchemeNames("BearerAuth", "BearerAuthAdmin")
                     response {
                         HttpStatusCode.OK to {
                             body<UserProfileResponse>()
                         }
                         HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "Missing or invalid JWT token"
                             body<String>()
                         }
                     }
@@ -44,6 +49,7 @@ fun Application.configureUsers() {
                 builder = {
                     description = "Create a user profile"
                     tags("user-profile")
+                    securitySchemeNames("BearerAuth", "BearerAuthAdmin")
                     request {
                         body<CreateUserProfileRequest>()
                     }
@@ -52,6 +58,10 @@ fun Application.configureUsers() {
                             body<UserProfileResponse>()
                         }
                         HttpStatusCode.BadRequest to {
+                            body<String>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "Missing or invalid JWT token"
                             body<String>()
                         }
                     }
@@ -67,6 +77,7 @@ fun Application.configureUsers() {
                 builder = {
                     description = "Update the authenticated user's profile"
                     tags("user-profile")
+                    securitySchemeNames("BearerAuth", "BearerAuthAdmin")
                     request {
                         body<UpdateUserProfileRequest>()
                     }
@@ -75,6 +86,10 @@ fun Application.configureUsers() {
                             body<UserProfileResponse>()
                         }
                         HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "Missing or invalid JWT token"
                             body<String>()
                         }
                     }
@@ -90,9 +105,14 @@ fun Application.configureUsers() {
                 builder = {
                     description = "Delete the authenticated user's profile"
                     tags("user-profile")
+                    securitySchemeNames("BearerAuth", "BearerAuthAdmin")
                     response {
                         HttpStatusCode.NoContent to {}
                         HttpStatusCode.BadRequest to {
+                            body<String>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "Missing or invalid JWT token"
                             body<String>()
                         }
                     }

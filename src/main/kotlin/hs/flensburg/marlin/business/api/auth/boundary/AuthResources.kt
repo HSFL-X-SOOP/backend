@@ -13,6 +13,7 @@ import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
 import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
 import hs.flensburg.marlin.business.api.email.boundary.EmailService
+import hs.flensburg.marlin.business.api.openAPI.AuthOpenAPISpec
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.kioEnv
@@ -22,7 +23,6 @@ import io.github.smiley4.ktoropenapi.get
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.Authentication
@@ -90,12 +90,7 @@ fun Application.configureAuth(envConfig: Config) {
 
     routing {
         authenticate("auth-oauth-google") {
-            get(
-                path = "/login/google",
-                builder = {
-                    tags("auth")
-                    description = "Redirect to Google for OAuth login"
-                }) {}
+            get("/login/google", AuthOpenAPISpec.loginGoogle) {}
 
             get("/auth/google/callback", { hidden = true }) {
 
@@ -113,8 +108,7 @@ fun Application.configureAuth(envConfig: Config) {
                         }
                     )
 
-                val callbackUrl =
-                    if (envConfig.mode == Config.Mode.STAGING || envConfig.mode == Config.Mode.PROD) "${envConfig.frontendUrl}/oauth-callback" else "${envConfig.frontendUrl}/google/callback"
+                val callbackUrl = "${envConfig.frontendUrl}/oauth-callback"
 
                 val redirectUrl = buildString {
                     append(callbackUrl)
@@ -128,47 +122,13 @@ fun Application.configureAuth(envConfig: Config) {
             }
         }
 
-        post(
-            path = "/register",
-            builder = {
-                description = "Register a new user"
-                tags("auth")
-                request {
-                    body<RegisterRequest>()
-                }
-                response {
-                    HttpStatusCode.Created to {
-                        body<LoginResponse>()
-                    }
-                }
-            }
-        ) {
+        post("/register", AuthOpenAPISpec.register) {
             val registerRequest = call.receive<RegisterRequest>()
 
             call.respondKIO(AuthService.register(registerRequest))
         }
 
-        post(
-            path = "/login",
-            builder = {
-                description = "Login an existing user"
-                tags("auth")
-                request {
-                    body<LoginRequest>()
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<LoginResponse>()
-                    }
-                    HttpStatusCode.Unauthorized to {
-                        body<String>()
-                    }
-                    HttpStatusCode.TooManyRequests to {
-                        body<String>()
-                    }
-                }
-            }
-        ) {
+        post("/login", AuthOpenAPISpec.login) {
             val loginRequest = call.receive<LoginRequest>()
             val clientIp = call.request.origin.remoteAddress
             val env = call.kioEnv
@@ -194,128 +154,38 @@ fun Application.configureAuth(envConfig: Config) {
             )
         }
 
-        post(
-            path = "/login/google/android",
-            builder = {
-                description = "Login with Google ID token from Android"
-                tags("auth")
-                request {
-                    body<GoogleLoginRequest>()
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<LoginResponse>()
-                    }
-                    HttpStatusCode.BadRequest to {
-                        body<String>()
-                    }
-                }
-            }
-        ) {
+        post("/login/google/android", AuthOpenAPISpec.loginGoogleAndroid) {
             val googleLoginRequest = call.receive<GoogleLoginRequest>()
 
             call.respondKIO(AuthService.loginGoogleUser(googleLoginRequest.idToken))
         }
 
-        post(
-            path = "/auth/refresh",
-            builder = {
-                description = "Refresh an access token using a refresh token"
-                tags("auth")
-                request {
-                    body<RefreshTokenRequest>()
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<LoginResponse>()
-                    }
-                }
-            }
-        ) {
+        post("/auth/refresh", AuthOpenAPISpec.refreshToken) {
             val refreshToken = call.receive<RefreshTokenRequest>()
 
             call.respondKIO(AuthService.refreshToken(refreshToken))
         }
 
-        post(
-            path = "/magic-link",
-            builder = {
-                description = "Request a magic link for a passwordless login"
-                tags("auth")
-                request {
-                    body<MagicLinkRequest>()
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<Unit>()
-                    }
-                }
-            }
-        ) {
+        post("/magic-link", AuthOpenAPISpec.requestMagicLink) {
             val magicLinkRequest = call.receive<MagicLinkRequest>()
 
             call.respondKIO(EmailService.sendMagicLinkEmail(magicLinkRequest.email))
         }
 
-        post(
-            path = "/magic-link/login",
-            builder = {
-                description = "Login using a magic link"
-                tags("auth")
-                request {
-                    body<MagicLinkLoginRequest>()
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<LoginResponse>()
-                    }
-                    HttpStatusCode.Unauthorized to {
-                        body<String>()
-                    }
-                }
-            }
-        ) {
+        post("/magic-link/login", AuthOpenAPISpec.loginViaMagicLink) {
             val magicLinkLoginRequest = call.receive<MagicLinkLoginRequest>()
 
             call.respondKIO(AuthService.loginViaMagicLink(magicLinkLoginRequest))
         }
 
-        post(
-            path = "/verify-email",
-            builder = {
-                description = "Verify the user's email address"
-                tags("auth")
-                request {
-                    body<VerifyEmailRequest>()
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<Unit>()
-                    }
-                    HttpStatusCode.BadRequest to {
-                        body<String>()
-                    }
-                }
-            }
-        ) {
+        post("/verify-email", AuthOpenAPISpec.verifyEmail) {
             val verifyEmailRequest = call.receive<VerifyEmailRequest>()
 
             call.respondKIO(AuthService.verifyEmail(verifyEmailRequest))
         }
 
         authenticate(Realm.COMMON) {
-            post(
-                path = "/send-verification-email",
-                builder = {
-                    description = "Send a verification email to the authenticated user"
-                    tags("auth")
-                    response {
-                        HttpStatusCode.OK to {
-                            body<Unit>()
-                        }
-                    }
-                }
-            ) {
+            post("/send-verification-email", AuthOpenAPISpec.sendVerificationEmail) {
                 val user = call.principal<LoggedInUser>()!!
 
                 call.respondKIO(EmailService.sendVerificationEmail(user.id))
