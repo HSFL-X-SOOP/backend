@@ -16,7 +16,6 @@ import hs.flensburg.marlin.business.api.sensors.entity.mapToLocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.toLocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 
@@ -45,7 +44,7 @@ object SensorService {
 
     fun getAllLocations(): App<Error, List<LocationDTO>> = KIO.comprehension {
         val locations = !SensorRepo.fetchAllLocations().orDie().onNullFail { Error.NotFound }
-        KIO.ok(locations.map { it.toLocationDTO() })
+        KIO.ok(locations.map { LocationDTO.fromLocation(it) })
     }
 
     fun getAllMeasurements(): App<Error, List<MeasurementDTO>> = KIO.comprehension {

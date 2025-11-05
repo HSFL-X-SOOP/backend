@@ -4,6 +4,7 @@ import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
+import hs.flensburg.marlin.plugins.receiveImageFile
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.delete
 import io.github.smiley4.ktoropenapi.get
@@ -130,17 +131,8 @@ fun Application.configureLocation() {
                 val id = call.parameters["id"]?.toLongOrNull()
                     ?: return@post call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-                try {
-                    val imageBytes = call.receiveImageFile()
-                    call.respondKIO(LocationService.createLocationImage(id, imageBytes))
-                } catch (e: BadRequestException) {
-                    call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
-                } catch (e: UnsupportedMediaTypeException) {
-                    call.respondText(
-                        e.message ?: "Unsupported media type",
-                        status = HttpStatusCode.UnsupportedMediaType
-                    )
-                }
+                val imageBytes = call.receiveImageFile()
+                call.respondKIO(LocationService.createLocationImage(id, imageBytes))
             }
 
             put("/location/{id}/image", {
@@ -168,17 +160,8 @@ fun Application.configureLocation() {
                 val id = call.parameters["id"]?.toLongOrNull()
                     ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-                try {
-                    val imageBytes = call.receiveImageFile()
-                    call.respondKIO(LocationService.updateLocationImage(id, imageBytes))
-                } catch (e: BadRequestException) {
-                    call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
-                } catch (e: UnsupportedMediaTypeException) {
-                    call.respondText(
-                        e.message ?: "Unsupported media type",
-                        status = HttpStatusCode.UnsupportedMediaType
-                    )
-                }
+                val imageBytes = call.receiveImageFile()
+                call.respondKIO(LocationService.updateLocationImage(id, imageBytes))
             }
 
             delete(

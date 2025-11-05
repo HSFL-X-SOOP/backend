@@ -8,7 +8,6 @@ import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.control.AuthRepo
-import hs.flensburg.marlin.business.api.auth.boundary.BlacklistHandler
 import hs.flensburg.marlin.business.api.auth.control.Hashing
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
@@ -25,7 +24,6 @@ import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.jwt.JWTCredential
-import java.time.LocalDateTime
 
 object AuthService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -191,7 +189,7 @@ object AuthService {
         !KIO.failOn(userId == null || email == null) { Error.Unauthorized }
 
         val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
-        // Invert input, for better readability
+        // Invert "predict", so the lambda in the function call is the "positive" case.
         !KIO.failOn(!predict(user)) { Error.Unauthorized }
 
         !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)

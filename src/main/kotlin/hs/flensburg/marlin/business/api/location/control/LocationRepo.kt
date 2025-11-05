@@ -44,8 +44,6 @@ object LocationRepo {
             .fetchOneInto(Location::class.java)
     }
 
-    // IMAGE
-
     fun insertLocationImage(id: Long, imageBytes: ByteArray): JIO<Unit> = Jooq.query {
         insertInto(LOCATION_IMAGE)
             .set(LOCATION_IMAGE.LOCATION_ID, id)

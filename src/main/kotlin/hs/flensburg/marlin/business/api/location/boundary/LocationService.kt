@@ -9,7 +9,6 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
-import hs.flensburg.marlin.business.api.location.entity.toDetailedLocationDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.toJavaLocalTime
 
 object LocationService {
@@ -29,7 +28,7 @@ object LocationService {
 
     fun getLocationByID(id: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
         val location = !LocationRepo.fetchLocationByID(id).orDie().onNullFail { Error.NotFound }
-        KIO.ok(location.toDetailedLocationDTO())
+        KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
 
     fun updateLocationByID(id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> = KIO.comprehension {
@@ -42,33 +41,30 @@ object LocationService {
             openingTime = request.openingTime?.toJavaLocalTime(),
             closingTime = request.closingTime?.toJavaLocalTime()
         ).orDie().onNullFail { Error.NotFound }
-        KIO.ok(location.toDetailedLocationDTO())
+        KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
 
     fun getLocationImage(id: Long): App<Error, ByteArray?> = KIO.comprehension {
-        val locationImage = !LocationRepo.fetchLocationImage(id = id).orDie().onNullFail { Error.ImageNotFound }
-        KIO.ok(locationImage.image)
+        LocationRepo.fetchLocationImage(id = id).orDie().onNullFail { Error.ImageNotFound }
+            .map { it.image }
     }
 
     fun updateLocationImage(id: Long, imageBytes: ByteArray): App<Error, Unit> = KIO.comprehension {
-        !LocationRepo.updateLocationImage(
+        LocationRepo.updateLocationImage(
             id = id,
             imageBytes = imageBytes
         ).orDie().onNullFail { Error.ImageNotFound }
-        KIO.unit
     }
 
     fun createLocationImage(id: Long, imageBytes: ByteArray): App<Error, Unit> = KIO.comprehension {
-        !LocationRepo.insertLocationImage(
+        LocationRepo.insertLocationImage(
             id = id,
             imageBytes = imageBytes
         ).orDie().onNullFail { Error.ImageNotFound }
-        KIO.unit
     }
     fun deleteLocationImage(id: Long): App<Error, Unit> = KIO.comprehension {
-        !LocationRepo.deleteLocationImage(
+        LocationRepo.deleteLocationImage(
             id = id
         ).orDie().onNullFail { Error.ImageNotFound }
-        KIO.unit
     }
 }

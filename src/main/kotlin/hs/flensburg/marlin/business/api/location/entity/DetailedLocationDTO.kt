@@ -14,14 +14,19 @@ data class DetailedLocationDTO(
     val openingTime: LocalTime?,
     val closingTime: LocalTime?,
     val coordinates: GeoPoint?
-)
+) {
+    companion object {
+        fun fromLocation(location: Location): DetailedLocationDTO {
+            return DetailedLocationDTO(
+                id = location.id,
+                name = location.name,
+                description = location.description,
+                address = location.address,
+                openingTime = location.openingTime?.toKotlinLocalTime(),
+                closingTime = location.closingTime?.toKotlinLocalTime(),
+                coordinates = location.coordinates
+            )
+        }
+    }
+}
 
-fun Location.toDetailedLocationDTO() = DetailedLocationDTO(
-    id = this.id,
-    name = this.name,
-    description = this.description,
-    address = this.address,
-    openingTime = this.openingTime?.toKotlinLocalTime(),
-    closingTime = this.closingTime?.toKotlinLocalTime(),
-    coordinates = this.coordinates
-)
