@@ -48,6 +48,22 @@ object ReverseGeoCodingService {
 
                 if (location.name.isNullOrBlank()) {
                     name = parts.firstOrNull().orEmpty()
+
+                    val cityOrTown = response.address?.city
+                        ?: response.address?.town
+                        ?: response.address?.village
+                        ?: response.address?.suburb
+                        ?: ""
+
+                    // Append city name if not already part of the name
+                    if (!cityOrTown.isBlank()) {
+                        val normalizedName = name.lowercase()
+                        val normalizedCity = cityOrTown.lowercase()
+
+                        if (!normalizedName.contains(normalizedCity)) {
+                            name = "$name, $cityOrTown"
+                        }
+                    }
                 }
 
                 if (location.address.isNullOrBlank()) {
