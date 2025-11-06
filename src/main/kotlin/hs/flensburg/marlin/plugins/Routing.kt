@@ -102,16 +102,16 @@ enum class Realm(val value: String) {
     override fun toString(): String = value
 }
 
-suspend fun ApplicationCall.receiveImageFile(): ByteArray {
+suspend fun ApplicationCall.receiveImageFile(): Pair<ByteArray, String> {
     var imageBytes: ByteArray? = null
-    var contentType: String?
+    var contentType: String? = null
 
     val multipart = receiveMultipart()
     multipart.forEachPart { part ->
         if (part is PartData.FileItem && part.name == "image") {
-            contentType = part.contentType?.toString()
+            contentType = part.contentType.toString()
 
-            if (contentType?.startsWith("image/") != true) {
+            if (!contentType.startsWith("image/")) {
                 part.dispose()
                 throw UnsupportedMediaTypeException(null)
             }
@@ -122,9 +122,9 @@ suspend fun ApplicationCall.receiveImageFile(): ByteArray {
         return@forEachPart
     }
 
-    if (imageBytes == null) {
+    if (imageBytes == null || contentType == null) {
         throw BadRequestException("No image file provided")
     }
 
-    return imageBytes
+    return imageBytes to contentType
 }

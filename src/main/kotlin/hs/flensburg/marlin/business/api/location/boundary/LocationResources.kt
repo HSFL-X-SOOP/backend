@@ -1,9 +1,11 @@
 package hs.flensburg.marlin.business.api.location.boundary
 
+import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
+import hs.flensburg.marlin.plugins.kioEnv
 import hs.flensburg.marlin.plugins.receiveImageFile
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.delete
@@ -14,6 +16,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.server.application.Application
 import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondFile
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 
@@ -70,7 +74,16 @@ fun Application.configureLocation() {
             val id = call.parameters["id"]?.toLongOrNull()
                 ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            call.respondKIO(LocationService.getLocationImage(id))
+            val image = LocationService.getLocationImage(id).unsafeRunSync(call.kioEnv)
+                .fold(
+                    onSuccess = { it },
+                    onError = { error ->
+                        val e = error.failures().first().toApiError()
+                        call.respond(e.statusCode, e.message)
+                        return@get
+                    }
+                )
+            call.respondFile(image)
         }
 
         authenticate(Realm.HARBOUR_CONTROL) {
@@ -131,8 +144,8 @@ fun Application.configureLocation() {
                 val id = call.parameters["id"]?.toLongOrNull()
                     ?: return@post call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-                val imageBytes = call.receiveImageFile()
-                call.respondKIO(LocationService.createLocationImage(id, imageBytes))
+                val (imageBytes, contentType) = call.receiveImageFile()
+                call.respondKIO(LocationService.createLocationImage(id, imageBytes, contentType))
             }
 
             put("/location/{id}/image", {
@@ -160,8 +173,8 @@ fun Application.configureLocation() {
                 val id = call.parameters["id"]?.toLongOrNull()
                     ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-                val imageBytes = call.receiveImageFile()
-                call.respondKIO(LocationService.updateLocationImage(id, imageBytes))
+                val (imageBytes, contentType) = call.receiveImageFile()
+                call.respondKIO(LocationService.updateLocationImage(id, imageBytes, contentType))
             }
 
             delete(

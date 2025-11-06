@@ -10,6 +10,7 @@ import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
 import hs.flensburg.marlin.business.api.timezones.boundary.toJavaLocalTime
+import java.io.File
 
 object LocationService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -44,27 +45,54 @@ object LocationService {
         KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
 
-    fun getLocationImage(id: Long): App<Error, ByteArray?> = KIO.comprehension {
-        LocationRepo.fetchLocationImage(id = id).orDie().onNullFail { Error.ImageNotFound }
-            .map { it.image }
+    fun getLocationImage(id: Long): App<Error, File> = KIO.comprehension {
+        val locationImage = !LocationRepo.fetchLocationImage(id = id).orDie().onNullFail { Error.ImageNotFound }
+
+        !KIO.failOn(locationImage.data == null || locationImage.contentType == null) { Error.ImageNotFound }
+
+        val extension = extension(locationImage.contentType!!)
+
+        val tempFile = kotlin.io.path.createTempFile(suffix = extension).toFile()
+        tempFile.writeBytes(locationImage.data!!)
+        tempFile.deleteOnExit()
+
+        KIO.ok(tempFile)
     }
 
-    fun updateLocationImage(id: Long, imageBytes: ByteArray): App<Error, Unit> = KIO.comprehension {
+    fun updateLocationImage(id: Long, imageBytes: ByteArray, contentType: String): App<Error, Unit> = KIO.comprehension {
         LocationRepo.updateLocationImage(
             id = id,
-            imageBytes = imageBytes
+            imageBytes = imageBytes,
+            contentType = contentType
         ).orDie().onNullFail { Error.ImageNotFound }
     }
 
-    fun createLocationImage(id: Long, imageBytes: ByteArray): App<Error, Unit> = KIO.comprehension {
+    fun createLocationImage(id: Long, imageBytes: ByteArray,contentType: String): App<Error, Unit> = KIO.comprehension {
         LocationRepo.insertLocationImage(
             id = id,
-            imageBytes = imageBytes
+            imageBytes = imageBytes,
+            contentType = contentType
         ).orDie().onNullFail { Error.ImageNotFound }
     }
     fun deleteLocationImage(id: Long): App<Error, Unit> = KIO.comprehension {
         LocationRepo.deleteLocationImage(
             id = id
         ).orDie().onNullFail { Error.ImageNotFound }
+    }
+
+    private fun extension(contentType: String): String {
+        return when (contentType) {
+            "image/apng" -> ".apng"
+            "image/webp" -> ".webp"
+            "image/avif" -> ".avif"
+            "image/bmp" -> ".bmp"
+            "image/vnd.microsoft.icon" -> ".ico"
+            "image/tiff" -> ".tiff"
+            "image/png" -> ".png"
+            "image/jpeg" -> ".jpg"
+            "image/gif" -> ".gif"
+            "image/svg+xml" -> ".svg"
+            else -> ".bin"
+        }
     }
 }

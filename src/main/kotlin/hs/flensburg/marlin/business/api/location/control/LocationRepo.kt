@@ -44,23 +44,25 @@ object LocationRepo {
             .fetchOneInto(Location::class.java)
     }
 
-    fun insertLocationImage(id: Long, imageBytes: ByteArray): JIO<Unit> = Jooq.query {
+    fun insertLocationImage(id: Long, imageBytes: ByteArray, contentType: String): JIO<Unit> = Jooq.query {
         insertInto(LOCATION_IMAGE)
             .set(LOCATION_IMAGE.LOCATION_ID, id)
-            .set(LOCATION_IMAGE.IMAGE, imageBytes)
+            .set(LOCATION_IMAGE.DATA, imageBytes)
+            .set(LOCATION_IMAGE.CONTENT_TYPE, contentType)
             .execute()
     }
 
-    fun updateLocationImage(id: Long, imageBytes: ByteArray): JIO<Unit> = Jooq.query {
+    fun updateLocationImage(id: Long, imageBytes: ByteArray, contentType: String): JIO<Unit> = Jooq.query {
         update(LOCATION_IMAGE)
-            .set(LOCATION_IMAGE.IMAGE, imageBytes)
+            .set(LOCATION_IMAGE.DATA, imageBytes)
+            .set(LOCATION_IMAGE.CONTENT_TYPE, contentType)
             .set(LOCATION_IMAGE.UPLOADED_AT, LocalDateTime.now())
             .where(LOCATION_IMAGE.LOCATION_ID.eq(id))
             .execute()
     }
 
     fun fetchLocationImage(id: Long): JIO<LocationImage?> = Jooq.query {
-        select(LOCATION_IMAGE.IMAGE)
+        select(LOCATION_IMAGE)
             .from(LOCATION_IMAGE)
             .where(LOCATION_IMAGE.LOCATION_ID.eq(id))
             .fetchOneInto(LocationImage::class.java)
