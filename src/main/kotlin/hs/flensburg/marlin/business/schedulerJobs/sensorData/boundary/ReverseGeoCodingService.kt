@@ -76,8 +76,10 @@ object ReverseGeoCodingService {
                 name = name,
                 address = address,
                 description = location.description,
-                openingTime = location.openingTime,
-                closingTime = location.closingTime,
+                openingHours = location.openingHours,
+                phone = location.contactPhone,
+                email = location.contactEmail,
+                website = location.contactWebsite
             ).orDie()
         }
         KIO.unit

@@ -9,7 +9,6 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
-import hs.flensburg.marlin.business.api.timezones.boundary.toJavaLocalTime
 import java.io.File
 
 object LocationService {
@@ -17,12 +16,14 @@ object LocationService {
         object NotFound : Error("Location not found")
         object ImageNotFound : Error("Location image not found")
         object BadRequest : Error("Bad request")
+        class ValidationError(message: String) : Error(message)
 
         override fun toApiError(): ApiError {
             return when (this) {
                 is NotFound -> ApiError.NotFound(message)
                 is ImageNotFound -> ApiError.NotFound(message)
                 is BadRequest -> ApiError.BadRequest(message)
+                is ValidationError -> ApiError.BadRequest(message)
             }
         }
     }
@@ -34,14 +35,24 @@ object LocationService {
 
     fun updateLocationByID(id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> = KIO.comprehension {
         !KIO.failOn(request.name.isNullOrBlank()) { Error.BadRequest }
+
+        val contactError = StringValidationService.validateContact(request.contact)
+        !KIO.failOn(contactError != null) { Error.ValidationError(contactError ?: "Invalid contact") }
+
+        val openingHoursError = StringValidationService.validateOpeningHoursFormat(request.openingHours)
+        !KIO.failOn(openingHoursError != null) { Error.ValidationError(openingHoursError ?: "Invalid opening hours") }
+
         val location = !LocationRepo.updateLocation(
             id = id,
             name = request.name?.takeIf { it.isNotBlank() },
             description = request.description,
-            address = request.address,
-            openingTime = request.openingTime?.toJavaLocalTime(),
-            closingTime = request.closingTime?.toJavaLocalTime()
+            address = request.address?.takeIf { it.isNotBlank() },
+            openingHours = request.openingHours,
+            phone = request.contact?.phone,
+            email = request.contact?.email,
+            website = request.contact?.website
         ).orDie().onNullFail { Error.NotFound }
+
         KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
 

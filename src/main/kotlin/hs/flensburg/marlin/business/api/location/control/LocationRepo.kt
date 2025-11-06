@@ -7,7 +7,6 @@ import hs.flensburg.marlin.database.generated.tables.pojos.LocationImage
 import hs.flensburg.marlin.database.generated.tables.references.LOCATION
 import hs.flensburg.marlin.database.generated.tables.references.LOCATION_IMAGE
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 object LocationRepo {
 
@@ -30,15 +29,19 @@ object LocationRepo {
         name: String?,
         description: String?,
         address: String?,
-        openingTime: LocalTime?,
-        closingTime: LocalTime?,
+        openingHours: String?,
+        phone: String?,
+        email: String?,
+        website: String?
     ): JIO<Location?> = Jooq.query {
         update(LOCATION)
             .set(LOCATION.NAME, name)
             .set(LOCATION.DESCRIPTION, description)
             .set(LOCATION.ADDRESS, address)
-            .set(LOCATION.OPENING_TIME, openingTime)
-            .set(LOCATION.CLOSING_TIME, closingTime)
+            .set(LOCATION.OPENING_HOURS, openingHours)
+            .set(LOCATION.CONTACT_PHONE, phone)
+            .set(LOCATION.CONTACT_EMAIL, email)
+            .set(LOCATION.CONTACT_WEBSITE, website)
             .where(LOCATION.ID.eq(id))
             .returning()
             .fetchOneInto(Location::class.java)
