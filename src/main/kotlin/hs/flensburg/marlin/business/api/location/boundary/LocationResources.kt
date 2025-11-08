@@ -1,6 +1,7 @@
 package hs.flensburg.marlin.business.api.location.boundary
 
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
+import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
 import hs.flensburg.marlin.plugins.Realm
@@ -15,6 +16,7 @@ import io.github.smiley4.ktoropenapi.put
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.server.application.Application
+import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondFile
@@ -112,9 +114,9 @@ fun Application.configureLocation() {
                 val id = call.parameters["id"]?.toLongOrNull()
                     ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
+                val user = call.principal<LoggedInUser>()!!
                 val request = call.receive<UpdateLocationRequest>()
-
-                call.respondKIO(LocationService.updateLocationByID(id, request))
+                call.respondKIO(LocationService.updateLocationByID(user.id, id, request))
             }
 
 
@@ -144,8 +146,9 @@ fun Application.configureLocation() {
                 val id = call.parameters["id"]?.toLongOrNull()
                     ?: return@post call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
+                val user = call.principal<LoggedInUser>()!!
                 val (imageBytes, contentType) = call.receiveImageFile()
-                call.respondKIO(LocationService.createLocationImage(id, imageBytes, contentType))
+                call.respondKIO(LocationService.createLocationImage(user.id, id, imageBytes, contentType))
             }
 
             put("/location/{id}/image", {
@@ -173,8 +176,9 @@ fun Application.configureLocation() {
                 val id = call.parameters["id"]?.toLongOrNull()
                     ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
+                val user = call.principal<LoggedInUser>()!!
                 val (imageBytes, contentType) = call.receiveImageFile()
-                call.respondKIO(LocationService.updateLocationImage(id, imageBytes, contentType))
+                call.respondKIO(LocationService.updateLocationImage(user.id, id,imageBytes, contentType))
             }
 
             delete(

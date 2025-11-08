@@ -9,6 +9,8 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
+import hs.flensburg.marlin.business.api.users.control.UserRepo
+import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import java.io.File
 
 object LocationService {
@@ -16,6 +18,7 @@ object LocationService {
         object NotFound : Error("Location not found")
         object ImageNotFound : Error("Location image not found")
         object BadRequest : Error("Bad request")
+        object Unauthorized : Error("Authorization required")
         class ValidationError(message: String) : Error(message)
 
         override fun toApiError(): ApiError {
@@ -23,6 +26,7 @@ object LocationService {
                 is NotFound -> ApiError.NotFound(message)
                 is ImageNotFound -> ApiError.NotFound(message)
                 is BadRequest -> ApiError.BadRequest(message)
+                is Unauthorized -> ApiError.Unauthorized(message)
                 is ValidationError -> ApiError.BadRequest(message)
             }
         }
@@ -33,7 +37,8 @@ object LocationService {
         KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
 
-    fun updateLocationByID(id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> = KIO.comprehension {
+    fun updateLocationByID(userId: Long, id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> = KIO.comprehension {
+        !checkLocationAccess(userId, id)
         !KIO.failOn(request.name.isNullOrBlank()) { Error.BadRequest }
 
         val contactError = StringValidationService.validateContact(request.contact)
@@ -70,7 +75,8 @@ object LocationService {
         KIO.ok(tempFile)
     }
 
-    fun updateLocationImage(id: Long, imageBytes: ByteArray, contentType: String): App<Error, Unit> = KIO.comprehension {
+    fun updateLocationImage(userId: Long, id: Long, imageBytes: ByteArray, contentType: String): App<Error, Unit> = KIO.comprehension {
+        !checkLocationAccess(userId, id)
         LocationRepo.updateLocationImage(
             id = id,
             imageBytes = imageBytes,
@@ -78,7 +84,8 @@ object LocationService {
         ).orDie().onNullFail { Error.ImageNotFound }
     }
 
-    fun createLocationImage(id: Long, imageBytes: ByteArray,contentType: String): App<Error, Unit> = KIO.comprehension {
+    fun createLocationImage(userId: Long, id: Long, imageBytes: ByteArray,contentType: String): App<Error, Unit> = KIO.comprehension {
+        !checkLocationAccess(userId, id)
         LocationRepo.insertLocationImage(
             id = id,
             imageBytes = imageBytes,
@@ -89,6 +96,22 @@ object LocationService {
         LocationRepo.deleteLocationImage(
             id = id
         ).orDie().onNullFail { Error.ImageNotFound }
+    }
+
+    private fun checkLocationAccess(userId: Long, locationId: Long): App<Error, Unit> = KIO.comprehension {
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
+        // Admin can access all locations
+        if (user.role == UserAuthorityRole.ADMIN) {
+            return@comprehension KIO.unit
+        }
+        // Harbor master can only access their assigned location
+        if (user.role == UserAuthorityRole.HARBOR_MASTER) {
+            val assignedLocation = !UserRepo.fetchUserAssignedLocationId(userId).orDie().onNullFail { Error.Unauthorized }
+            !KIO.failOn(locationId != assignedLocation) { Error.Unauthorized }
+        } else {
+            !KIO.fail(Error.Unauthorized)
+        }
+        KIO.unit
     }
 
     private fun extension(contentType: String): String {

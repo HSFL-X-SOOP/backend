@@ -16,6 +16,7 @@ import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.pojos.UserView
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
 import hs.flensburg.marlin.database.generated.tables.references.FAILED_LOGIN_ATTEMPT
+import hs.flensburg.marlin.database.generated.tables.references.HARBOR_MASTER_LOCATION
 import hs.flensburg.marlin.database.generated.tables.references.LOGIN_BLACKLIST
 import hs.flensburg.marlin.database.generated.tables.references.USER
 import hs.flensburg.marlin.database.generated.tables.references.USER_PROFILE
@@ -165,4 +166,13 @@ object UserRepo {
             .where(USER.ID.eq(id))
             .execute()
     }
+
+    fun fetchUserAssignedLocationId(userId: Long): JIO<Long> = Jooq.query {
+        val harborMasterLocation = selectFrom(HARBOR_MASTER_LOCATION)
+            .where(HARBOR_MASTER_LOCATION.USER_ID.eq(userId))
+            .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.HarborMasterLocation::class.java)!!
+
+        harborMasterLocation.locationId!!
+    }
+
 }
