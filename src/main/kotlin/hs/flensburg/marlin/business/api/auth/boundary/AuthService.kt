@@ -189,7 +189,7 @@ object AuthService {
         !KIO.failOn(userId == null || email == null) { Error.Unauthorized }
 
         val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.Unauthorized }
-        // Invert "predict", so the lambda in the function call is the "positive" case.
+
         !KIO.failOn(!predict(user)) { Error.Unauthorized }
 
         !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)

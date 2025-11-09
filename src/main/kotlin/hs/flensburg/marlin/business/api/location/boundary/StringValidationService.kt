@@ -5,7 +5,8 @@ import hs.flensburg.marlin.business.api.location.entity.Contact
 object StringValidationService {
     private val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
     private val PHONE_REGEX = Regex("^[+]?[0-9\\s\\-()]{7,20}$")
-    private val WEBSITE_REGEX = Regex("^(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*/?$", RegexOption.IGNORE_CASE)
+    private val WEBSITE_REGEX =
+        Regex("^(https?://)?([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*/?$", RegexOption.IGNORE_CASE)
 
     // Opening hours format examples:
     // "08:00-18:00"
@@ -51,9 +52,9 @@ object StringValidationService {
                     } else {
                         dayGroup.trim()
                     }
-            } else {
-                dayGroup
-            }
+                } else {
+                    dayGroup
+                }
 
             // Split by comma for multiple time ranges in a day
             val ranges = timeRanges.split(",").map { it.trim() }
@@ -70,26 +71,6 @@ object StringValidationService {
                 startValid && endValid && isStartBeforeEnd(start, end)
             }
         }
-    }
-
-    private fun isValidTime(time: String): Boolean {
-        val parts = time.split(":")
-        if (parts.size != 2) return false
-
-        val hour = parts[0].toIntOrNull() ?: return false
-        val minute = parts[1].toIntOrNull() ?: return false
-
-        return hour in 0..23 && minute in 0..59
-    }
-
-    private fun isStartBeforeEnd(start: String, end: String): Boolean {
-        val (startHour, startMin) = start.split(":").map { it.toInt() }
-        val (endHour, endMin) = end.split(":").map { it.toInt() }
-
-        val startMinutes = startHour * 60 + startMin
-        val endMinutes = endHour * 60 + endMin
-
-        return startMinutes < endMinutes
     }
 
     fun validateContact(contact: Contact?): String? {
@@ -118,5 +99,25 @@ object StringValidationService {
         }
 
         return null
+    }
+
+    private fun isValidTime(time: String): Boolean {
+        val parts = time.split(":")
+        if (parts.size != 2) return false
+
+        val hour = parts[0].toIntOrNull() ?: return false
+        val minute = parts[1].toIntOrNull() ?: return false
+
+        return hour in 0..23 && minute in 0..59
+    }
+
+    private fun isStartBeforeEnd(start: String, end: String): Boolean {
+        val (startHour, startMin) = start.split(":").map { it.toInt() }
+        val (endHour, endMin) = end.split(":").map { it.toInt() }
+
+        val startMinutes = startHour * 60 + startMin
+        val endMinutes = endHour * 60 + endMin
+
+        return startMinutes < endMinutes
     }
 }

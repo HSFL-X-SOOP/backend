@@ -1,15 +1,18 @@
 package hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary
 
 import de.lambda9.tailwind.core.KIO
+import de.lambda9.tailwind.core.extensions.kio.fold
 import de.lambda9.tailwind.core.extensions.kio.orDie
+import de.lambda9.tailwind.core.extensions.kio.run
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.httpclient
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.NominatimResponse
-import io.ktor.client.call.*
-import io.ktor.client.request.*
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import kotlinx.coroutines.runBlocking
 import kotlin.time.Duration.Companion.seconds
 
@@ -80,17 +83,19 @@ object ReverseGeoCodingService {
                 phone = location.contactPhone,
                 email = location.contactEmail,
                 website = location.contactWebsite
-            ).orDie()
+            ).run().fold(
+                onFailure = { println("Failed to update Location Name, Address for ${location.id}: $it")},
+                onSuccess = { }
+            )
         }
         KIO.unit
     }
 
-    fun fetchLocationInfoFromNominatim(lat: Double,lon: Double): NominatimResponse = runBlocking {
+    fun fetchLocationInfoFromNominatim(lat: Double, lon: Double): NominatimResponse = runBlocking {
         httpclient.get("https://nominatim.openstreetmap.org/reverse") {
             parameter("lat", lat)
             parameter("lon", lon)
             parameter("format", "json")
-            header("User-Agent", "SOOP-Application/1.0")
         }.body<NominatimResponse>()
     }
 }

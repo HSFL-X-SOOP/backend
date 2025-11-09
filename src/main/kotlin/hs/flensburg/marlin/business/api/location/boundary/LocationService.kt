@@ -3,6 +3,7 @@ package hs.flensburg.marlin.business.api.location.boundary
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
+import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
@@ -37,44 +38,38 @@ object LocationService {
         KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
 
-    fun updateLocationByID(userId: Long, id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> = KIO.comprehension {
-        !checkLocationAccess(userId, id)
-        !KIO.failOn(request.name.isNullOrBlank()) { Error.BadRequest }
+    fun updateLocationByID(userId: Long, id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> =
+        KIO.comprehension {
+            !checkLocationAccess(userId, id)
 
-        val contactError = StringValidationService.validateContact(request.contact)
-        !KIO.failOn(contactError != null) { Error.ValidationError(contactError ?: "Invalid contact") }
+            val location = !LocationRepo.updateLocation(
+                id = id,
+                name = request.name.takeIf { it.isNotBlank() },
+                description = request.description,
+                address = request.address.takeIf { it.isNotBlank() },
+                openingHours = request.openingHours,
+                phone = request.contact?.phone,
+                email = request.contact?.email,
+                website = request.contact?.website
+            ).orDie().onNullFail { Error.NotFound }
 
-        val openingHoursError = StringValidationService.validateOpeningHoursFormat(request.openingHours)
-        !KIO.failOn(openingHoursError != null) { Error.ValidationError(openingHoursError ?: "Invalid opening hours") }
+            if (!request.image?.base64.isNullOrBlank() && !request.image.contentType.isNullOrBlank()) {
+                !KIO.failOn(imageTypeToExtension(request.image.contentType) == null) { Error.BadRequest }
 
-        val location = !LocationRepo.updateLocation(
-            id = id,
-            name = request.name?.takeIf { it.isNotBlank() },
-            description = request.description,
-            address = request.address?.takeIf { it.isNotBlank() },
-            openingHours = request.openingHours,
-            phone = request.contact?.phone,
-            email = request.contact?.email,
-            website = request.contact?.website
-        ).orDie().onNullFail { Error.NotFound }
+                val imageBytes = request.image.base64.let {
+                    java.util.Base64.getDecoder().decode(it)
+                }
 
-        if (!request.image?.base64.isNullOrBlank() && !request.image.contentType.isNullOrBlank()) {
-            !KIO.failOn(imageTypeToExtension(request.image.contentType) == null) { Error.BadRequest }
-
-            val imageBytes = request.image.base64.let {
-                java.util.Base64.getDecoder().decode(it)
+                val existingImage = !LocationRepo.fetchLocationImage(id = id).orDie()
+                if (existingImage != null) {
+                    !updateLocationImage(id, imageBytes, request.image.contentType)
+                } else {
+                    !createLocationImage(id, imageBytes, request.image.contentType)
+                }
             }
 
-            val existingImage = !LocationRepo.fetchLocationImage(id = id).orDie()
-            if (existingImage != null) {
-                !updateLocationImage(id, imageBytes, request.image.contentType)
-            } else {
-                !createLocationImage(id, imageBytes, request.image.contentType)
-            }
-        }
-
-        KIO.ok(DetailedLocationDTO.fromLocation(location))
-    }
+            KIO.ok(DetailedLocationDTO.fromLocation(location))
+        }.transact()
 
     fun getLocationImage(id: Long): App<Error, File> = KIO.comprehension {
         val locationImage = !LocationRepo.fetchLocationImage(id = id).orDie().onNullFail { Error.ImageNotFound }
@@ -90,21 +85,24 @@ object LocationService {
         KIO.ok(tempFile)
     }
 
-    fun updateLocationImage(id: Long, imageBytes: ByteArray, contentType: String): App<Error, Unit> = KIO.comprehension {
-        LocationRepo.updateLocationImage(
-            id = id,
-            imageBytes = imageBytes,
-            contentType = contentType
-        ).orDie().onNullFail { Error.ImageNotFound }
-    }
+    private fun updateLocationImage(id: Long, imageBytes: ByteArray, contentType: String): App<Error, Unit> =
+        KIO.comprehension {
+            LocationRepo.updateLocationImage(
+                id = id,
+                imageBytes = imageBytes,
+                contentType = contentType
+            ).orDie().onNullFail { Error.ImageNotFound }
+        }
 
-    fun createLocationImage(id: Long, imageBytes: ByteArray,contentType: String): App<Error, Unit> = KIO.comprehension {
-        LocationRepo.insertLocationImage(
-            id = id,
-            imageBytes = imageBytes,
-            contentType = contentType
-        ).orDie().onNullFail { Error.ImageNotFound }
-    }
+    private fun createLocationImage(id: Long, imageBytes: ByteArray, contentType: String): App<Error, Unit> =
+        KIO.comprehension {
+            LocationRepo.insertLocationImage(
+                id = id,
+                imageBytes = imageBytes,
+                contentType = contentType
+            ).orDie().onNullFail { Error.ImageNotFound }
+        }
+
     fun deleteLocationImage(id: Long): App<Error, Unit> = KIO.comprehension {
         LocationRepo.deleteLocationImage(
             id = id
@@ -119,7 +117,8 @@ object LocationService {
         }
         // Harbor master can only access their assigned location
         if (user.role == UserAuthorityRole.HARBOR_MASTER) {
-            val assignedLocation = !UserRepo.fetchUserAssignedLocationId(userId).orDie().onNullFail { Error.Unauthorized }
+            val assignedLocation =
+                !UserRepo.fetchUserAssignedLocationId(userId).orDie().onNullFail { Error.Unauthorized }
             !KIO.failOn(locationId != assignedLocation) { Error.Unauthorized }
         } else {
             !KIO.fail(Error.Unauthorized)
