@@ -1,6 +1,6 @@
 package hs.flensburg.marlin.business.api.admin.boundary
 
-import hs.flensburg.marlin.business.api.admin.entity.Dashboard
+import hs.flensburg.marlin.business.api.admin.entity.DashboardInfo
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.respondKIO
@@ -19,7 +19,7 @@ fun Application.configureAdmin() {
                     tags("admin")
                     response {
                         HttpStatusCode.OK to {
-                            body<Dashboard.DashboardInfo>()
+                            body<DashboardInfo>()
                         }
                     }
                 }
