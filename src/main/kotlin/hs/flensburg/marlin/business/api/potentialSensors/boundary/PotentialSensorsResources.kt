@@ -15,14 +15,19 @@ fun Application.configurePotentialSensors() {
     routing {
         authenticate(Realm.ADMIN) {
             get(
-                path = "/admin/potential-sensors",
+                path = "/potential-sensors",
                 builder = {
-                    description = "Get all potential sensors"
-                    tags("admin")
+                    description = "Get all potential sensors. Requires admin role."
+                    tags("admin", "potential-sensors")
+                    securitySchemeNames("BearerAuthAdmin")
                     response {
                         HttpStatusCode.OK to {
                             description = "List of potential sensors"
                             body<List<PotentialSensorDTO>>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "Missing or invalid JWT token, or insufficient permissions (admin role required)"
+                            body<String>()
                         }
                         HttpStatusCode.InternalServerError to {
                             description = "Error retrieving potential sensors"
@@ -33,10 +38,11 @@ fun Application.configurePotentialSensors() {
                 call.respondKIO(PotentialSensorService.getAllPotentialSensors())
             }
             get(
-                path = "/admin/potential-sensors-toggle/{id}",
+                path = "/potential-sensors-toggle/{id}",
                 builder = {
-                    description = "Toggle active state of potential sensors"
-                    tags("admin")
+                    description = "Toggle active state of potential sensors. Requires admin role."
+                    tags("admin", "potential-sensors")
+                    securitySchemeNames("BearerAuthAdmin")
                     request {
                         pathParameter<Long>("id") {
                             description = "The sensor ID"
@@ -46,6 +52,14 @@ fun Application.configurePotentialSensors() {
                         HttpStatusCode.OK to {
                             description = "potential sensors with updated active state"
                             body<List<PotentialSensorDTO>>()
+                        }
+                        HttpStatusCode.BadRequest to {
+                            description = "Invalid sensor ID"
+                            body<String>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "Missing or invalid JWT token, or insufficient permissions (admin role required)"
+                            body<String>()
                         }
                         HttpStatusCode.InternalServerError to {
                             description = "Error retrieving potential sensors"

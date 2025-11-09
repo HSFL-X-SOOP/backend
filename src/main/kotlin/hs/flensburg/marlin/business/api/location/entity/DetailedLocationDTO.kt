@@ -1,8 +1,6 @@
 package hs.flensburg.marlin.business.api.location.entity
 
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
-import kotlinx.datetime.LocalTime
-import kotlinx.datetime.toKotlinLocalTime
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -11,17 +9,29 @@ data class DetailedLocationDTO(
     val name: String?,
     val description: String?,
     val address: String?,
-    val openingTime: LocalTime?,
-    val closingTime: LocalTime?,
+    val openingHours: String?,
+    val contact: Contact?,
     val coordinates: GeoPoint?
-)
+) {
+    companion object {
+        fun fromLocation(location: Location): DetailedLocationDTO {
+            return DetailedLocationDTO(
+                id = location.id,
+                name = location.name,
+                description = location.description,
+                address = location.address,
+                openingHours = location.openingHours,
+                contact = Contact(
+                        location.contactPhone,
+                        location.contactEmail,
+                        location.contactWebsite
+                    ),
+                coordinates = location.coordinates
+            )
+        }
+    }
+}
 
-fun Location.toDetailedLocationDTO() = DetailedLocationDTO(
-    id = this.id,
-    name = this.name,
-    description = this.description,
-    address = this.address,
-    openingTime = this.openingTime?.toKotlinLocalTime(),
-    closingTime = this.closingTime?.toKotlinLocalTime(),
-    coordinates = this.coordinates
-)
+@Serializable
+data class Contact(val phone: String?, val email: String?, val website: String?)
+

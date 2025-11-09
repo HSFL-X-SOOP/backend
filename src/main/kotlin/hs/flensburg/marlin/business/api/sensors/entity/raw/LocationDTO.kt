@@ -9,10 +9,14 @@ data class LocationDTO(
     val id: Long,
     val name: String?,
     val coordinates: GeoPoint?
-)
-
-fun Location.toLocationDTO() = LocationDTO(
-    id = this.id ?: 0L,
-    name = this.name,
-    coordinates = this.coordinates
-)
+){
+    companion object{
+        fun fromLocation(location: Location): LocationDTO {
+            return LocationDTO(
+                id = location.id ?: 0L,
+                name = location.name,
+                coordinates = location.coordinates
+            )
+        }
+    }
+}

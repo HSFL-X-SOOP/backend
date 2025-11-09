@@ -1,18 +1,25 @@
 package hs.flensburg.marlin.business.api.location.boundary
 
+import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
+import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
+import hs.flensburg.marlin.business.api.location.entity.Contact
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
+import hs.flensburg.marlin.business.api.location.entity.ImageRequest
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
+import hs.flensburg.marlin.plugins.kioEnv
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.delete
 import io.github.smiley4.ktoropenapi.get
-import io.github.smiley4.ktoropenapi.post
 import io.github.smiley4.ktoropenapi.put
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.server.application.Application
+import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondFile
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 
@@ -69,7 +76,16 @@ fun Application.configureLocation() {
             val id = call.parameters["id"]?.toLongOrNull()
                 ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            call.respondKIO(LocationService.getLocationImage(id))
+            val image = LocationService.getLocationImage(id).unsafeRunSync(call.kioEnv)
+                .fold(
+                    onSuccess = { it },
+                    onError = { error ->
+                        val e = error.failures().first().toApiError()
+                        call.respond(e.statusCode, e.message)
+                        return@get
+                    }
+                )
+            call.respondFile(image)
         }
 
         authenticate(Realm.HARBOUR_CONTROL) {
@@ -83,7 +99,25 @@ fun Application.configureLocation() {
                         pathParameter<Long>("id") {
                             description = "The location ID (not the sensor ID)"
                         }
-                        body<UpdateLocationRequest>()
+                        body<UpdateLocationRequest> {
+                            example("Update Location Example") {
+                                value = UpdateLocationRequest(
+                                    name = "Updated Marina Test",
+                                    description = "This is a new description for the marina.",
+                                    address = "456 Pier Road",
+                                    openingHours = "Mon-Fri: 09:00-17:00; Sat: 10:00-14:00",
+                                    contact = Contact(
+                                        phone = "1234567890",
+                                        email = "info@marina.com",
+                                        website = "https://marina-updated.com"
+                                    ),
+                                    image = ImageRequest(
+                                        base64 = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAIB...",
+                                        contentType = "image/jpeg"
+                                    ),
+                                )
+                            }
+                        }
                     }
                     response {
                         HttpStatusCode.OK to {
@@ -98,87 +132,10 @@ fun Application.configureLocation() {
                 val id = call.parameters["id"]?.toLongOrNull()
                     ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
+                val user = call.principal<LoggedInUser>()!!
                 val request = call.receive<UpdateLocationRequest>()
 
-                call.respondKIO(LocationService.updateLocationByID(id, request))
-            }
-
-
-
-            post("/location/{id}/image", {
-                description = "Create the image of a location"
-                tags("location")
-                request {
-                    pathParameter<Long>("id") {
-                        description = "The location ID"
-                    }
-                    multipartBody {
-                        part<PartData.FileItem>("image") {
-                            required = true
-                        }
-                    }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<Unit>()
-                    }
-                    HttpStatusCode.NotFound to {
-                        body<String>()
-                    }
-                }
-            }) {
-                val id = call.parameters["id"]?.toLongOrNull()
-                    ?: return@post call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
-
-                try {
-                    val imageBytes = call.receiveImageFile()
-                    call.respondKIO(LocationService.createLocationImage(id, imageBytes))
-                } catch (e: BadRequestException) {
-                    call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
-                } catch (e: UnsupportedMediaTypeException) {
-                    call.respondText(
-                        e.message ?: "Unsupported media type",
-                        status = HttpStatusCode.UnsupportedMediaType
-                    )
-                }
-            }
-
-            put("/location/{id}/image", {
-                description = "Update the image of a location"
-                tags("location")
-                request {
-                    pathParameter<Long>("id") {
-                        description = "The location ID"
-                    }
-                    multipartBody {
-                        part<PartData.FileItem>("image") {
-                            required = true
-                        }
-                    }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        body<Unit>()
-                    }
-                    HttpStatusCode.NotFound to {
-                        body<String>()
-                    }
-                }
-            }) {
-                val id = call.parameters["id"]?.toLongOrNull()
-                    ?: return@put call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
-
-                try {
-                    val imageBytes = call.receiveImageFile()
-                    call.respondKIO(LocationService.updateLocationImage(id, imageBytes))
-                } catch (e: BadRequestException) {
-                    call.respondText(e.message ?: "Missing image file", status = HttpStatusCode.BadRequest)
-                } catch (e: UnsupportedMediaTypeException) {
-                    call.respondText(
-                        e.message ?: "Unsupported media type",
-                        status = HttpStatusCode.UnsupportedMediaType
-                    )
-                }
+                call.respondKIO(LocationService.updateLocationByID(user.id, id, request))
             }
 
             delete(

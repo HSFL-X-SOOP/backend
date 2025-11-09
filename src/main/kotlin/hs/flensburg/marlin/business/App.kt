@@ -9,7 +9,6 @@ import org.jooq.Condition
 import org.jooq.OrderField
 import org.jooq.impl.DSL
 import javax.sql.DataSource
-import kotlin.reflect.full.companionObjectInstance
 
 
 /**
@@ -87,12 +86,13 @@ data class PageResult<A>(val items: List<A>, val filteredCount: Long, val totalC
  * The [Page] class represents pagination parameters for API requests.
  *
  * @param T The type of query parameters.
- * @param queryParameters The query parameters.
+ * @param parameterWrapper The query parameters wrapped in a [Conditional] object.
  * @param order The sorting criteria.
  * @param limit The maximum number of items to return.
  * @param offset The number of items to skip.
  */
-data class Page<T : Conditional>(val queryParameters: T, val order: OrderBy, val limit: Int, val offset: Int) {
+data class Page<T : Conditional>(val parameterWrapper: T, val order: OrderBy, val limit: Int, val offset: Int) {
+
     init {
         require(limit >= 0) { "Limit must be non-negative" }
         require(offset >= 0) { "Offset must be non-negative" }
@@ -100,17 +100,21 @@ data class Page<T : Conditional>(val queryParameters: T, val order: OrderBy, val
     }
 
     companion object {
-        inline fun <reified T : Conditional> from(queryParams: Parameters): Page<T> {
-            val searchParams = (T::class.companionObjectInstance as ConditionalFactory<T>).from(queryParams)
-            val orderBy = OrderBy.parse(queryParams["sort"] ?: "id.asc")
-            val limit = queryParams["limit"]?.toIntOrNull() ?: 50
-            val offset = queryParams["offset"]?.toIntOrNull() ?: 0
-
+        inline fun <reified T : Conditional> from(queryParams: Parameters, factory: ConditionalFactory<T>): Page<T> {
             return Page(
-                queryParameters = searchParams,
-                order = orderBy,
-                limit = limit,
-                offset = offset
+                parameterWrapper = factory.from(queryParams),
+                order = OrderBy.parse(queryParams["sort"] ?: "id.asc"),
+                limit = queryParams["limit"]?.toIntOrNull() ?: 50,
+                offset = queryParams["offset"]?.toIntOrNull() ?: 0
+            )
+        }
+
+        inline fun <reified T : Conditional> from(queryParams: Parameters, parameterWrapper: T): Page<T> {
+            return Page(
+                parameterWrapper = parameterWrapper,
+                order = OrderBy.parse(queryParams["sort"] ?: "id.asc"),
+                limit = queryParams["limit"]?.toIntOrNull() ?: 50,
+                offset = queryParams["offset"]?.toIntOrNull() ?: 0
             )
         }
     }
