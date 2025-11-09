@@ -43,7 +43,7 @@ fun Application.configurePotentialSensors() {
                 path = "/admin/potential-sensors-toggle/{id}",
                 builder = {
                     description = "Toggle active state of potential sensors. Requires admin role."
-                    tags("admin", "potential-sensors")
+                    tags("admin")
                     securitySchemeNames("BearerAuthAdmin")
                     request {
                         pathParameter<Long>("id") {
