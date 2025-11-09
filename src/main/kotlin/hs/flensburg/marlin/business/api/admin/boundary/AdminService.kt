@@ -12,7 +12,7 @@ import hs.flensburg.marlin.business.api.users.control.UserRepo
 
 object AdminService {
     sealed class Error(private val message: String) : ServiceLayerError {
-        object NotFound : Error("Countment not found")
+        object NotFound : Error("Requested data not found")
         object BadRequest : Error("Bad request")
 
         override fun toApiError(): ApiError {
