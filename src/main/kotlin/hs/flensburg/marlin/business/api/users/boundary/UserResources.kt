@@ -1,9 +1,14 @@
 package hs.flensburg.marlin.business.api.users.boundary
 
+import hs.flensburg.marlin.business.Page
+import hs.flensburg.marlin.business.PageResult
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
+import hs.flensburg.marlin.business.api.users.entity.BlacklistUserRequest
 import hs.flensburg.marlin.business.api.users.entity.CreateUserProfileRequest
 import hs.flensburg.marlin.business.api.users.entity.UpdateUserProfileRequest
-import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
+import hs.flensburg.marlin.business.api.users.entity.UpdateUserRequest
+import hs.flensburg.marlin.business.api.users.entity.UserProfile
+import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.respondKIO
@@ -19,6 +24,199 @@ import io.ktor.server.routing.routing
 
 fun Application.configureUsers() {
     routing {
+        authenticate(Realm.ADMIN) {
+            get(
+                path = "/admin/user-profiles",
+                builder = {
+                    description = "Get all user profiles (Admin only)"
+                    tags("admin")
+                    request {
+                        queryParameter<Long>("id") {
+                            description = "Filter by user ID"
+                            required = false
+                        }
+                        queryParameter<String>("email") {
+                            description = "Filter by email (case-insensitive like match)"
+                            required = false
+                        }
+                        queryParameter<Boolean>("verified") {
+                            description = "Filter by verification status"
+                            required = false
+                        }
+                        queryParameter<String>("authorityRole") {
+                            description = "Filter by authority role (USER, ADMIN, etc.)"
+                            required = false
+                        }
+                        queryParameter<List<String>>("activityRoles") {
+                            description = "Filter by activity roles (can provide multiple)"
+                            required = false
+                        }
+                        queryParameter<String>("language") {
+                            description = "Filter by preferred language"
+                            required = false
+                        }
+                        queryParameter<String>("measurementSystem") {
+                            description = "Filter by measurement system"
+                            required = false
+                        }
+                        queryParameter<String>("userCreatedAt") {
+                            description = "Filter by user creation timestamp (ISO-8601 format)"
+                            required = false
+                        }
+                        queryParameter<String>("userUpdatedAt") {
+                            description = "Filter by user update timestamp (ISO-8601 format)"
+                            required = false
+                        }
+                        queryParameter<String>("profileCreatedAt") {
+                            description = "Filter by profile creation timestamp (ISO-8601 format)"
+                            required = false
+                        }
+                        queryParameter<String>("profileUpdatedAt") {
+                            description = "Filter by profile update timestamp (ISO-8601 format)"
+                            required = false
+                        }
+                        queryParameter<String>("sort") {
+                            description = "Sort field in snake_case. Use 'field.asc' or 'field.desc' (e.g., 'id.asc')."
+                            required = false
+                        }
+                        queryParameter<Long>("limit") {
+                            description = "Maximum number of results to return"
+                            required = false
+                        }
+                        queryParameter<Long>("offset") {
+                            description = "The offset from the start of the results"
+                            required = false
+                        }
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            body<PageResult<UserProfile>>()
+                        }
+                    }
+                }
+            ) {
+                call.respondKIO(
+                    UserService.getProfiles(
+                        Page.from(call.request.queryParameters, UserSearchParameters)
+                    )
+                )
+            }
+
+            get(
+                path = "/admin/user-profiles/{userId}",
+                builder = {
+                    description = "Get a user's profile by user ID (Admin only)"
+                    tags("admin")
+                    request {
+                        pathParameter<Long>("userId") {
+                            description = "ID of the user"
+                        }
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            body<UserProfile>()
+                        }
+                        HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
+                    }
+                }
+            ) {
+                val userId = call.parameters["userId"]!!.toLong()
+                call.respondKIO(UserService.getProfile(userId))
+            }
+
+            get(
+                path = "/admin/user-profiles/{userId}/recent-activity",
+                builder = {
+                    description = "Get a user's recent activity by user ID (Admin only)"
+                    tags("admin")
+                    request {
+                        pathParameter<Long>("userId") {
+                            description = "ID of the user"
+                        }
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            body<PageResult<String>>()
+                        }
+                        HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
+                    }
+                }
+            ) {
+                val userId = call.parameters["userId"]!!.toLong()
+                call.respondKIO(UserService.getRecentActivity(userId))
+            }
+
+            post(
+                path = "/admin/user-profiles/block",
+                builder = {
+                    description = "Add a user to the login blacklist (Admin only)"
+                    tags("admin")
+                    request {
+                        body<BlacklistUserRequest>()
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            body<Unit>()
+                        }
+                        HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
+                    }
+                }
+            ) {
+                val request = call.receive<BlacklistUserRequest>()
+                call.respondKIO(UserService.addUserToBlacklist(request))
+            }
+
+            put(
+                path = "/admin/user-profiles",
+                builder = {
+                    description = "Update a user's profile by user ID (Admin only)"
+                    tags("admin")
+                    request {
+                        body<UpdateUserRequest>()
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            body<Unit>()
+                        }
+                        HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
+                    }
+                }
+            ) {
+                val request = call.receive<UpdateUserRequest>()
+                call.respondKIO(UserService.updateProfile(request))
+            }
+
+            delete(
+                path = "/admin/user-profiles/{userId}",
+                builder = {
+                    description = "Delete a user's profile by user ID (Admin only)"
+                    tags("admin")
+                    request {
+                        pathParameter<Long>("userId") {
+                            description = "ID of the user"
+                        }
+                    }
+                    response {
+                        HttpStatusCode.NoContent to {}
+                        HttpStatusCode.NotFound to {
+                            body<String>()
+                        }
+                    }
+                }
+            ) {
+                val userId = call.parameters["userId"]!!.toLong()
+                call.respondKIO(UserService.deleteUser(userId))
+            }
+        }
+
         authenticate(Realm.COMMON) {
             get(
                 path = "/user-profile",
@@ -28,7 +226,7 @@ fun Application.configureUsers() {
                     securitySchemeNames("BearerAuth", "BearerAuthAdmin")
                     response {
                         HttpStatusCode.OK to {
-                            body<UserProfileResponse>()
+                            body<UserProfile>()
                         }
                         HttpStatusCode.NotFound to {
                             body<String>()
@@ -55,7 +253,7 @@ fun Application.configureUsers() {
                     }
                     response {
                         HttpStatusCode.Created to {
-                            body<UserProfileResponse>()
+                            body<UserProfile>()
                         }
                         HttpStatusCode.BadRequest to {
                             body<String>()
@@ -83,7 +281,7 @@ fun Application.configureUsers() {
                     }
                     response {
                         HttpStatusCode.OK to {
-                            body<UserProfileResponse>()
+                            body<UserProfile>()
                         }
                         HttpStatusCode.NotFound to {
                             body<String>()
@@ -103,7 +301,7 @@ fun Application.configureUsers() {
             delete(
                 path = "/user-profile",
                 builder = {
-                    description = "Delete the authenticated user's profile"
+                    description = "Delete the authenticated user from the system"
                     tags("user-profile")
                     securitySchemeNames("BearerAuth", "BearerAuthAdmin")
                     response {
@@ -119,7 +317,7 @@ fun Application.configureUsers() {
                 }
             ) {
                 val user = call.principal<LoggedInUser>()!!
-                call.respondKIO(UserService.deleteProfile(user))
+                call.respondKIO(UserService.deleteUser(user))
             }
         }
     }

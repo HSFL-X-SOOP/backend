@@ -22,6 +22,9 @@
         <kotlin.logging.version>7.0.7</kotlin.logging.version>
         <kotlin.dotenv.version>6.5.1</kotlin.dotenv.version>
 
+        <!--Testing-->
+        <junit.version>6.0.1</junit.version>
+
         <tailwind.version>0.2.0</tailwind.version>
         <ktor.version>3.2.3</ktor.version>
         <ktor-openapi-tools.version>5.1.0</ktor-openapi-tools.version>
@@ -46,6 +49,13 @@
         <database.password>sql</database.password>
         <database.schemas>marlin</database.schemas>
         <database.generated.package>hs.flensburg.marlin.database.generated</database.generated.package>
+
+        <!-- TEST DATABASE -->
+        <test.database.url>jdbc:postgresql://localhost:6001/marlin_test</test.database.url>
+        <test.database.user>user</test.database.user>
+        <test.database.password>sql</test.database.password>
+        <test.database.schemas>marlin</test.database.schemas>
+        <skipTestDbMigration>false</skipTestDbMigration>
     </properties>
 
     <dependencies>
@@ -55,6 +65,28 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib</artifactId>
             <version>${kotlin.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-test</artifactId>
+            <version>${kotlin.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JUnit 5 (Jupiter) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- Ktor Dependencies -->
@@ -350,18 +382,40 @@
                 <version>${flyway.version}</version>
                 <executions>
                     <execution>
+                        <id>migrate-dev-db</id>
                         <phase>generate-sources</phase>
                         <goals>
                             <goal>migrate</goal>
                         </goals>
+                        <configuration>
+                            <url>${database.url}</url>
+                            <user>${database.user}</user>
+                            <password>${database.password}</password>
+                            <schemas>${database.schemas}</schemas>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>migrate-test-db</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>migrate</goal>
+                        </goals>
+                        <configuration>
+                            <url>${test.database.url}</url>
+                            <user>${test.database.user}</user>
+                            <password>${test.database.password}</password>
+                            <schemas>${test.database.schemas}</schemas>
+                            <skip>${skipTestDbMigration}</skip>
+                        </configuration>
                     </execution>
                 </executions>
                 <configuration>
-                    <url>${database.url}</url>
-                    <user>${database.user}</user>
-                    <password>${database.password}</password>
-                    <schemas>${database.schemas}</schemas>
                     <cleanDisabled>false</cleanDisabled>
+                    <locations>
+                        <location>filesystem:src/main/resources/db/migration</location>
+                        <location>filesystem:src/main/resources/db/views</location>
+                    </locations>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -412,6 +466,15 @@
                             <excludes/>
                             <inputSchema>${database.schemas}</inputSchema>
                             <outputSchemaToDefault>false</outputSchemaToDefault>
+
+                            <forcedTypes>
+                                <forcedType>
+                                    <userType>hs.flensburg.marlin.business.api.location.entity.GeoPoint</userType>
+                                    <binding>hs.flensburg.marlin.business.api.location.entity.GeoPointBinding</binding>
+                                    <includeTypes>GEOGRAPHY</includeTypes>
+                                </forcedType>
+                            </forcedTypes>
+
                         </database>
                         <target>
                             <packageName>${database.generated.package}</packageName>

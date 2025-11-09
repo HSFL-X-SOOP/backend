@@ -5,6 +5,7 @@ import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.database.generated.tables.pojos.User
+import hs.flensburg.marlin.database.generated.tables.pojos.UserView
 import java.util.Date
 
 object JWTAuthority {
@@ -60,27 +61,27 @@ object JWTAuthority {
             .build()
     }
 
-    fun generateAccessToken(user: User): String =
+    fun generateAccessToken(user: UserView): String =
         generateToken(user, AUTH_SUBJECT, ACCESS_TTL_MILLIS)
 
-    fun generateRefreshToken(user: User): String =
+    fun generateRefreshToken(user: UserView): String =
         generateToken(user, REFRESH_SUBJECT, REFRESH_TTL_IN_MS)
 
-    fun generateMagicLinkToken(user: User): String =
+    fun generateMagicLinkToken(user: UserView): String =
         generateToken(user, MAGIC_LINK_SUBJECT, MAGIC_LINK_TTL_IN_MS)
 
-    fun generateEmailVerificationToken(user: User): String =
+    fun generateEmailVerificationToken(user: UserView): String =
         generateToken(user, EMAIL_VERIFICATION_SUBJECT, EMAIL_VERIFICATION_TTL_IN_MS)
 
     private fun generateToken(
-        user: User,
+        user: UserView,
         subject: String,
         ttlMillis: Long
     ): String = JWT.create()
         .withSubject(subject)
         .withClaim("id", user.id)
         .withClaim("email", user.email)
-        .withClaim("role", user.role.toString())
+        .withClaim("role", user.authorityRole.toString())
         .withClaim("issuedAt", System.currentTimeMillis())
         .withIssuer(ISSUER)
         .withAudience(AUDIENCE)

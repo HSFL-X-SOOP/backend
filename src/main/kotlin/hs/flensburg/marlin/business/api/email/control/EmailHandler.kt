@@ -12,7 +12,7 @@ import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.database.generated.enums.EmailType
 import hs.flensburg.marlin.database.generated.tables.pojos.Email
-import hs.flensburg.marlin.database.generated.tables.pojos.User
+import hs.flensburg.marlin.database.generated.tables.pojos.UserView
 import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
@@ -43,7 +43,7 @@ object EmailHandler {
 
     fun sendEmail(email: Email, vararg infoFields: Pair<String, String>): App<Error, Unit> = KIO.comprehension {
         val config = (!KIO.access<JEnv>()).component2().config
-        val user = !UserRepo.fetchById(email.userId!!).orDie().onNullFail { Error.UserNotFound(email.userId!!) }
+        val user = !UserRepo.fetchViewById(email.userId!!).orDie().onNullFail { Error.UserNotFound(email.userId!!) }
 
         val mail = EmailBuilder.startingBlank()
             .from(config.mail.sendFrom)
@@ -78,7 +78,7 @@ object EmailHandler {
         }
     }
 
-    private fun body(email: Email, user: User, vararg infoFields: Pair<String, String>): String {
+    private fun body(email: Email, user: UserView, vararg infoFields: Pair<String, String>): String {
         val baseTemplate = loadTemplate("base")
         val contentTemplate = loadTemplate(templateNameForType(email.type!!))
 

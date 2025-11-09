@@ -3,6 +3,7 @@ package hs.flensburg.marlin.plugins
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
+import hs.flensburg.marlin.business.api.location.boundary.configureLocation
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
 import hs.flensburg.marlin.business.api.users.boundary.configureUsers
@@ -17,6 +18,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.UnsupportedMediaTypeException
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
@@ -33,6 +35,7 @@ fun Application.configureRouting(config: Config) {
     configureUsers()
     configureSensors()
     configurePotentialSensors()
+    configureLocation()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
@@ -88,6 +91,12 @@ fun Application.configureRouting(config: Config) {
                 mapOf("error" to "Malformed JSON: ${cause.cause?.message}")
             )
         }
+        exception<UnsupportedMediaTypeException> { call, cause ->
+            call.respond(
+                HttpStatusCode.UnsupportedMediaType,
+                mapOf("error" to (cause.cause?.message ?: "Invalid Media Type"))
+            )
+        }
     }
 
     routing {
@@ -115,7 +124,8 @@ fun Route.authenticate(realm: Realm, block: Route.() -> Unit) {
 
 enum class Realm(val value: String) {
     COMMON("common"),
-    ADMIN("admin");
+    ADMIN("admin"),
+    HARBOUR_CONTROL("harbor_control");
 
     override fun toString(): String = value
 }

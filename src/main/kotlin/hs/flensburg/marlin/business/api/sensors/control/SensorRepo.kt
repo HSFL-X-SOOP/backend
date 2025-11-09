@@ -2,9 +2,9 @@ package hs.flensburg.marlin.business.api.sensors.control
 
 import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
+import hs.flensburg.marlin.business.api.location.entity.GeoPoint
 import hs.flensburg.marlin.business.api.sensors.entity.EnrichedMeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.GeoPointDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
@@ -17,7 +17,6 @@ import hs.flensburg.marlin.database.generated.tables.references.LOCATION
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENT
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENTTYPE
 import hs.flensburg.marlin.database.generated.tables.references.SENSOR
-import org.jooq.impl.DSL
 import java.time.OffsetDateTime
 
 object SensorRepo {
@@ -33,25 +32,9 @@ object SensorRepo {
     }
 
     fun fetchAllLocations(): JIO<List<Location>> = Jooq.query {
-        select(
-            LOCATION.ID,
-            LOCATION.NAME,
-            // Use PostGIS functions to extract latitude and longitude from coordinates
-            DSL.field("ST_Y(coordinates::geometry)", Double::class.java).`as`("latitude"),
-            DSL.field("ST_X(coordinates::geometry)", Double::class.java).`as`("longitude")
-        ).from(LOCATION)
-            .fetch {
-                Location(
-                    id = it[LOCATION.ID],
-                    name = it[LOCATION.NAME],
-                    // combine latitude and longitude into a Pair
-                    coordinates = it.get("latitude", Double::class.java)?.let { lat ->
-                        it.get("longitude", Double::class.java)?.let { lon ->
-                            Pair(lat, lon)
-                        }
-                    }
-                )
-            }
+        selectFrom(LOCATION)
+            .orderBy(LOCATION.ID.asc())
+            .fetchInto(Location::class.java)
     }
 
     fun fetchAllMeasurements(): JIO<List<Measurement>> = Jooq.query {
@@ -108,7 +91,7 @@ object SensorRepo {
                     LocationDTO(
                         id = rec.get("loc_id", Long::class.java)!!,
                         name = rec.get("loc_name", String::class.java),
-                        coordinates = GeoPointDTO(
+                        coordinates = GeoPoint(
                             lat = rec.get("latitude", Double::class.java)!!,
                             lon = rec.get("longitude", Double::class.java)!!
                         )
@@ -200,7 +183,7 @@ object SensorRepo {
                 LocationDTO(
                     id = rec.get("loc_id", Long::class.java)!!,
                     name = rec.get("loc_name", String::class.java),
-                    coordinates = GeoPointDTO(
+                    coordinates = GeoPoint(
                         lat = rec.get("latitude", Double::class.java)!!,
                         lon = rec.get("longitude", Double::class.java)!!
                     )
@@ -322,7 +305,7 @@ object SensorRepo {
                 LocationDTO(
                     id = rec.get("loc_id", Long::class.java)!!,
                     name = rec.get("loc_name", String::class.java),
-                    coordinates = GeoPointDTO(
+                    coordinates = GeoPoint(
                         lat = rec.get("latitude", Double::class.java)!!,
                         lon = rec.get("longitude", Double::class.java)!!
                     )

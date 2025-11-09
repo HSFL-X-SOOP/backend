@@ -11,6 +11,20 @@ services:
       POSTGRES_PASSWORD: sql
       POSTGRES_DB: marlin
 
+  db-marlin-test:
+    image: timescale/timescaledb-ha:pg17
+    restart: on-failure
+    ports:
+      - "6001:5432"
+    volumes:
+      - db-marlin-test-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: sql
+      POSTGRES_DB: marlin_test
+
 volumes:
   db-marlin-data:
+    driver: local
+  db-marlin-test-data:
     driver: local
