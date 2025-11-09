@@ -1,7 +1,6 @@
 package hs.flensburg.marlin.business.api.admin.boundary
 
 import de.lambda9.tailwind.core.KIO
-import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.ServiceLayerError
@@ -31,14 +30,14 @@ object AdminService {
         val totalLocations = !LocationRepo.countAllLocations().orDie()
         val totalUsers = !UserRepo.countAllUsers().orDie()
 
-        val dashboardInfo = DashboardInfo(
-            totalLocations = totalLocations,
-            totalSensors = totalSensors,
-            totalMeasurements = totalMeasurement,
-            totalUsers = totalUsers
+        KIO.ok(
+            DashboardInfo(
+                totalLocations = totalLocations,
+                totalSensors = totalSensors,
+                totalMeasurements = totalMeasurement,
+                totalUsers = totalUsers
+            )
         )
-
-        KIO.ok(dashboardInfo)
 
     }
 }
