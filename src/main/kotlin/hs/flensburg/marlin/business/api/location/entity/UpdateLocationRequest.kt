@@ -8,5 +8,6 @@ data class UpdateLocationRequest(
     val description: String?,
     val address: String?,
     val openingHours: String?,
-    val contact: Contact?
+    val contact: Contact?,
+    val image: ImageRequest?
 )

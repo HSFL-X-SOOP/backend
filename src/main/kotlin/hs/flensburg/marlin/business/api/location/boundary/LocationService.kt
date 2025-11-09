@@ -58,6 +58,21 @@ object LocationService {
             website = request.contact?.website
         ).orDie().onNullFail { Error.NotFound }
 
+        if (!request.image?.base64.isNullOrBlank() && !request.image.contentType.isNullOrBlank()) {
+            !KIO.failOn(imageTypeToExtension(request.image.contentType) == null) { Error.BadRequest }
+
+            val imageBytes = request.image.base64.let {
+                java.util.Base64.getDecoder().decode(it)
+            }
+
+            val existingImage = !LocationRepo.fetchLocationImage(id = id).orDie()
+            if (existingImage != null) {
+                !updateLocationImage(id, imageBytes, request.image.contentType)
+            } else {
+                !createLocationImage(id, imageBytes, request.image.contentType)
+            }
+        }
+
         KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
 
@@ -66,7 +81,7 @@ object LocationService {
 
         !KIO.failOn(locationImage.data == null || locationImage.contentType == null) { Error.ImageNotFound }
 
-        val extension = extension(locationImage.contentType!!)
+        val extension = imageTypeToExtension(locationImage.contentType!!)
 
         val tempFile = kotlin.io.path.createTempFile(suffix = extension).toFile()
         tempFile.writeBytes(locationImage.data!!)
@@ -75,8 +90,7 @@ object LocationService {
         KIO.ok(tempFile)
     }
 
-    fun updateLocationImage(userId: Long, id: Long, imageBytes: ByteArray, contentType: String): App<Error, Unit> = KIO.comprehension {
-        !checkLocationAccess(userId, id)
+    fun updateLocationImage(id: Long, imageBytes: ByteArray, contentType: String): App<Error, Unit> = KIO.comprehension {
         LocationRepo.updateLocationImage(
             id = id,
             imageBytes = imageBytes,
@@ -84,8 +98,7 @@ object LocationService {
         ).orDie().onNullFail { Error.ImageNotFound }
     }
 
-    fun createLocationImage(userId: Long, id: Long, imageBytes: ByteArray,contentType: String): App<Error, Unit> = KIO.comprehension {
-        !checkLocationAccess(userId, id)
+    fun createLocationImage(id: Long, imageBytes: ByteArray,contentType: String): App<Error, Unit> = KIO.comprehension {
         LocationRepo.insertLocationImage(
             id = id,
             imageBytes = imageBytes,
@@ -114,7 +127,7 @@ object LocationService {
         KIO.unit
     }
 
-    private fun extension(contentType: String): String {
+    private fun imageTypeToExtension(contentType: String): String? {
         return when (contentType) {
             "image/apng" -> ".apng"
             "image/webp" -> ".webp"
@@ -126,7 +139,7 @@ object LocationService {
             "image/jpeg" -> ".jpg"
             "image/gif" -> ".gif"
             "image/svg+xml" -> ".svg"
-            else -> ".bin"
+            else -> null
         }
     }
 }

@@ -12,10 +12,7 @@ import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktorswaggerui.swaggerUI
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.content.PartData
-import io.ktor.http.content.forEachPart
 import io.ktor.server.application.Application
-import io.ktor.server.application.ApplicationCall
 import io.ktor.server.application.install
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.BadRequestException
@@ -23,14 +20,11 @@ import io.ktor.server.plugins.UnsupportedMediaTypeException
 import io.ktor.server.plugins.forwardedheaders.ForwardedHeaders
 import io.ktor.server.plugins.forwardedheaders.XForwardedHeaders
 import io.ktor.server.plugins.statuspages.StatusPages
-import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondRedirect
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
-import io.ktor.utils.io.readRemaining
-import kotlinx.io.readByteArray
 import kotlinx.serialization.SerializationException
 
 
@@ -100,31 +94,4 @@ enum class Realm(val value: String) {
     HARBOUR_CONTROL("harbor_control");
 
     override fun toString(): String = value
-}
-
-suspend fun ApplicationCall.receiveImageFile(): Pair<ByteArray, String> {
-    var imageBytes: ByteArray? = null
-    var contentType: String? = null
-
-    val multipart = receiveMultipart()
-    multipart.forEachPart { part ->
-        if (part is PartData.FileItem && part.name == "image") {
-            contentType = part.contentType.toString()
-
-            if (!contentType.startsWith("image/")) {
-                part.dispose()
-                throw UnsupportedMediaTypeException(null)
-            }
-
-            imageBytes = part.provider().readRemaining().readByteArray()
-        }
-        part.dispose()
-        return@forEachPart
-    }
-
-    if (imageBytes == null || contentType == null) {
-        throw BadRequestException("No image file provided")
-    }
-
-    return imageBytes to contentType
 }
