@@ -12,7 +12,7 @@ object JWTAuthority {
     private lateinit var ISSUER: String
     private lateinit var AUDIENCE: String
     private lateinit var ALGORITHM: Algorithm
-    private const val ACCESS_TTL_MILLIS: Long = 36_000_00L * 3 // 3 hours
+    private const val ACCESS_TTL_MILLIS: Long = 36_000_00L / 4 // 15 minutes
     private const val REFRESH_TTL_IN_MS: Long = 36_000_00L * 24 * 30 // 30 days
     private const val PASSWORD_RESET_TTL_IN_MS: Long = 36_000_00L / 2 // 30 minutes
     private const val MAGIC_LINK_TTL_IN_MS: Long = 36_000_00L / 2 // 30 minutes

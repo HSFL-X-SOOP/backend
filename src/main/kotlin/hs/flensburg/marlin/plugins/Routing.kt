@@ -9,6 +9,8 @@ import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePoten
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
 import hs.flensburg.marlin.business.api.users.boundary.configureUsers
 import io.github.smiley4.ktoropenapi.OpenApi
+import io.github.smiley4.ktoropenapi.config.AuthScheme
+import io.github.smiley4.ktoropenapi.config.AuthType
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.openApi
 import io.github.smiley4.ktorswaggerui.swaggerUI
@@ -41,6 +43,38 @@ fun Application.configureRouting(config: Config) {
     install(OpenApi) {
         server {
             url = config.backendUrl
+        }
+
+        security {
+            securityScheme("BearerAuth") {
+                type = AuthType.HTTP
+                scheme = AuthScheme.BEARER
+                bearerFormat = "JWT"
+                description = "JWT access token for authenticated users. Obtain via /login, /register, /login/google/android, or /magic-link/login endpoints. Token expires after 15 minutes - use /auth/refresh to obtain a new token pair."
+            }
+
+            securityScheme("BearerAuthAdmin") {
+                type = AuthType.HTTP
+                scheme = AuthScheme.BEARER
+                bearerFormat = "JWT"
+                description = "JWT access token with admin role. Only users with 'ADMIN' role in their JWT claims can access admin endpoints. Obtain via login endpoints if user has admin privileges."
+            }
+
+            securityScheme("OAuth2Google") {
+                type = AuthType.OAUTH2
+                flows {
+                    authorizationCode {
+                        authorizationUrl = "https://accounts.google.com/o/oauth2/v2/auth"
+                        tokenUrl = "https://oauth2.googleapis.com/token"
+                        scopes = mapOf(
+                            "openid" to "OpenID Connect authentication",
+                            "email" to "Access user's email address",
+                            "profile" to "Access user's basic profile information"
+                        )
+                    }
+                }
+                description = "Google OAuth2 authentication flow. Redirects to Google for authentication, then returns JWT tokens via callback."
+            }
         }
     }
 
