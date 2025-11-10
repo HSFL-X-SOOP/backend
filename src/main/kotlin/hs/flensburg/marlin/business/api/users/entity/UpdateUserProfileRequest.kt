@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UpdateUserProfileRequest(
+    val firstName: String? = null,
+    val lastName: String? = null,
     val language: Language? = null,
     val roles: List<UserActivityRole>? = null,
     val measurementSystem: MeasurementSystem? = null
