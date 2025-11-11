@@ -181,4 +181,16 @@ object UserRepo {
         harborMasterLocation.locationId!!
     }
 
+    fun assignLocationToHarborMaster(userId: Long, locationId: Long, assignedBy: Long): JIO<Unit> = Jooq.query {
+        insertInto(HARBOR_MASTER_LOCATION)
+            .set(HARBOR_MASTER_LOCATION.USER_ID, userId)
+            .set(HARBOR_MASTER_LOCATION.LOCATION_ID, locationId)
+            .set(HARBOR_MASTER_LOCATION.ASSIGNED_BY, assignedBy)
+            .onConflict(HARBOR_MASTER_LOCATION.USER_ID)
+            .doUpdate()
+            .set(HARBOR_MASTER_LOCATION.LOCATION_ID, locationId)
+            .set(HARBOR_MASTER_LOCATION.ASSIGNED_BY, assignedBy)
+            .execute()
+    }
+
 }
