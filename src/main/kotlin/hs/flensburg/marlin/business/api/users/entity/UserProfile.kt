@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.business.api.users.entity
 
+import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.database.generated.enums.Language
 import hs.flensburg.marlin.database.generated.enums.MeasurementSystem
 import hs.flensburg.marlin.database.generated.enums.UserActivityRole
@@ -23,7 +24,8 @@ data class UserProfile(
     var userCreatedAt: LocalDateTime,
     var userUpdatedAt: LocalDateTime?,
     var profileCreatedAt: LocalDateTime?,
-    var profileUpdatedAt: LocalDateTime?
+    var profileUpdatedAt: LocalDateTime?,
+    var assignedLocation: LocationDTO? = null
 ) {
     companion object {
         fun from(userView: UserView): UserProfile {
