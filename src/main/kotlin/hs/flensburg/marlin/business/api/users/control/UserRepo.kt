@@ -147,11 +147,15 @@ object UserRepo {
 
     fun updateProfile(
         userId: Long,
+        firstName: String?,
+        lastName: String?,
         language: Language?,
         roles: List<UserActivityRole>?,
         measurementSystem: MeasurementSystem?
     ): JIO<hs.flensburg.marlin.database.generated.tables.pojos.UserProfile?> = Jooq.query {
         update(USER_PROFILE)
+            .set(USER_PROFILE.FIRST_NAME, firstName)
+            .set(USER_PROFILE.LAST_NAME, lastName)
             .set(USER_PROFILE.LANGUAGE, language)
             .set(USER_PROFILE.ROLE, roles?.toTypedArray())
             .set(USER_PROFILE.MEASUREMENT_SYSTEM, measurementSystem)

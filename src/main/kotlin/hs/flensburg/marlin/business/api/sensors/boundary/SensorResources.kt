@@ -2,9 +2,9 @@ package hs.flensburg.marlin.business.api.sensors.boundary
 
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.business.api.location.boundary.LocationService
+import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
@@ -56,11 +56,11 @@ fun Application.configureSensors() {
             path = "/locations",
             builder = {
                 tags("location")
-                description = "Return all locations (raw form)."
+                description = "Return all locations."
                 response {
                     HttpStatusCode.OK to {
                         description = "List of locations"
-                        body<List<LocationDTO>>()
+                        body<List<DetailedLocationDTO>>()
                     }
                 }
             }
@@ -71,7 +71,7 @@ fun Application.configureSensors() {
         get(
             path = "/measurements",
             builder = {
-                tags("raw")
+                tags("measurements")
                 description = "Return all measurements (raw form)."
                 response {
                     HttpStatusCode.OK to {
@@ -87,7 +87,7 @@ fun Application.configureSensors() {
         get(
             path = "/latestmeasurements",
             builder = {
-                tags("raw")
+                tags("measurements")
                 description = "Return the latest measurement for each location (raw form)."
                 response {
                     HttpStatusCode.OK to {
@@ -104,10 +104,12 @@ fun Application.configureSensors() {
             path = "/latestmeasurementsNEW",
             builder = {
                 tags("measurements")
-                description = "Get the latest measurement values for all locations. The measurement must be within the last 2 hours."
+                description =
+                    "Get the latest measurement values for all locations. The measurement must be within the last 2 hours."
                 request {
                     queryParameter<String>("timezone") {
-                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                 }
@@ -140,11 +142,13 @@ fun Application.configureSensors() {
                         description = "The location ID (not the sensor ID)"
                     }
                     queryParameter<String>("timeRange") {
-                        description = "Optional time range ('48h', '7d', '30d', '90d', '180d' '1y'). Defaults to 24h. Warning: '90d', '180d' and '1y' can take a while to load."
+                        description =
+                            "Optional time range ('48h', '7d', '30d', '90d', '180d' '1y'). Defaults to 24h. Warning: '90d', '180d' and '1y' can take a while to load."
                         required = false
                     }
                     queryParameter<String>("timezone") {
-                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                 }
@@ -199,7 +203,8 @@ fun Application.configureSensors() {
                         required = false
                     }
                     queryParameter<String>("timezone") {
-                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                 }

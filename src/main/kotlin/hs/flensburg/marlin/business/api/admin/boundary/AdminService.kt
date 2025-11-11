@@ -61,19 +61,4 @@ object AdminService {
 
         KIO.unit
     }
-
-    fun changeUserRole(
-        userId: Long,
-        newRole: UserAuthorityRole
-    ): App<Error, Unit> = KIO.comprehension {
-        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.NotFound }
-
-        !UserRepo.updateUser(
-            userId = userId,
-            authorityRole = newRole,
-            verified = user.verified ?: false
-        ).orDie().onNullFail { Error.NotFound }
-
-        KIO.unit
-    }
 }
