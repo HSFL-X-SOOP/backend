@@ -1,7 +1,6 @@
 package hs.flensburg.marlin.business.api.admin.boundary
 
 import hs.flensburg.marlin.business.api.admin.entity.AssignLocationRequest
-import hs.flensburg.marlin.business.api.admin.entity.ChangeUserRoleRequest
 import hs.flensburg.marlin.business.api.admin.entity.DashboardInfo
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.plugins.Realm
@@ -65,34 +64,6 @@ fun Application.configureAdmin() {
                         userId = request.userId,
                         locationId = request.locationId,
                         adminId = admin.id
-                    )
-                )
-            }
-
-            post(
-                path = "/admin/changeUserRole",
-                builder = {
-                    description = "Change user role (upgrade to harbor master or downgrade to user) (Admin only)"
-                    tags("admin")
-                    request {
-                        body<ChangeUserRoleRequest>()
-                    }
-                    response {
-                        HttpStatusCode.OK to {
-                            description = "User role successfully changed"
-                        }
-                        HttpStatusCode.NotFound to {
-                            description = "User not found"
-                        }
-                    }
-                }
-            ) {
-                val request = call.receive<ChangeUserRoleRequest>()
-
-                call.respondKIO(
-                    AdminService.changeUserRole(
-                        userId = request.userId,
-                        newRole = request.newRole
                     )
                 )
             }
