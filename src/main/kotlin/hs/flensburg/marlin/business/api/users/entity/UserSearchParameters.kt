@@ -15,6 +15,8 @@ import org.jooq.Condition
 data class UserSearchParameters(
     var id: Long?,
     var email: String?,
+    var firstName: String?,
+    var lastName: String?,
     var verified: Boolean?,
     var authorityRole: UserAuthorityRole?,
     var activityRoles: List<UserActivityRole?>,
@@ -29,6 +31,8 @@ data class UserSearchParameters(
         return listOfNotNull(
             id?.let { USER_VIEW.ID.eq(it) },
             email?.let { USER_VIEW.EMAIL.likeIgnoreCase(it) },
+            firstName?.let { USER_VIEW.FIRST_NAME.likeIgnoreCase(it) },
+            lastName?.let { USER_VIEW.LAST_NAME.likeIgnoreCase(it) },
             verified?.let { USER_VIEW.VERIFIED.eq(it) },
             authorityRole?.let { USER_VIEW.AUTHORITY_ROLE.eq(it) },
             if (activityRoles.isNotEmpty()) USER_VIEW.ACTIVITY_ROLES.contains(activityRoles.toTypedArray()) else null,
@@ -46,6 +50,8 @@ data class UserSearchParameters(
             return UserSearchParameters(
                 id = queryParams["id"]?.toLongOrNull(),
                 email = queryParams["email"],
+                firstName = queryParams["firstName"],
+                lastName = queryParams["lastName"],
                 verified = queryParams["verified"]?.toBooleanStrictOrNull(),
                 authorityRole = queryParams["authorityRole"]?.let { UserAuthorityRole.valueOf(it.uppercase()) },
                 activityRoles = queryParams.getAll("activityRoles")?.map { UserActivityRole.valueOf(it.uppercase()) } ?: emptyList(),
