@@ -5,6 +5,7 @@ import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.jooq.Jooq
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Parameters
+import kotlinx.serialization.Serializable
 import org.jooq.Condition
 import org.jooq.OrderField
 import org.jooq.impl.DSL
@@ -80,6 +81,7 @@ interface ServiceLayerError {
  * @param filteredCount The total number of items after applying filters.
  * @param totalCount The total number of items without any filters.
  */
+@Serializable
 data class PageResult<A>(val items: List<A>, val filteredCount: Long, val totalCount: Long)
 
 /**

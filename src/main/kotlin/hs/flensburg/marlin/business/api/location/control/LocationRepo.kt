@@ -16,6 +16,12 @@ object LocationRepo {
             .fetchOneInto(Location::class.java)
     }
 
+    fun fetchAllLocations(): JIO<List<Location>> = Jooq.query {
+        selectFrom(LOCATION)
+            .orderBy(LOCATION.ID.asc())
+            .fetchInto(Location::class.java)
+    }
+
     fun fetchLocationsWithoutNameOrAdressButCoordinates(): JIO<List<Location>> = Jooq.query {
         selectFrom(LOCATION)
             .where(LOCATION.NAME.isNull)
