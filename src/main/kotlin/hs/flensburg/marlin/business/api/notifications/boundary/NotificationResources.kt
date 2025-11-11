@@ -2,7 +2,6 @@ package hs.flensburg.marlin.business.api.notifications.boundary
 
 import hs.flensburg.marlin.business.api.notifications.FirebaseNotificationSender
 import hs.flensburg.marlin.business.api.notifications.entity.TestNotificationRequest
-import hs.flensburg.marlin.business.api.users.entity.UserProfileResponse
 import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
