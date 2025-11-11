@@ -1,26 +1,19 @@
 package hs.flensburg.marlin.business.api.sensors.boundary
 
-import de.lambda9.tailwind.core.Exit.Companion.isSuccess
 import de.lambda9.tailwind.core.KIO
-import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
-import de.lambda9.tailwind.core.extensions.exit.getOrNull
+import hs.flensburg.marlin.business.api.location.boundary.LocationService
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
-import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
-import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.plugins.origin
-import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
-import kotlin.text.get
 
 fun Application.configureSensors() {
     routing {
@@ -62,7 +55,7 @@ fun Application.configureSensors() {
         get(
             path = "/locations",
             builder = {
-                tags("raw")
+                tags("location")
                 description = "Return all locations (raw form)."
                 response {
                     HttpStatusCode.OK to {
@@ -72,7 +65,7 @@ fun Application.configureSensors() {
                 }
             }
         ) {
-            call.respondKIO(SensorService.getAllLocations())
+            call.respondKIO(LocationService.getAllLocations())
         }
 
         get(

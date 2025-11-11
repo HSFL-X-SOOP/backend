@@ -10,6 +10,7 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
+import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import java.io.File
@@ -31,6 +32,11 @@ object LocationService {
                 is ValidationError -> ApiError.BadRequest(message)
             }
         }
+    }
+
+    fun getAllLocations(): App<Error, List<LocationDTO>> = KIO.comprehension {
+        val locations = !LocationRepo.fetchAllLocations().orDie().onNullFail { Error.NotFound }
+        KIO.ok(locations.map { LocationDTO.fromLocation(it) })
     }
 
     fun getLocationByID(locationId: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
