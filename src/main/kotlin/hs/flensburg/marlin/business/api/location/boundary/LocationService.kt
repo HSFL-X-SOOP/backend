@@ -33,10 +33,21 @@ object LocationService {
         }
     }
 
-    fun getLocationByID(id: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
-        val location = !LocationRepo.fetchLocationByID(id).orDie().onNullFail { Error.NotFound }
+    fun getLocationByID(locationId: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
+        val location = !LocationRepo.fetchLocationByID(locationId).orDie().onNullFail { Error.NotFound }
         KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
+
+    fun getHarborMasterAssignedLocation(userId: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.NotFound }
+
+        !KIO.failOn(user.role != UserAuthorityRole.HARBOR_MASTER) { Error.Unauthorized }
+        val assignedLocation = !UserRepo.fetchUserAssignedLocationId(userId).orDie().onNullFail { Error.NotFound }
+        val location = !LocationRepo.fetchLocationByID(assignedLocation).orDie().onNullFail { Error.NotFound }
+
+        KIO.ok(DetailedLocationDTO.fromLocation(location))
+    }
+
 
     fun updateLocationByID(userId: Long, id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> =
         KIO.comprehension {

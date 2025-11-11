@@ -46,10 +46,10 @@ fun Application.configureLocation() {
                 }
             }
         ) {
-            val id = call.parameters["id"]?.toLongOrNull()
+            val locationId = call.parameters["id"]?.toLongOrNull()
                 ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            call.respondKIO(LocationService.getLocationByID(id))
+            call.respondKIO(LocationService.getLocationByID(locationId))
         }
 
         get(
@@ -89,6 +89,28 @@ fun Application.configureLocation() {
         }
 
         authenticate(Realm.HARBOUR_CONTROL) {
+            get(
+                path = "/harbour/location",
+                builder = {
+                    tags("harbourMaster")
+                    description = "Get the assigned location for the authenticated harbor master"
+                    response {
+                        HttpStatusCode.OK to {
+                            description = "Successful response with location details"
+                            body<DetailedLocationDTO>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "User is not a harbor master"
+                        }
+                        HttpStatusCode.NotFound to {
+                            description = "No location assigned to this harbor master"
+                        }
+                    }
+                }
+            ) {
+                val user = call.principal<LoggedInUser>()!!
+                call.respondKIO(LocationService.getHarborMasterAssignedLocation(user.id))
+            }
 
             put(
                 path = "/location/{id}",
