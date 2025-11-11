@@ -3,7 +3,6 @@ package hs.flensburg.marlin
 import hs.flensburg.marlin.Config.Companion.parseConfig
 import hs.flensburg.marlin.business.Env
 import hs.flensburg.marlin.business.JEnv
-import hs.flensburg.marlin.business.api.notifications.FirebaseNotificationSender
 import hs.flensburg.marlin.business.api.notifications.configureFirebase
 import hs.flensburg.marlin.business.configureScheduling
 import hs.flensburg.marlin.plugins.configureCORS

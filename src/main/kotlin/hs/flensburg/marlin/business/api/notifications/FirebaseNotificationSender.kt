@@ -23,10 +23,10 @@ fun Application.configureFirebase(config: Config.FirebaseInfo) {
 
 object FirebaseNotificationSender {
 
-    fun sendNotification(token: String) {
+    fun sendNotification(token: String, title: String, message: String) {
         val notification = Notification.builder()
-            .setTitle("Title")
-            .setBody("Message")
+            .setTitle(title)
+            .setBody(message)
             .build()
 
         val message = Message.builder()
