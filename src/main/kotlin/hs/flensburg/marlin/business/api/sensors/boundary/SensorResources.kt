@@ -186,6 +186,10 @@ fun Application.configureSensors() {
                         description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
+                    queryParameter<String>("units") {
+                        description = "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        required = false
+                    }
                 }
                 response {
                     HttpStatusCode.OK to {
@@ -210,7 +214,8 @@ fun Application.configureSensors() {
                     locationID,
                     timeRange,
                     call.parameters["timezone"] ?: "DEFAULT",
-                    call.request.origin.remoteAddress
+                    call.request.origin.remoteAddress,
+                    call.parameters["units"] ?: "metric"
                 )
             )
         }
@@ -241,6 +246,10 @@ fun Application.configureSensors() {
                         description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
+                    queryParameter<String>("units") {
+                        description = "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        required = false
+                    }
                 }
                 response {
                     HttpStatusCode.OK to {
@@ -265,7 +274,8 @@ fun Application.configureSensors() {
                     locationID,
                     timeRange,
                     call.parameters["timezone"] ?: "DEFAULT",
-                    call.request.origin.remoteAddress
+                    call.request.origin.remoteAddress,
+                    call.parameters["units"] ?: "metric"
                 )
             )
         }

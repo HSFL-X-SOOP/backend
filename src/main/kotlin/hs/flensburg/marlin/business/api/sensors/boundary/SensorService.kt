@@ -88,12 +88,14 @@ object SensorService {
         locationId: Long,
         timeRange: String, // "today", "week", "month"
         timezone: String,
-        ipAddress: String
+        ipAddress: String,
+        units: String
     ): App<Error, LocationWithBoxesDTO?> = KIO.comprehension {
         val rawLocation = !SensorRepo.fetchLocationByIDWithMeasurementsWithinTimespan(
             locationId,
             timeRange,
-            !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
+            !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            units
         ).orDie().onNullFail { Error.NotFound }
         KIO.ok(rawLocation.mapToLocationWithBoxesDTO())
     }
@@ -102,12 +104,14 @@ object SensorService {
         locationId: Long,
         timeRange: String, // "today", "week", "month"
         timezone: String,
-        ipAddress: String
+        ipAddress: String,
+        units: String
     ): App<Error, LocationWithBoxesDTO?> = KIO.comprehension {
         val rawLocation = !SensorRepo.fetchLocationByIDWithMeasurementsWithinTimespanFAST(
             locationId,
             timeRange,
-            !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
+            !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            units
         ).orDie().onNullFail { Error.NotFound }
         KIO.ok(rawLocation.mapToLocationWithBoxesDTO())
     }

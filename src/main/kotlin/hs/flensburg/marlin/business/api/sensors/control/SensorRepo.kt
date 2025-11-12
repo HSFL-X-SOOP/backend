@@ -139,7 +139,8 @@ object SensorRepo {
     fun fetchLocationByIDWithMeasurementsWithinTimespan(
         locationId: Long,
         timeRange: String,
-        timezone: String
+        timezone: String,
+        units: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
         val intervalCondition = when (timeRange.lowercase()) {
@@ -216,11 +217,16 @@ object SensorRepo {
                 val time = rec.get("meas_time", OffsetDateTime::class.java)
                 val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
 
+                val (valueConverted, unit) = UnitsService.convert(rec.get("meas_value", Double::class.java)!!,
+                    type, units)
+
+                type.unitSymbol = unit
+
                 EnrichedMeasurementDTO(
                     sensor = sensor,
                     measurementType = type,
                     time = localTime,
-                    value = rec.get("meas_value", Double::class.java)!!
+                    value = valueConverted
                 )
             }
         )
@@ -233,7 +239,8 @@ object SensorRepo {
     fun fetchLocationByIDWithMeasurementsWithinTimespanFAST(
         locationId: Long,
         timeRange: String,
-        timezone: String
+        timezone: String,
+        units: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
         val (useRaw, bucketWidth, intervalCondition) = when (timeRange.lowercase()) {
@@ -338,11 +345,16 @@ object SensorRepo {
                 val time = rec.get("meas_time", OffsetDateTime::class.java)
                 val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
 
+                val (valueConverted, unit) = UnitsService.convert(rec.get("meas_value", Double::class.java)!!,
+                    type, units)
+
+                type.unitSymbol = unit
+
                 EnrichedMeasurementDTO(
                     sensor = sensor,
                     measurementType = type,
                     time = localTime,
-                    value = rec.get("meas_value", Double::class.java)!!
+                    value = valueConverted
                 )
 
 
