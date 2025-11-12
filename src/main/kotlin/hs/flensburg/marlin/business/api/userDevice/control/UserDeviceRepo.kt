@@ -2,19 +2,12 @@ package hs.flensburg.marlin.business.api.userDevice.control
 
 import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
-import hs.flensburg.marlin.database.generated.enums.Language
-import hs.flensburg.marlin.database.generated.enums.MeasurementSystem
-import hs.flensburg.marlin.database.generated.enums.UserActivityRole
 import hs.flensburg.marlin.database.generated.tables.pojos.UserDeviceView
-import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.pojos.UserDevice
-import hs.flensburg.marlin.database.generated.tables.pojos.UserView
+import hs.flensburg.marlin.business.api.userDevice.entity.UserDevice as UserDeviceEntity
 import hs.flensburg.marlin.database.generated.tables.records.UserDeviceRecord
-import hs.flensburg.marlin.database.generated.tables.references.USER
 import hs.flensburg.marlin.database.generated.tables.references.USER_DEVICE
 import hs.flensburg.marlin.database.generated.tables.references.USER_DEVICE_VIEW
-import hs.flensburg.marlin.database.generated.tables.references.USER_PROFILE
-import hs.flensburg.marlin.database.generated.tables.references.USER_VIEW
 
 object UserDeviceRepo {
     fun insert(userDevice: UserDeviceRecord): JIO<UserDevice> = Jooq.query {
@@ -51,21 +44,17 @@ object UserDeviceRepo {
             .fetchOneInto(UserDevice::class.java)
     }
 
-    fun fetchAllByUserId(userId: Long): JIO<UserDevice?> = Jooq.query {
-        selectFrom(USER_DEVICE)
-            .where(USER_DEVICE.USER_ID.eq(userId))
-            .fetchOneInto(UserDevice::class.java)
+    fun fetchAllByUserId(userId: Long): JIO<List<UserDeviceEntity?>> = Jooq.query {
+        selectFrom(USER_DEVICE_VIEW)
+            .where(USER_DEVICE_VIEW.USER_ID.eq(userId))
+            .fetchInto(UserDeviceView::class.java)
+            .map { UserDeviceEntity.from(it) }
+
     }
 
     fun deleteById(id: Long): JIO<Unit> = Jooq.query {
         deleteFrom(USER_DEVICE)
             .where(USER_DEVICE.ID.eq(id))
-            .execute()
-    }
-
-    fun deleteAllByUserId(id: Long): JIO<Unit> = Jooq.query {
-        deleteFrom(USER_DEVICE)
-            .where(USER_DEVICE.USER_ID.eq(id))
             .execute()
     }
 }

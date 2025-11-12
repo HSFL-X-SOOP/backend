@@ -5,14 +5,11 @@ import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.userDevice.control.UserDeviceRepo
 import hs.flensburg.marlin.business.api.userDevice.entity.CreateUserDeviceRequest
 import hs.flensburg.marlin.business.api.userDevice.entity.UserDevice
-import hs.flensburg.marlin.business.api.users.boundary.UserService
-import hs.flensburg.marlin.business.api.users.control.UserRepo
-import hs.flensburg.marlin.business.api.users.entity.CreateUserProfileRequest
-import hs.flensburg.marlin.business.api.users.entity.UserProfile
 
 object UserDeviceService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -27,14 +24,12 @@ object UserDeviceService {
         }
     }
 
-    /*
-    fun getDevices(userId: Long): App<Error, UserDevice> = KIO.comprehension {
-        UserDeviceRepo.fetchByUserId(userId).orDie()
-    }*/
-
-
     fun getUserDevice(userId: Long): App<UserDeviceService.Error, UserDevice> = KIO.comprehension {
         UserDeviceRepo.fetchViewById(userId).orDie().onNullFail { UserDeviceService.Error.NotFound }.map { UserDevice.from(it) }
+    }
+
+    fun getAllUserDevices(userId: Long): App<UserDeviceService.Error, List<UserDevice>> = KIO.comprehension {
+        UserDeviceRepo.fetchAllByUserId(userId).orDie().onNullFail { Error.NotFound } as KIO<JEnv, Error, List<UserDevice>>
     }
 
     fun createDevice(
@@ -53,12 +48,4 @@ object UserDeviceService {
 
         UserDeviceRepo.deleteById(userDevice.id!!).orDie()
     }
-
-    /*
-    fun deleteAllUserDevice(id: Long): App<UserDeviceService.Error, Unit> = KIO.comprehension {
-        val userDevice = !UserDeviceRepo.fetchById(id).orDie().onNullFail { UserDeviceService.Error.BadRequest }
-
-        UserDeviceRepo.deleteById(userDevice.id!!).orDie()
-    }
-    */
 }
