@@ -1,9 +1,9 @@
-package hs.flensburg.marlin.business.api.units.entity
+package hs.flensburg.marlin.business.api.sensors.entity
 
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UnitsDTO (
+data class MeasurementUnitsDTO (
     val waterTemperature: String,
     val waveHeight: String,
     val tide: String,

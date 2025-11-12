@@ -1,17 +1,16 @@
 package hs.flensburg.marlin.business.api.sensors.entity
 
-import hs.flensburg.marlin.business.api.units.entity.UnitsDTO
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class UnitsWithLocationWithBoxesDTO (
-    val units: UnitsDTO,
+    val units: MeasurementUnitsDTO,
     val locationWithBoxes: List<LocationWithBoxesDTO>
 )
 
 fun mapToUnitsWithLocationWithBoxesDTO(rawLocations: List<LocationWithLatestMeasurementsDTO>): UnitsWithLocationWithBoxesDTO {
     return UnitsWithLocationWithBoxesDTO(
-        units = UnitsDTO(
+        units = MeasurementUnitsDTO(
             getUnitFromRawLocations(rawLocations,"Temperature, water"),
             getUnitFromRawLocations(rawLocations,"Wave Height"),
             getUnitFromRawLocations(rawLocations,"Tide"),
