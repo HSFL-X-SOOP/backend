@@ -179,7 +179,7 @@ fun Application.configureSensors() {
                         description = "The location ID (not the sensor ID)"
                     }
                     queryParameter<String>("timeRange") {
-                        description = "Optional time range ('today', 'week', 'month', 'DEFAULT'). Defaults to 24h."
+                        description = "Optional time range ('48h', '7d', '30d', '90d', '180d' '1y'). Defaults to 24h. Warning: '90d', '180d' and '1y' can take a while to load."
                         required = false
                     }
                     queryParameter<String>("timezone") {
@@ -214,5 +214,61 @@ fun Application.configureSensors() {
                 )
             )
         }
+        //testing purposes
+        //TODO: remove
+        get(
+            path = "/location/{id}/measurementsWithinTimeRangeFAST",
+            builder = {
+                tags("location")
+                description = "Get all measurements for a location within a given time range"
+                request {
+                    pathParameter<Long>("id") {
+                        description = "The location ID (not the sensor ID)"
+                    }
+                    queryParameter<String>("timeRange") {
+                        description = """Optional time range ('48h', '7d', '30d', '1y'). Defaults to 24h.
+                            |           "24h" -> raw;
+                                        "48h" -> raw;
+                                        "7d"  -> avg: 2 hours;
+                                        "30d" -> avg: 6 hours;
+                                        "90d"  -> avg: 12 hours;
+                                        "180d" -> avg: 1 day;
+                                        "1y"  -> avg: 2 days;
+                        """.trimMargin()
+                        required = false
+                    }
+                    queryParameter<String>("timezone") {
+                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        required = false
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response with measurements"
+                        body<LocationWithBoxesDTO>()
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameters"
+                    }
+                }
+            }
+        ) {
+            val locationID = call.parameters["id"]?.toLongOrNull()
+            val timeRange = call.parameters["timeRange"] ?: "DEFAULT"
+
+            if (locationID == null) {
+                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
+                return@get
+            }
+            call.respondKIO(
+                SensorService.getLocationByIDWithMeasurementsWithinTimespanFAST(
+                    locationID,
+                    timeRange,
+                    call.parameters["timezone"] ?: "DEFAULT",
+                    call.request.origin.remoteAddress
+                )
+            )
+        }
+
     }
 }

@@ -33,6 +33,7 @@ fun main(args: Array<String>) {
         Flyway.configure()
             .driver("org.postgresql.Driver")
             .dataSource(dsl)
+            .locations("classpath:db/migration", "classpath:db/views")
             .schemas("marlin")
     ).migrate()
 
@@ -50,5 +51,4 @@ fun Application.modules(env: JEnv) {
     configureScheduling(env)
     configureCORS()
     configureRouting(env.env.config)
-
 }

@@ -1,10 +1,7 @@
 package hs.flensburg.marlin.business.api.potentialSensors.boundary
 
-import de.lambda9.tailwind.core.KIO
-import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.api.potentialSensors.entity.PotentialSensorDTO
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
-import hs.flensburg.marlin.database.generated.tables.pojos.PotentialSensor
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.respondKIO
@@ -16,17 +13,23 @@ import io.ktor.server.routing.routing
 
 fun Application.configurePotentialSensors() {
     routing {
-        // TODO: ADMIN Authentication
         authenticate(Realm.ADMIN) {
             get(
-                path = "/potential-sensors",
+                path = "/admin/potential-sensors",
                 builder = {
-                    description = "Get all potential sensors"
+                    description = "Get all potential sensors. Requires admin role."
                     tags("admin", "potential-sensors")
+                    securitySchemeNames("BearerAuthAdmin")
+                    description = "Get all potential sensors"
+                    tags("admin")
                     response {
                         HttpStatusCode.OK to {
                             description = "List of potential sensors"
                             body<List<PotentialSensorDTO>>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "Missing or invalid JWT token, or insufficient permissions (admin role required)"
+                            body<String>()
                         }
                         HttpStatusCode.InternalServerError to {
                             description = "Error retrieving potential sensors"
@@ -37,10 +40,11 @@ fun Application.configurePotentialSensors() {
                 call.respondKIO(PotentialSensorService.getAllPotentialSensors())
             }
             get(
-                path = "/potential-sensors-toggle/{id}",
+                path = "/admin/potential-sensors-toggle/{id}",
                 builder = {
-                    description = "Toggle active state of potential sensors"
+                    description = "Toggle active state of potential sensors. Requires admin role."
                     tags("admin", "potential-sensors")
+                    securitySchemeNames("BearerAuthAdmin")
                     request {
                         pathParameter<Long>("id") {
                             description = "The sensor ID"
@@ -50,6 +54,14 @@ fun Application.configurePotentialSensors() {
                         HttpStatusCode.OK to {
                             description = "potential sensors with updated active state"
                             body<List<PotentialSensorDTO>>()
+                        }
+                        HttpStatusCode.BadRequest to {
+                            description = "Invalid sensor ID"
+                            body<String>()
+                        }
+                        HttpStatusCode.Unauthorized to {
+                            description = "Missing or invalid JWT token, or insufficient permissions (admin role required)"
+                            body<String>()
                         }
                         HttpStatusCode.InternalServerError to {
                             description = "Error retrieving potential sensors"

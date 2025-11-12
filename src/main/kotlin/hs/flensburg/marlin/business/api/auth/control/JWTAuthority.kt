@@ -5,13 +5,14 @@ import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.database.generated.tables.pojos.User
+import hs.flensburg.marlin.database.generated.tables.pojos.UserView
 import java.util.Date
 
 object JWTAuthority {
     private lateinit var ISSUER: String
     private lateinit var AUDIENCE: String
     private lateinit var ALGORITHM: Algorithm
-    private const val ACCESS_TTL_MILLIS: Long = 36_000_00L * 3 // 3 hours
+    private const val ACCESS_TTL_MILLIS: Long = 36_000_00L / 4 // 15 minutes
     private const val REFRESH_TTL_IN_MS: Long = 36_000_00L * 24 * 30 // 30 days
     private const val PASSWORD_RESET_TTL_IN_MS: Long = 36_000_00L / 2 // 30 minutes
     private const val MAGIC_LINK_TTL_IN_MS: Long = 36_000_00L / 2 // 30 minutes
@@ -60,27 +61,27 @@ object JWTAuthority {
             .build()
     }
 
-    fun generateAccessToken(user: User): String =
+    fun generateAccessToken(user: UserView): String =
         generateToken(user, AUTH_SUBJECT, ACCESS_TTL_MILLIS)
 
-    fun generateRefreshToken(user: User): String =
+    fun generateRefreshToken(user: UserView): String =
         generateToken(user, REFRESH_SUBJECT, REFRESH_TTL_IN_MS)
 
-    fun generateMagicLinkToken(user: User): String =
+    fun generateMagicLinkToken(user: UserView): String =
         generateToken(user, MAGIC_LINK_SUBJECT, MAGIC_LINK_TTL_IN_MS)
 
-    fun generateEmailVerificationToken(user: User): String =
+    fun generateEmailVerificationToken(user: UserView): String =
         generateToken(user, EMAIL_VERIFICATION_SUBJECT, EMAIL_VERIFICATION_TTL_IN_MS)
 
     private fun generateToken(
-        user: User,
+        user: UserView,
         subject: String,
         ttlMillis: Long
     ): String = JWT.create()
         .withSubject(subject)
         .withClaim("id", user.id)
         .withClaim("email", user.email)
-        .withClaim("role", user.role.toString())
+        .withClaim("role", user.authorityRole.toString())
         .withClaim("issuedAt", System.currentTimeMillis())
         .withIssuer(ISSUER)
         .withAudience(AUDIENCE)
