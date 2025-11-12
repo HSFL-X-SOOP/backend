@@ -484,6 +484,7 @@
                             <pojos>true</pojos>
                             <pojosAsKotlinDataClasses>true</pojosAsKotlinDataClasses>
                             <daos>false</daos>
+                            <routines>false</routines>
                             <validationAnnotations>false</validationAnnotations>
                             <javaTimeTypes>true</javaTimeTypes>
                         </generate>
