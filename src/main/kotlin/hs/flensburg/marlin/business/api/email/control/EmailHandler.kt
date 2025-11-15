@@ -50,7 +50,7 @@ object EmailHandler {
             .from(config.mail.sendFrom)
             .to(user.email!!)
             .withSubject(subject(email.type!!))
-            .withHTMLText(body(email, user, *infoFields))
+            .withHTMLText(body(email, user, config.frontendUrl, *infoFields))
 
         if (logoStream != null) {
             mailBuilder.withEmbeddedImage("marlin-logo", logoStream.readBytes(), "image/png")
@@ -84,7 +84,7 @@ object EmailHandler {
         }
     }
 
-    private fun body(email: Email, user: UserView, vararg infoFields: Pair<String, String>): String {
+    private fun body(email: Email, user: UserView, frontendUrl: String, vararg infoFields: Pair<String, String>): String {
         val baseTemplate = loadTemplate("base")
         val contentTemplate = loadTemplate(templateNameForType(email.type!!))
 
@@ -96,11 +96,13 @@ object EmailHandler {
 
         val content = contentTemplate
             .replace("{{token}}", token)
+            .replace("{{frontendUrl}}", frontendUrl)
             .replace("{{infoFields}}", infoFields.toList().toInfoListHtml())
 
         return baseTemplate
             .replace("{{subject}}", subject(email.type!!))
             .replace("{{email}}", user.email ?: "")
+            .replace("{{frontendUrl}}", frontendUrl)
             .replace("{{content}}", content)
     }
 
