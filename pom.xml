@@ -22,9 +22,6 @@
         <kotlin.logging.version>7.0.7</kotlin.logging.version>
         <kotlin.dotenv.version>6.5.1</kotlin.dotenv.version>
 
-        <!--Testing-->
-        <junit.version>6.0.1</junit.version>
-
         <tailwind.version>0.2.0</tailwind.version>
         <ktor.version>3.2.3</ktor.version>
         <ktor-openapi-tools.version>5.1.0</ktor-openapi-tools.version>
@@ -37,6 +34,8 @@
         <bcrypt.version>0.4</bcrypt.version>
         <simplejavamail.version>8.12.6</simplejavamail.version>
         <firebase-admin.version>9.7.0</firebase-admin.version>
+        <stripe.version>30.2.0</stripe.version>
+        <jackson.version>2.20.1</jackson.version>
 
         <!--Compile-->
         <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
@@ -48,15 +47,18 @@
         <database.url>jdbc:postgresql://localhost:6000/marlin</database.url>
         <database.user>user</database.user>
         <database.password>sql</database.password>
-        <database.schemas>marlin</database.schemas>
+        <database.schemas>marlin,audit</database.schemas>
         <database.generated.package>hs.flensburg.marlin.database.generated</database.generated.package>
 
         <!-- TEST DATABASE -->
         <test.database.url>jdbc:postgresql://localhost:6001/marlin_test</test.database.url>
         <test.database.user>user</test.database.user>
         <test.database.password>sql</test.database.password>
-        <test.database.schemas>marlin</test.database.schemas>
+        <test.database.schemas>marlin,audit</test.database.schemas>
         <skipTestDbMigration>false</skipTestDbMigration>
+
+        <!--Testing-->
+        <junit.version>6.0.1</junit.version>
     </properties>
 
     <dependencies>
@@ -304,6 +306,7 @@
             <version>${simplejavamail.version}</version>
         </dependency>
 
+        <!--Firebase-->
         <dependency>
             <groupId>com.google.firebase</groupId>
             <artifactId>firebase-admin</artifactId>
@@ -344,6 +347,34 @@
             </exclusions>
         </dependency>
 
+
+        <!--Payment-->
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>${stripe.version}</version>
+        </dependency>
+
+        <!--Jackson-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-kotlin</artifactId>
+            <version>${jackson.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
