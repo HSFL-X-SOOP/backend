@@ -9,6 +9,7 @@ import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
 import hs.flensburg.marlin.business.api.notifications.boundary.configureNotifications
 import hs.flensburg.marlin.business.api.location.boundary.configureLocation
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.boundary.configureNotificationMeasurementRules
+import hs.flensburg.marlin.business.api.payment.boundary.configurePaymentResources
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
 import hs.flensburg.marlin.business.api.userDevice.boundary.configureUserDevices
@@ -48,9 +49,11 @@ fun Application.configureRouting(config: Config) {
     configureNotificationMeasurementRules()
     configureUserLocations()
     configureNotificationLocations()
+    configurePaymentResources(config)
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
+
     install(OpenApi) {
         server {
             url = config.backendUrl
@@ -61,14 +64,16 @@ fun Application.configureRouting(config: Config) {
                 type = AuthType.HTTP
                 scheme = AuthScheme.BEARER
                 bearerFormat = "JWT"
-                description = "JWT access token for authenticated users. Obtain via /login, /register, /login/google/android, or /magic-link/login endpoints. Token expires after 15 minutes - use /auth/refresh to obtain a new token pair."
+                description =
+                    "JWT access token for authenticated users. Obtain via /login, /register, /login/google/android, or /magic-link/login endpoints. Token expires after 15 minutes - use /auth/refresh to obtain a new token pair."
             }
 
             securityScheme("BearerAuthAdmin") {
                 type = AuthType.HTTP
                 scheme = AuthScheme.BEARER
                 bearerFormat = "JWT"
-                description = "JWT access token with admin role. Only users with 'ADMIN' role in their JWT claims can access admin endpoints. Obtain via login endpoints if user has admin privileges."
+                description =
+                    "JWT access token with admin role. Only users with 'ADMIN' role in their JWT claims can access admin endpoints. Obtain via login endpoints if user has admin privileges."
             }
 
             securityScheme("OAuth2Google") {
@@ -84,7 +89,8 @@ fun Application.configureRouting(config: Config) {
                         )
                     }
                 }
-                description = "Google OAuth2 authentication flow. Redirects to Google for authentication, then returns JWT tokens via callback."
+                description =
+                    "Google OAuth2 authentication flow. Redirects to Google for authentication, then returns JWT tokens via callback."
             }
         }
     }
@@ -103,6 +109,7 @@ fun Application.configureRouting(config: Config) {
                 mapOf("error" to "Malformed JSON: ${cause.cause?.message}")
             )
         }
+
         exception<UnsupportedMediaTypeException> { call, cause ->
             call.respond(
                 HttpStatusCode.UnsupportedMediaType,
@@ -128,12 +135,23 @@ fun Application.configureRouting(config: Config) {
     }
 }
 
+/**
+ * Helper function to authenticate routes using a specified realm
+ *
+ * @param realm The authentication realm to use
+ * @param block The route block to execute within the authenticated context
+ */
 fun Route.authenticate(realm: Realm, block: Route.() -> Unit) {
     authenticate(realm.value) {
         block()
     }
 }
 
+/**
+ * Enumeration of authentication realms used in the application
+ *
+ * @param value The string value representing the realm
+ */
 enum class Realm(val value: String) {
     COMMON("common"),
     ADMIN("admin"),

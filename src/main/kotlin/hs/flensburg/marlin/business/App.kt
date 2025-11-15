@@ -64,6 +64,7 @@ open class ApiError(
     data class Unknown(val msg: String?) : ApiError(HttpStatusCode.InternalServerError, msg ?: "Unknown error")
     data class Conflict(val msg: String?) : ApiError(HttpStatusCode.Conflict, msg ?: "Conflict error")
     data class TooManyRequests(val msg: String?) : ApiError(HttpStatusCode.TooManyRequests, msg ?: "Too many requests")
+    data class BadGateway(val msg: String?) : ApiError(HttpStatusCode.BadGateway, msg ?: "Bad gateway")
 
     // Add more error types as needed
 
