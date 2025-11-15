@@ -9,7 +9,8 @@ data class Config(
     val mail: Mail,
     val auth: Auth,
     val googleAuth: GoogleAuth,
-    val ipInfo: IPInfo
+    val ipInfo: IPInfo,
+    val stripe: Stripe
 ) {
     val frontendUrl: String
         get() = when (mode) {
@@ -65,6 +66,11 @@ data class Config(
         val token: String
     )
 
+    data class Stripe(
+        val secretKey: String,
+        val webhookSecret: String
+    )
+
     companion object {
         fun Dotenv.parseConfig(): Config = Config(
             mode = Mode.valueOf(get("MODE", "DEV").uppercase()),
@@ -95,6 +101,10 @@ data class Config(
             ),
             ipInfo = IPInfo(
                 token = get("IPINFO_TOKEN", "")
+            ),
+            stripe = Stripe(
+                secretKey = get("STRIPE_SECRET_KEY", ""),
+                webhookSecret = get("STRIPE_WEBHOOK_SECRET", "")
             )
         )
 
@@ -127,6 +137,10 @@ data class Config(
             ),
             ipInfo = IPInfo(
                 token = System.getenv("IPINFO_TOKEN") ?: ""
+            ),
+            stripe = Stripe(
+                secretKey = System.getenv("STRIPE_SECRET_KEY") ?: "",
+                webhookSecret = System.getenv("STRIPE_WEBHOOK_SECRET") ?: ""
             )
         )
     }
