@@ -1,15 +1,17 @@
 CREATE SCHEMA IF NOT EXISTS audit;
 
+CREATE TYPE audit.operation_type AS ENUM ('INSERT', 'UPDATE', 'DELETE');
+
 CREATE TABLE IF NOT EXISTS audit.audit_log
 (
     id             BIGSERIAL PRIMARY KEY,
-    table_name     TEXT        NOT NULL,
-    operation      VARCHAR(10) NOT NULL CHECK (operation IN ('INSERT', 'UPDATE', 'DELETE')),
+    table_name     TEXT                 NOT NULL,
+    operation      audit.operation_type NOT NULL,
     record_id      TEXT,
     old_data       JSONB,
     new_data       JSONB,
     changed_fields TEXT[],
-    changed_at     TIMESTAMP   NOT NULL DEFAULT NOW()
+    changed_at     TIMESTAMP            NOT NULL DEFAULT NOW()
 );
 
 REVOKE ALL ON SCHEMA audit FROM PUBLIC;
@@ -63,7 +65,7 @@ BEGIN
                                  changed_fields,
                                  changed_at)
     VALUES (TG_TABLE_NAME,
-            TG_OP,
+            TG_OP::audit.operation_type,
             record_id_value,
             old_data_json,
             new_data_json,
