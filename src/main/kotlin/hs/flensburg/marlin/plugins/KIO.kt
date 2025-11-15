@@ -27,7 +27,7 @@ suspend inline fun <E, reified A> ApplicationCall.respondKIO(kio: KIO<JEnv, E, A
             }
         },
         onDefect = {
-            respond(HttpStatusCode.InternalServerError)
+            respond(HttpStatusCode.InternalServerError, it.message?: "")
         },
         onSuccess = {
             respondNullable(it)
