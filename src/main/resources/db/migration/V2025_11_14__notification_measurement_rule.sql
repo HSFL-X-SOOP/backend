@@ -7,5 +7,7 @@ CREATE TABLE IF NOT EXISTS marlin.notification_measurement_rule
     operator VARCHAR(2) NOT NULL,
     valu DOUBLE PRECISION NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (user_id, location_id, measurement_type_id)
 );
