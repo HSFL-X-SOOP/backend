@@ -5,6 +5,7 @@ import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.admin.boundary.configureAdmin
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
 import hs.flensburg.marlin.business.api.location.boundary.configureLocation
+import hs.flensburg.marlin.business.api.notificationMeasurementRule.boundary.configureNotificationMeasurementRules
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
 import hs.flensburg.marlin.business.api.userDevice.boundary.configureUserDevices
@@ -40,6 +41,7 @@ fun Application.configureRouting(config: Config) {
     configurePotentialSensors()
     configureLocation()
     configureUserDevices()
+    configureNotificationMeasurementRules()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
