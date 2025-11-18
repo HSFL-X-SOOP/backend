@@ -19,12 +19,10 @@ object UserDeviceRepo {
 
     fun insertDevice(
         userId: Long,
-        deviceId: String,
         fcmToken: String
     ): JIO<UserDevice> = Jooq.query {
         insertInto(USER_DEVICE)
             .set(USER_DEVICE.USER_ID, userId)
-            .set(USER_DEVICE.DEVICE_ID, deviceId)
             .set(USER_DEVICE.FCM_TOKEN, fcmToken)
             .returning()
             .fetchOneInto(UserDevice::class.java)!!

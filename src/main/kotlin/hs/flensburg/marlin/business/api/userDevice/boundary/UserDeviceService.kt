@@ -13,7 +13,7 @@ import hs.flensburg.marlin.business.api.userDevice.entity.UserDevice
 
 object UserDeviceService {
     sealed class Error(private val message: String) : ServiceLayerError {
-        object NotFound : Error("User profile not found")
+        object NotFound : Error("User device not found")
         object BadRequest : Error("Bad request")
 
         override fun toApiError(): ApiError {
@@ -37,7 +37,7 @@ object UserDeviceService {
         userDevice: CreateUserDeviceRequest
     ): App<UserDeviceService.Error, UserDevice> = KIO.comprehension {
 
-        !UserDeviceRepo.insertDevice(userId, userDevice.deviceId, userDevice.fcmToken).orDie()
+        !UserDeviceRepo.insertDevice(userId, userDevice.fcmToken).orDie()
 
         UserDeviceRepo.fetchViewById(userId).orDie().onNullFail { UserDeviceService.Error.NotFound }.map { UserDevice.from(it) }
     }

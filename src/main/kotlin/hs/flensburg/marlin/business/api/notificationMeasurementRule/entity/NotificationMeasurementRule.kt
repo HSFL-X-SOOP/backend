@@ -12,7 +12,7 @@ data class NotificationMeasurementRuleDTO(
     var locationId: Long,
     var measurementTypeId: Long,
     var operator: String,
-    var value: Double,
+    var measurementValue: Double,
     var isActive: Boolean,
     var createdAt: LocalDateTime?
 ) {
@@ -24,7 +24,7 @@ data class NotificationMeasurementRuleDTO(
                 locationId = rule.locationId!!,
                 measurementTypeId = rule.measurementTypeId!!,
                 operator = rule.operator!!,
-                value = rule.valu!!,
+                measurementValue = rule.measurementValue!!,
                 isActive = rule.isActive!!,
                 createdAt = rule.createdAt?.toKotlinLocalDateTime()
 

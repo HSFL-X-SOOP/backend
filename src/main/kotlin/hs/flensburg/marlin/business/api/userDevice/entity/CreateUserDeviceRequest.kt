@@ -4,7 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CreateUserDeviceRequest(
-    val deviceId: String,
     val fcmToken: String,
     val userId: Long
 ) {

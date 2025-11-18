@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UserDevice(
     var id: Long,
-    var deviceId: String,
     var fcmToken: String,
     var userId: Long,
 ) {
@@ -14,7 +13,6 @@ data class UserDevice(
         fun from(userDeviceView: UserDeviceView): UserDevice {
             return UserDevice(
                 id = userDeviceView.id!!,
-                deviceId = userDeviceView.deviceId!!,
                 fcmToken = userDeviceView.fcmToken!!,
                 userId= userDeviceView.userId!!
             )

@@ -8,6 +8,6 @@ data class CreateOrUpdateNotificationMeasurementRuleRequest(
     var locationId: Long,
     var measurementTypeId: Long,
     var operator: String,
-    var value: Double,
+    var measurementValue: Double,
     var isActive: Boolean
 )

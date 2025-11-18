@@ -43,7 +43,7 @@ object NotificationMeasurementRuleService {
                 locationId = rule.locationId,
                 measurementTypeId = rule.measurementTypeId,
                 operator = rule.operator,
-                valu = rule.value,
+                measurementValue = rule.measurementValue,
                 isActive = rule.isActive
             )
         ).orDie()
@@ -61,7 +61,7 @@ object NotificationMeasurementRuleService {
                 locationId = rule.locationId,
                 measurementTypeId = rule.measurementTypeId,
                 operator = rule.operator,
-                valu = rule.value,
+                measurementValue = rule.measurementValue,
                 isActive = rule.isActive
             )
         ).orDie()
