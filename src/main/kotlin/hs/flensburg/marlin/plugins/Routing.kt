@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.plugins
 
+import configureUserLocations
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.admin.boundary.configureAdmin
@@ -42,6 +43,7 @@ fun Application.configureRouting(config: Config) {
     configureLocation()
     configureUserDevices()
     configureNotificationMeasurementRules()
+    configureUserLocations()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
