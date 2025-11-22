@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.plugins
 
+import configureNotificationLocations
 import configureUserLocations
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
@@ -44,6 +45,7 @@ fun Application.configureRouting(config: Config) {
     configureUserDevices()
     configureNotificationMeasurementRules()
     configureUserLocations()
+    configureNotificationLocations()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
