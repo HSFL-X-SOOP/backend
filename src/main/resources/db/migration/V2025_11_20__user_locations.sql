@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS marlin.user_locations
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     UNIQUE (user_id, location_id)
-    );
+);

@@ -37,6 +37,34 @@ fun Application.configureUserLocations() {
         }
 
         get(
+            path = "/user-locations/{userId}/{locationId}",
+            builder = {
+                description = "Get a user location by its user ID and location ID"
+                tags("user-locations")
+                request {
+                    pathParameter<Long>("userId") {
+                        description = "ID of the user"
+                    }
+                    pathParameter<Long>("locationId") {
+                        description = "ID of the location"
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        body<UserLocationDTO>()
+                    }
+                    HttpStatusCode.NotFound to {
+                        body<String>()
+                    }
+                }
+            }
+        ) {
+            val userId = call.parameters["userId"]!!.toLong()
+            val locationId = call.parameters["locationId"]!!.toLong()
+            call.respondKIO(UserLocationsService.getUserLocationByUserIdAndLocationId(userId, locationId))
+        }
+
+        get(
             path = "/user-locations/user/{userId}",
             builder = {
                 description = "Get all user locations from a user by the user ID"
