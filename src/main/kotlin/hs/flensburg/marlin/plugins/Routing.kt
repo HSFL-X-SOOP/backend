@@ -6,6 +6,7 @@ import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.admin.boundary.configureAdmin
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
+import hs.flensburg.marlin.business.api.notifications.boundary.configureNotifications
 import hs.flensburg.marlin.business.api.location.boundary.configureLocation
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.boundary.configureNotificationMeasurementRules
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
@@ -41,6 +42,7 @@ fun Application.configureRouting(config: Config) {
     configureSensors()
     configureAdmin()
     configurePotentialSensors()
+    configureNotifications()
     configureLocation()
     configureUserDevices()
     configureNotificationMeasurementRules()
