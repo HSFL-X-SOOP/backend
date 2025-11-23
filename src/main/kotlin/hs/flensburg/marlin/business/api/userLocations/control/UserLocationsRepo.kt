@@ -59,6 +59,13 @@ object UserLocationsRepo {
             .fetchOneInto(UserLocations::class.java)
     }
 
+    fun fetchAllUserLocationsByLocationId(locationId: Long): JIO<List<UserLocationDTO?>> = Jooq.query {
+        selectFrom(USER_LOCATIONS)
+            .where(USER_LOCATIONS.LOCATION_ID.eq(locationId))
+            .fetchInto(UserLocations::class.java)
+            .map { UserLocationDTO.from(it) }
+    }
+
     fun deleteById(id: Long): JIO<Unit> = Jooq.query {
         deleteFrom(USER_LOCATIONS)
             .where(USER_LOCATIONS.ID.eq(id))

@@ -78,6 +78,12 @@ fun Application.configureNotificationLocations() {
             }
         ) {
             val request = call.receive<CreateOrUpdateNotificationLocationRequest>()
+            val allUserLocationsByLocationId = UserLocationsService.getAllUserLocationsByLocationId(request.locationId)
+            FirebaseNotificationSender.sendNotification(
+                token="",
+                title="",
+                message=""
+            )
             call.respondKIO(NotificationLocationsService.create(request))
         }
 
