@@ -18,10 +18,7 @@ import java.time.LocalDateTime
 
 object EmailService {
     sealed class Error(private val message: String) : ServiceLayerError {
-        data class AlreadySent(
-            val userId: Long
-        ) : Error("An email has already been sent to you recently")
-
+        data class AlreadySent(val userId: Long) : Error("An email has already been sent to this user recently")
         data class UserNotFound(val email: String) : Error("User with email $email not found")
         data class EmailSendFailed(val emailId: Long, val error: String) :
             Error("Failed to send email with ID $emailId: $error")
@@ -39,6 +36,24 @@ object EmailService {
         }
     }
 
+    fun sendWelcomeEmail(userId: Long): App<Error, Unit> = KIO.comprehension {
+        !checkNoConsecutiveEmails(userId, EmailType.WELCOME) { lastEmail ->
+            lastEmail == null
+        }
+
+        val email = EmailRecord().apply {
+            this.userId = userId
+            this.type = EmailType.WELCOME
+            this.sentAt = null
+        }
+
+        val res = !EmailRepo.insert(email).orDie()
+
+        !EmailHandler.sendEmail(res).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+
+        KIO.unit
+    }
+
     fun sendVerificationEmail(userId: Long): App<Error, Unit> = KIO.comprehension {
         !checkNoConsecutiveEmails(userId, EmailType.EMAIL_VERIFICATION) { lastEmail ->
             lastEmail == null || lastEmail.sentAt != null && lastEmail.sentAt!!.isBefore(
@@ -54,11 +69,10 @@ object EmailService {
 
         val res = !EmailRepo.insert(email).orDie()
 
-        !EmailHandler.sendEmail(res)
-            .mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+        !EmailHandler.sendEmail(res).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit
-    }.transact()
+    }
 
     fun sendMagicLinkEmail(email: String): App<Error, Unit> = KIO.comprehension {
         val userId = (!UserRepo.fetchByEmail(email).orDie().onNullFail { Error.UserNotFound(email) }).id!!
@@ -77,8 +91,7 @@ object EmailService {
 
         val res = !EmailRepo.insert(email).orDie()
 
-        !EmailHandler.sendEmail(res)
-            .mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+        !EmailHandler.sendEmail(res).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit
     }.transact()
@@ -120,8 +133,7 @@ object EmailService {
         !EmailHandler.sendEmail(
             res,
             *infoFields.toTypedArray()
-        )
-            .mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+        ).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit
     }.transact()
