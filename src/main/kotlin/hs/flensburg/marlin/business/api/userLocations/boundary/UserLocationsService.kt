@@ -34,10 +34,6 @@ object UserLocationsService {
         UserLocationsRepo.fetchByUserIdAndLocationId(userId, locationId).orDie().onNullFail { UserLocationsService.Error.NotFound }.map { UserLocationDTO.from(it) }
     }
 
-    fun getAllUserLocationsByLocationId(locationId: Long): App<UserLocationsService.Error, List<UserLocationDTO>> = KIO.comprehension {
-        UserLocationsRepo.fetchAllUserLocationsByLocationId(locationId).orDie().onNullFail { UserLocationsService.Error.NotFound } as KIO<JEnv, UserLocationsService.Error, List<UserLocationDTO>>
-    }
-
     fun create(
         userLocation: CreateOrUpdateUserLocationRequest
     ): App<UserLocationsService.Error, UserLocationDTO> = KIO.comprehension {

@@ -1,4 +1,10 @@
+import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import hs.flensburg.marlin.business.api.notificationLocation.entity.CreateOrUpdateNotificationLocationRequest
+import hs.flensburg.marlin.business.api.notifications.FirebaseNotificationSender
+import hs.flensburg.marlin.business.api.userDevice.control.UserDeviceRepo
+import hs.flensburg.marlin.business.api.userDevice.entity.UserDevice
+import hs.flensburg.marlin.database.generated.tables.pojos.UserLocations
+import hs.flensburg.marlin.plugins.kioEnv
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.delete
 import io.github.smiley4.ktoropenapi.get
@@ -78,12 +84,27 @@ fun Application.configureNotificationLocations() {
             }
         ) {
             val request = call.receive<CreateOrUpdateNotificationLocationRequest>()
-            val allUserLocationsByLocationId = UserLocationsService.getAllUserLocationsByLocationId(request.locationId)
-            FirebaseNotificationSender.sendNotification(
-                token="",
-                title="",
-                message=""
+
+            var allUserLocations: List<UserLocations?> = UserLocationsRepo.fetchAllUserLocationsByLocationId(request.locationId).unsafeRunSync(call.kioEnv).fold(
+                onError = {listOf<UserLocations>()},
+                onSuccess = {it}
             )
+            allUserLocations = allUserLocations.filter { userLocations -> userLocations!!.sentHarborNotifications == true }
+            allUserLocations.forEach { userLocation ->
+                val userId: Long = userLocation!!.userId!!
+                val allUserDevices: List<UserDevice?> = UserDeviceRepo.fetchAllByUserId(userId).unsafeRunSync(call.kioEnv).fold(
+                    onError = {listOf<UserDevice>()},
+                    onSuccess = {it}
+                )
+                allUserDevices.forEach { device ->
+                    FirebaseNotificationSender.sendNotification(
+                        token = device!!.fcmToken,
+                        title = request.notificationTitle,
+                        message = request.notificationText
+                    )
+                }
+            }
+
             call.respondKIO(NotificationLocationsService.create(request))
         }
 
