@@ -30,6 +30,10 @@ object NotificationMeasurementRuleService {
         NotificationMeasurementRuleRepo.fetchById(id).orDie().onNullFail { NotificationMeasurementRuleService.Error.NotFound }.map { NotificationMeasurementRuleDTO.from(it) }
     }
 
+    fun getAllNotificationMeasurementRulesByLocationId(locationId: Long): App<NotificationMeasurementRuleService.Error, List<NotificationMeasurementRuleDTO>> = KIO.comprehension {
+        NotificationMeasurementRuleRepo.fetchAllByLocationId(locationId).orDie().onNullFail { Error.NotFound } as KIO<JEnv, Error, List<NotificationMeasurementRuleDTO>>
+    }
+
     fun getAllNotificationMeasurementRulesFromUser(userId: Long): App<NotificationMeasurementRuleService.Error, List<NotificationMeasurementRuleDTO>> = KIO.comprehension {
         NotificationMeasurementRuleRepo.fetchAllByUserId(userId).orDie().onNullFail { Error.NotFound } as KIO<JEnv, Error, List<NotificationMeasurementRuleDTO>>
     }

@@ -1,6 +1,5 @@
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import hs.flensburg.marlin.business.api.notificationLocation.entity.CreateOrUpdateNotificationLocationRequest
-import hs.flensburg.marlin.business.api.notifications.FirebaseNotificationSender
 import hs.flensburg.marlin.business.api.userDevice.control.UserDeviceRepo
 import hs.flensburg.marlin.business.api.userDevice.entity.UserDevice
 import hs.flensburg.marlin.database.generated.tables.pojos.UserLocations
@@ -97,11 +96,12 @@ fun Application.configureNotificationLocations() {
                     onSuccess = {it}
                 )
                 allUserDevices.forEach { device ->
-                    FirebaseNotificationSender.sendNotification(
-                        token = device!!.fcmToken,
-                        title = request.notificationTitle,
-                        message = request.notificationText
-                    )
+                    println("send noti")
+//                    FirebaseNotificationSender.sendNotification(
+//                        token = device!!.fcmToken,
+//                        title = request.notificationTitle,
+//                        message = request.notificationText
+//                    )
                 }
             }
 
