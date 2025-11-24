@@ -4,6 +4,7 @@ import de.lambda9.tailwind.core.Exit
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.exit.fold
+import hs.flensburg.marlin.business.api.notifications.boundary.NotificationService
 import hs.flensburg.marlin.business.schedulerJobs.auth.AuthSchedulerService
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.ReverseGeoCodingService
@@ -40,6 +41,10 @@ fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
 
     schedule(1.minutes, true, env) {
         AuthSchedulerService.deleteExpiredRestrictionLogs(LocalDateTime.now())
+    }
+
+    schedule(1.minutes, true, env) {
+        NotificationService.sentNotificationMeasurementRules()
     }
 }
 
