@@ -16,9 +16,9 @@ object LocationRepo {
             .fetchOneInto(Location::class.java)
     }
 
-    fun fetchAllLocation(): JIO<List<Location?>> = Jooq.query {
+    fun fetchAllLocations(): JIO<List<Location>> = Jooq.query {
         selectFrom(LOCATION)
-            .where(LOCATION.ID.gt(-1))
+            .orderBy(LOCATION.ID.asc())
             .fetchInto(Location::class.java)
     }
 

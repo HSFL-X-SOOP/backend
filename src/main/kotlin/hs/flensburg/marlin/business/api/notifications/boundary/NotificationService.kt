@@ -32,7 +32,7 @@ object NotificationService {
     }
 
     fun sentNotificationMeasurementRules(): App<ReverseGeoCodingService.Error, Unit> = KIO.comprehension {
-        val locations: List<Location?> = !LocationRepo.fetchAllLocation().orDie()
+        val locations: List<Location?> = !LocationRepo.fetchAllLocations().orDie()
         val locationWithLatestMeasurements: List<LocationWithLatestMeasurementsDTO> = !SensorRepo.fetchLocationsWithLatestMeasurements("").orDie()
         locations.forEach { location ->
             val currentLocationWithMeasurements: List<LocationWithLatestMeasurementsDTO> = locationWithLatestMeasurements.filter { it.location.id == location!!.id }
