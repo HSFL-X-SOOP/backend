@@ -8,9 +8,12 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.control.NotificationMeasurementRuleRepo
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.entity.NotificationMeasurementRuleDTO
+import hs.flensburg.marlin.business.api.notifications.FirebaseNotificationSender
 import hs.flensburg.marlin.business.api.sensors.control.SensorRepo
 import hs.flensburg.marlin.business.api.sensors.entity.EnrichedMeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
+import hs.flensburg.marlin.business.api.userDevice.control.UserDeviceRepo
+import hs.flensburg.marlin.business.api.userDevice.entity.UserDevice
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.ReverseGeoCodingService
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 
@@ -29,7 +32,7 @@ object NotificationService {
     }
 
     fun sentNotificationMeasurementRules(): App<ReverseGeoCodingService.Error, Unit> = KIO.comprehension {
-        val locations: List<Location?> = !LocationRepo.fetchAllLocations().orDie()
+        val locations: List<Location?> = !LocationRepo.fetchAllLocation().orDie()
         val locationWithLatestMeasurements: List<LocationWithLatestMeasurementsDTO> = !SensorRepo.fetchLocationsWithLatestMeasurements("").orDie()
         locations.forEach { location ->
             val currentLocationWithMeasurements: List<LocationWithLatestMeasurementsDTO> = locationWithLatestMeasurements.filter { it.location.id == location!!.id }
@@ -47,7 +50,7 @@ object NotificationService {
                 val operator = notificationMeasurementRule!!.operator
                 val notificationValue = notificationMeasurementRule.measurementValue
 
-                val sentNotification = when (operator) {
+                val sendNotification = when (operator) {
                     "<" -> measurementValue < notificationValue
                     ">" -> measurementValue > notificationValue
                     "<=" -> measurementValue <= notificationValue
@@ -55,16 +58,15 @@ object NotificationService {
                     else -> false
                 }
 
-                if (sentNotification) {
-//                    val userDevices: List<UserDevice?> = !UserDeviceRepo.fetchAllByUserId(notificationMeasurementRule.userId).orDie()
-//                    userDevices.forEach { userDevice ->
-//                        FirebaseNotificationSender.sendNotification(
-//                            token = userDevice!!.fcmToken,
-//                            title = "${currentLocationWithMeasurements.location.name}",
-//                            message = "${va.measurementType.name} $operator $notificationValue"
-//                        )
-//                    }
-                    println("${currentLocationWithMeasurement.location.name} ${enrichedMeasurementDTO.measurementType.name} Sent notification: MV $measurementValue $operator NV $notificationValue ")
+                if (sendNotification) {
+                    val userDevices: List<UserDevice?> = !UserDeviceRepo.fetchAllByUserId(notificationMeasurementRule.userId).orDie()
+                    userDevices.forEach { userDevice ->
+                        FirebaseNotificationSender.sendNotification(
+                            token = userDevice!!.fcmToken,
+                            title = "${currentLocationWithMeasurement.location.name}",
+                            message = "${enrichedMeasurementDTO.measurementType.name} $operator $notificationValue"
+                        )
+                    }
                 }
             }
 
