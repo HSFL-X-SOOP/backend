@@ -1,7 +1,6 @@
 package hs.flensburg.marlin.business.api.email.control
 
 import de.lambda9.tailwind.core.KIO
-import de.lambda9.tailwind.core.KIO.Companion.unit
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
@@ -42,15 +41,22 @@ object EmailHandler {
     }
 
     fun sendEmail(email: Email, vararg infoFields: Pair<String, String>): App<Error, Unit> = KIO.comprehension {
-        val config = (!KIO.access<JEnv>()).component2().config
+        val config = (!KIO.access<JEnv>()).env.config
         val user = !UserRepo.fetchViewById(email.userId!!).orDie().onNullFail { Error.UserNotFound(email.userId!!) }
 
-        val mail = EmailBuilder.startingBlank()
+        val logoStream = EmailHandler::class.java.getResourceAsStream("/assets/marlin-logo.png")
+
+        val mailBuilder = EmailBuilder.startingBlank()
             .from(config.mail.sendFrom)
             .to(user.email!!)
             .withSubject(subject(email.type!!))
-            .withHTMLText(body(email, user, *infoFields))
-            .buildEmail()
+            .withHTMLText(body(email, user, config.frontendUrl, *infoFields))
+
+        if (logoStream != null) {
+            mailBuilder.withEmbeddedImage("marlin-logo", logoStream.readBytes(), "image/png")
+        }
+
+        val mail = mailBuilder.buildEmail()
 
         val mailer = MailerBuilder
             .withSMTPServer(
@@ -66,7 +72,7 @@ object EmailHandler {
 
         mailer.sendMail(mail)
 
-        unit
+        KIO.unit
     }
 
     private fun subject(type: EmailType): String {
@@ -78,7 +84,7 @@ object EmailHandler {
         }
     }
 
-    private fun body(email: Email, user: UserView, vararg infoFields: Pair<String, String>): String {
+    private fun body(email: Email, user: UserView, frontendUrl: String, vararg infoFields: Pair<String, String>): String {
         val baseTemplate = loadTemplate("base")
         val contentTemplate = loadTemplate(templateNameForType(email.type!!))
 
@@ -90,11 +96,13 @@ object EmailHandler {
 
         val content = contentTemplate
             .replace("{{token}}", token)
+            .replace("{{frontendUrl}}", frontendUrl)
             .replace("{{infoFields}}", infoFields.toList().toInfoListHtml())
 
         return baseTemplate
             .replace("{{subject}}", subject(email.type!!))
             .replace("{{email}}", user.email ?: "")
+            .replace("{{frontendUrl}}", frontendUrl)
             .replace("{{content}}", content)
     }
 
@@ -108,11 +116,11 @@ object EmailHandler {
     private fun List<Pair<String, String>>.toInfoListHtml(): String =
         if (isEmpty()) ""
         else buildString {
-            appendLine("<hr style=\"border: none; border-top: 1px solid #3f3f46; margin: 24px 0;\">")
+            appendLine("<hr style=\"border: none; border-top: 1px solid #52525b; margin: 24px 0;\">")
             appendLine("<ul style=\"margin: 16px 0 0 0; padding: 0 0 0 20px; font-family: 'Oswald', sans-serif; font-size: 14px; line-height: 1.6;\">")
             for ((label, value) in this@toInfoListHtml) {
                 appendLine(
-                    "<li style=\"margin-bottom: 8px; color: #ffffff;\"><strong style=\"color: #ffffff;\">${label.escape()}</strong>: <span style=\"color: #78d278;\">${value.escape()}</span></li>"
+                    "<li style=\"margin-bottom: 8px; color: #f0f0f0;\"><strong style=\"color: #f0f0f0;\">${label.escape()}</strong>: <span style=\"color: #5fc0fc;\">${value.escape()}</span></li>"
                 )
             }
             appendLine("</ul>")

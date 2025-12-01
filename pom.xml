@@ -396,6 +396,20 @@
                     </execution>
 
                     <execution>
+                        <id>clean-test-db</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <url>${test.database.url}</url>
+                            <user>${test.database.user}</user>
+                            <password>${test.database.password}</password>
+                            <schemas>${test.database.schemas}</schemas>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>migrate-test-db</id>
                         <phase>generate-test-sources</phase>
                         <goals>
@@ -411,6 +425,10 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <url>${database.url}</url>
+                    <user>${database.user}</user>
+                    <password>${database.password}</password>
+                    <schemas>${database.schemas}</schemas>
                     <cleanDisabled>false</cleanDisabled>
                     <locations>
                         <location>filesystem:src/main/resources/db/migration</location>
@@ -464,7 +482,7 @@
                             <name>org.jooq.meta.postgres.PostgresDatabase</name>
                             <includes>.*</includes>
                             <excludes/>
-                            <inputSchema>${database.schemas}</inputSchema>
+                            <inputSchema>marlin</inputSchema>
                             <outputSchemaToDefault>false</outputSchemaToDefault>
 
                             <forcedTypes>
@@ -484,6 +502,7 @@
                             <pojos>true</pojos>
                             <pojosAsKotlinDataClasses>true</pojosAsKotlinDataClasses>
                             <daos>false</daos>
+                            <routines>false</routines>
                             <validationAnnotations>false</validationAnnotations>
                             <javaTimeTypes>true</javaTimeTypes>
                         </generate>
