@@ -31,3 +31,4 @@ build/
 .gradle/
 .kts
 
+google-service.json

@@ -59,6 +59,7 @@ data class Config(
     data class GoogleAuth(
         val clientId: String,
         val clientSecret: String,
+        val iosClientId: String,
     )
 
     data class IPInfo(
@@ -91,7 +92,8 @@ data class Config(
             ),
             googleAuth = GoogleAuth(
                 clientId = get("GOOGLE_CLIENT_ID", ""),
-                clientSecret = get("GOOGLE_CLIENT_SECRET", "")
+                clientSecret = get("GOOGLE_CLIENT_SECRET", ""),
+                iosClientId = get("GOOGLE_IOS_CLIENT_ID", "")
             ),
             ipInfo = IPInfo(
                 token = get("IPINFO_TOKEN", "")
@@ -123,7 +125,8 @@ data class Config(
             ),
             googleAuth = GoogleAuth(
                 clientId = System.getenv("GOOGLE_CLIENT_ID") ?: "",
-                clientSecret = System.getenv("GOOGLE_CLIENT_SECRET") ?: ""
+                clientSecret = System.getenv("GOOGLE_CLIENT_SECRET") ?: "",
+                iosClientId = System.getenv("GOOGLE_IOS_CLIENT_ID") ?: ""
             ),
             ipInfo = IPInfo(
                 token = System.getenv("IPINFO_TOKEN") ?: ""
