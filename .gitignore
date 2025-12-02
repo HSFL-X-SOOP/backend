@@ -34,3 +34,4 @@ build/
 # === Notifications ===
 src/main/resources/firebase/firebase-service-account-key.json
 
+google-service.json

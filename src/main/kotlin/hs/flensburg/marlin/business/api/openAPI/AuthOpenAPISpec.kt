@@ -84,8 +84,9 @@ object AuthOpenAPISpec {
 
     val loginGoogleAndroid: RouteConfig.() -> Unit = {
         tags("auth")
-        description = "Authenticates a user using a Google ID token obtained from the Android Google Sign-In SDK. " +
-                "This endpoint is specifically for mobile applications."
+        description = "Authenticates a user using a Google ID token obtained from Google Sign-In SDK. " +
+                "This endpoint supports both Android and iOS mobile applications. " +
+                "The ID token must be issued for one of the registered client IDs (Web or iOS)."
 
         request {
             body<GoogleLoginRequest>()
@@ -98,6 +99,10 @@ object AuthOpenAPISpec {
             }
             HttpStatusCode.BadRequest to {
                 description = "Invalid or expired Google ID token"
+                body<String>()
+            }
+            HttpStatusCode.Unauthorized to {
+                description = "Google ID token audience verification failed - token not issued for this application"
                 body<String>()
             }
         }

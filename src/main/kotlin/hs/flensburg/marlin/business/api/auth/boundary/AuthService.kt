@@ -7,6 +7,7 @@ import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.control.AuthRepo
 import hs.flensburg.marlin.business.api.auth.control.Hashing
@@ -217,6 +218,16 @@ object AuthService {
             JWT.decode(idToken)
         } catch (e: Exception) {
             !KIO.fail(Error.BadRequest)
+        }
+
+        val googleConfig = (!KIO.access<JEnv>()).env.config.googleAuth
+
+        val audience = credentials.audience
+        val validAudiences = listOf(googleConfig.clientId, googleConfig.iosClientId)
+
+        !KIO.failOn(audience.none { it in validAudiences }) {
+            logger.warn { "Invalid Google ID token audience: $audience" }
+            Error.Unauthorized
         }
 
         val email = credentials.getClaim("email").asString()
