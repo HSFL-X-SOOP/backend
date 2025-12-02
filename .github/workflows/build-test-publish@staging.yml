@@ -89,3 +89,5 @@ jobs:
             sudo systemctl stop marlin-test.service
             docker pull ${{ env.CONTAINER_REGISTRY_USERNAME }}/${{ env.CONTAINER_IMAGE_NAME }}:beta
             sudo systemctl start marlin-test.service
+            docker image prune -f
+            echo "Cleaned up unused Docker images"
