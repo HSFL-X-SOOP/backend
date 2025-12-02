@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="error">
     <Properties>
-        <Property name="LOG_DIR">${env:LOG_DIR:-/app/logs}</Property>
+        <Property name="LOG_DIR">${env:LOG_DIR:-target/logs}</Property>
         <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Property>
         <Property name="JSON_PATTERN">{"timestamp":"%d{ISO8601}","level":"%level","thread":"%thread","logger":"%logger","message":"%msg","exception":"%ex"}%n</Property>
+        <Property name="ENABLE_FILE_LOGGING">${env:ENABLE_FILE_LOGGING:-false}</Property>
     </Properties>
 
     <Appenders>
@@ -17,10 +18,12 @@
             <PatternLayout pattern="${JSON_PATTERN}" />
         </Console>
 
-        <!-- Rolling File Appender - All logs -->
+        <!-- Rolling File Appender - All logs (only used when ENABLE_FILE_LOGGING=true) -->
         <RollingFile name="RollingFile"
                      fileName="${LOG_DIR}/marlin.log"
-                     filePattern="${LOG_DIR}/marlin-%d{yyyy-MM-dd}-%i.log.gz">
+                     filePattern="${LOG_DIR}/marlin-%d{yyyy-MM-dd}-%i.log.gz"
+                     createOnDemand="true"
+                     ignoreExceptions="false">
             <PatternLayout pattern="${LOG_PATTERN}" />
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true" />
@@ -32,7 +35,9 @@
         <!-- Rolling File Appender - Error logs only -->
         <RollingFile name="ErrorFile"
                      fileName="${LOG_DIR}/marlin-error.log"
-                     filePattern="${LOG_DIR}/marlin-error-%d{yyyy-MM-dd}-%i.log.gz">
+                     filePattern="${LOG_DIR}/marlin-error-%d{yyyy-MM-dd}-%i.log.gz"
+                     createOnDemand="true"
+                     ignoreExceptions="false">
             <PatternLayout pattern="${LOG_PATTERN}" />
             <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY" />
             <Policies>
@@ -41,15 +46,6 @@
             </Policies>
             <DefaultRolloverStrategy max="30" />
         </RollingFile>
-
-        <!-- Async appenders -->
-        <Async name="AsyncFile">
-            <AppenderRef ref="RollingFile" />
-        </Async>
-
-        <Async name="AsyncError">
-            <AppenderRef ref="ErrorFile" />
-        </Async>
     </Appenders>
 
     <Loggers>
@@ -62,14 +58,12 @@
         <!-- Application loggers -->
         <Logger name="hs.flensburg.marlin" level="debug" additivity="false">
             <AppenderRef ref="${env:LOG_APPENDER:-Console}" />
-            <AppenderRef ref="AsyncFile" />
-            <AppenderRef ref="AsyncError" />
+            <AppenderRef ref="RollingFile" level="info" />
+            <AppenderRef ref="ErrorFile" level="error" />
         </Logger>
 
         <Root level="info">
             <AppenderRef ref="${env:LOG_APPENDER:-Console}" />
-            <AppenderRef ref="AsyncFile" />
-            <AppenderRef ref="AsyncError" />
         </Root>
     </Loggers>
 </Configuration>
