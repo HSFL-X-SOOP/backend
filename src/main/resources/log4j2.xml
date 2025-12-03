@@ -1,14 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="error">
+    <Properties>
+        <Property name="LOG_DIR">${env:LOG_DIR:-target/logs}</Property>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Property>
+        <Property name="JSON_PATTERN">{"timestamp":"%d{ISO8601}","level":"%level","thread":"%thread","logger":"%logger","message":"%msg","exception":"%ex"}%n</Property>
+        <Property name="ENABLE_FILE_LOGGING">${env:ENABLE_FILE_LOGGING:-false}</Property>
+    </Properties>
+
     <Appenders>
+        <!-- Console Appender - Plain text -->
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
+            <PatternLayout pattern="${LOG_PATTERN}" />
         </Console>
+
+        <!-- Console JSON Appender -->
+        <Console name="ConsoleJSON" target="SYSTEM_OUT">
+            <PatternLayout pattern="${JSON_PATTERN}" />
+        </Console>
+
+        <!-- Rolling File Appender - All logs (only used when ENABLE_FILE_LOGGING=true) -->
+        <RollingFile name="RollingFile"
+                     fileName="${LOG_DIR}/marlin.log"
+                     filePattern="${LOG_DIR}/marlin-%d{yyyy-MM-dd}-%i.log.gz"
+                     createOnDemand="true"
+                     ignoreExceptions="false">
+            <PatternLayout pattern="${LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true" />
+                <SizeBasedTriggeringPolicy size="100 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="30" />
+        </RollingFile>
+
+        <!-- Rolling File Appender - Error logs only -->
+        <RollingFile name="ErrorFile"
+                     fileName="${LOG_DIR}/marlin-error.log"
+                     filePattern="${LOG_DIR}/marlin-error-%d{yyyy-MM-dd}-%i.log.gz"
+                     createOnDemand="true"
+                     ignoreExceptions="false">
+            <PatternLayout pattern="${LOG_PATTERN}" />
+            <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true" />
+                <SizeBasedTriggeringPolicy size="50 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="30" />
+        </RollingFile>
     </Appenders>
 
     <Loggers>
+        <!-- Reduce noise from libraries -->
+        <Logger name="io.ktor" level="info" />
+        <Logger name="org.jooq" level="info" />
+        <Logger name="com.zaxxer.hikari" level="info" />
+        <Logger name="org.flywaydb" level="info" />
+
+        <!-- Application loggers -->
+        <Logger name="hs.flensburg.marlin" level="debug" additivity="false">
+            <AppenderRef ref="${env:LOG_APPENDER:-Console}" />
+            <AppenderRef ref="RollingFile" level="info" />
+            <AppenderRef ref="ErrorFile" level="error" />
+        </Logger>
+
         <Root level="info">
-            <AppenderRef ref="Console" />
+            <AppenderRef ref="${env:LOG_APPENDER:-Console}" />
         </Root>
     </Loggers>
 </Configuration>

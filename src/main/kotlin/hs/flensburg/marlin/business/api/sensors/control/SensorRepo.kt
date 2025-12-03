@@ -9,11 +9,9 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
-import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
 import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
-import hs.flensburg.marlin.database.generated.tables.references.LOCATION
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENT
 import hs.flensburg.marlin.database.generated.tables.references.MEASUREMENTTYPE
 import hs.flensburg.marlin.database.generated.tables.references.POTENTIAL_SENSOR
@@ -30,12 +28,6 @@ object SensorRepo {
 
     fun fetchAllMeasurementTypes(): JIO<List<Measurementtype>> = Jooq.query {
         selectFrom(MEASUREMENTTYPE).fetchInto(Measurementtype::class.java)
-    }
-
-    fun fetchAllLocations(): JIO<List<Location>> = Jooq.query {
-        selectFrom(LOCATION)
-            .orderBy(LOCATION.ID.asc())
-            .fetchInto(Location::class.java)
     }
 
     fun fetchAllMeasurements(): JIO<List<Measurement>> = Jooq.query {

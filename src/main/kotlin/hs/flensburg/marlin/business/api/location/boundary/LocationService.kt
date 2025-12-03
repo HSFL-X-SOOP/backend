@@ -10,6 +10,7 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
+import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import java.io.File
@@ -33,10 +34,26 @@ object LocationService {
         }
     }
 
-    fun getLocationByID(id: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
-        val location = !LocationRepo.fetchLocationByID(id).orDie().onNullFail { Error.NotFound }
+    fun getAllLocations(): App<Error, List<LocationDTO>> = KIO.comprehension {
+        val locations = !LocationRepo.fetchAllLocations().orDie().onNullFail { Error.NotFound }
+        KIO.ok(locations.map { LocationDTO.fromLocation(it) })
+    }
+
+    fun getLocationByID(locationId: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
+        val location = !LocationRepo.fetchLocationByID(locationId).orDie().onNullFail { Error.NotFound }
         KIO.ok(DetailedLocationDTO.fromLocation(location))
     }
+
+    fun getHarborMasterAssignedLocation(userId: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.NotFound }
+
+        !KIO.failOn(user.role != UserAuthorityRole.HARBOR_MASTER) { Error.Unauthorized }
+        val assignedLocation = !UserRepo.fetchUserAssignedLocationId(userId).orDie().onNullFail { Error.NotFound }
+        val location = !LocationRepo.fetchLocationByID(assignedLocation).orDie().onNullFail { Error.NotFound }
+
+        KIO.ok(DetailedLocationDTO.fromLocation(location))
+    }
+
 
     fun updateLocationByID(userId: Long, id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> =
         KIO.comprehension {
