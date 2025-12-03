@@ -14,7 +14,9 @@ data class NotificationMeasurementRuleDTO(
     var operator: String,
     var measurementValue: Double,
     var isActive: Boolean,
-    var createdAt: LocalDateTime?
+    var createdAt: LocalDateTime?,
+    var lastNotifiedAt: LocalDateTime?,
+    var lastState: Boolean
 ) {
     companion object {
         fun from(rule: NotificationMeasurementRule): NotificationMeasurementRuleDTO {
@@ -26,8 +28,9 @@ data class NotificationMeasurementRuleDTO(
                 operator = rule.operator!!,
                 measurementValue = rule.measurementValue!!,
                 isActive = rule.isActive!!,
-                createdAt = rule.createdAt?.toKotlinLocalDateTime()
-
+                createdAt = rule.createdAt?.toKotlinLocalDateTime(),
+                lastNotifiedAt = rule.lastNotifiedAt?.toKotlinLocalDateTime(),
+                lastState = rule.lastState!!
             )
         }
     }

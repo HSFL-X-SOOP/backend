@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.business.api.notificationMeasurementRule.entity
 
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 
 @Serializable
