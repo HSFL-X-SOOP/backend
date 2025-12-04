@@ -1,26 +1,18 @@
 package hs.flensburg.marlin.business.api.sensors.boundary
 
-import de.lambda9.tailwind.core.Exit.Companion.isSuccess
 import de.lambda9.tailwind.core.KIO
-import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
-import de.lambda9.tailwind.core.extensions.exit.getOrNull
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
-import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
-import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.plugins.origin
-import io.ktor.server.response.respond
 import io.ktor.server.routing.routing
-import kotlin.text.get
 
 fun Application.configureSensors() {
     routing {
@@ -111,10 +103,12 @@ fun Application.configureSensors() {
             path = "/latestmeasurementsNEW",
             builder = {
                 tags("measurements")
-                description = "Get the latest measurement values for all locations. The measurement must be within the last 2 hours."
+                description =
+                    "Get the latest measurement values for all locations. The measurement must be within the last 2 hours."
                 request {
                     queryParameter<String>("timezone") {
-                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                 }
@@ -147,11 +141,13 @@ fun Application.configureSensors() {
                         description = "The location ID (not the sensor ID)"
                     }
                     queryParameter<String>("timeRange") {
-                        description = "Optional time range ('48h', '7d', '30d', '90d', '180d' '1y'). Defaults to 24h. Warning: '90d', '180d' and '1y' can take a while to load."
+                        description =
+                            "Optional time range ('48h', '7d', '30d', '90d', '180d' '1y'). Defaults to 24h. Warning: '90d', '180d' and '1y' can take a while to load."
                         required = false
                     }
                     queryParameter<String>("timezone") {
-                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                 }
@@ -185,7 +181,7 @@ fun Application.configureSensors() {
         //testing purposes
         //TODO: remove
         get(
-            path = "/location/{id}/measurementsWithinTimeRangeFAST",
+            path = "/location/{id}/measurementsWithinTimeRangeFASTER",
             builder = {
                 tags("location")
                 description = "Get all measurements for a location within a given time range"
@@ -206,7 +202,8 @@ fun Application.configureSensors() {
                         required = false
                     }
                     queryParameter<String>("timezone") {
-                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                 }
@@ -229,7 +226,7 @@ fun Application.configureSensors() {
                 return@get
             }
             call.respondKIO(
-                SensorService.getLocationByIDWithMeasurementsWithinTimespanFAST(
+                SensorService.getLocationByIDWithMeasurementsWithinTimespanFASTER(
                     locationID,
                     timeRange,
                     call.parameters["timezone"] ?: "DEFAULT",

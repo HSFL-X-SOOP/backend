@@ -53,11 +53,11 @@ BEGIN
             mt.unit_symbol::text AS unit_symbol,
             mt.unit_definition::text AS unit_definition,
             rd.bucket,
-            rd.avg,
-            rd.min,
-            rd.max,
+            ROUND(rd.avg::numeric, 2)::double precision AS avg,
+            ROUND(rd.min::numeric, 2)::double precision AS min,
+            ROUND(rd.max::numeric, 2)::double precision AS max,
             rd.count,
-            rd.stddev
+            ROUND(rd.stddev::numeric, 2)::double precision AS stddev
         FROM raw_data rd
                  JOIN marlin.location l ON rd.location_id = l.id
                  JOIN marlin.sensor s ON rd.sensor_id = s.id

@@ -7,16 +7,10 @@ import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.sensors.control.SensorRepo
-import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
+import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.sensors.entity.mapToLocationWithBoxesDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.*
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 
 object SensorService {
@@ -54,9 +48,10 @@ object SensorService {
 
     fun getLocationsWithLatestMeasurements(timezone: String): App<Error, List<LocationWithLatestMeasurementsDTO>> =
         KIO.comprehension {
-        val latestMeasurements = !SensorRepo.fetchLocationsWithLatestMeasurements(timezone).orDie().onNullFail { Error.NotFound }
-        KIO.ok(latestMeasurements)
-    }
+            val latestMeasurements =
+                !SensorRepo.fetchLocationsWithLatestMeasurements(timezone).orDie().onNullFail { Error.NotFound }
+            KIO.ok(latestMeasurements)
+        }
 
     fun getLocationWithLatestMeasurementsNEW(
         timezone: String,
@@ -64,7 +59,8 @@ object SensorService {
     ): App<Error, List<LocationWithBoxesDTO>> =
         KIO.comprehension {
             val clientTimeZone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
-            val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(clientTimeZone).orDie().onNullFail { Error.NotFound }
+            val rawLocations =
+                !SensorRepo.fetchLocationsWithLatestMeasurements(clientTimeZone).orDie().onNullFail { Error.NotFound }
             KIO.ok(rawLocations.map { it.mapToLocationWithBoxesDTO() })
         }
 
@@ -83,18 +79,28 @@ object SensorService {
         KIO.ok(rawLocation.mapToLocationWithBoxesDTO())
     }
 
-    fun getLocationByIDWithMeasurementsWithinTimespanFAST(
+    fun getLocationByIDWithMeasurementsWithinTimespanFASTER(
         locationId: Long,
         timeRange: String, // "today", "week", "month"
         timezone: String,
         ipAddress: String
     ): App<Error, LocationWithBoxesDTO?> = KIO.comprehension {
-        val rawLocation = !SensorRepo.fetchLocationByIDWithMeasurementsWithinTimespanFAST(
-            locationId,
-            timeRange,
-            !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
-        ).orDie().onNullFail { Error.NotFound }
-        KIO.ok(rawLocation.mapToLocationWithBoxesDTO())
-    }
+        val validTimeRange = when (timeRange.lowercase()) {
+            "24h" -> true
+            "48h" -> true
+            "7d" -> true
+            "30d" -> true
+            "90d" -> true
+            "180d" -> true
+            "1y" -> true
+            else -> false
+        }
+        !KIO.failOn(!validTimeRange) { Error.BadRequest }
 
+        val data = !SensorRepo.getLatestMeasurementTimeEnriched(
+            locationId, timeRange,
+            timezone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
+        ).orDie().onNullFail { Error.NotFound }
+        KIO.ok(data.mapToLocationWithBoxesDTO())
+    }
 }
