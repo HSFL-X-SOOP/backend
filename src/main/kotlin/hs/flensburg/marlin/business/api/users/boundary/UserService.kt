@@ -57,6 +57,8 @@ object UserService {
     ): App<Error, UserProfile> = KIO.comprehension {
         !UserRepo.updateProfile(
             userId = userId,
+            firstName = request.firstName,
+            lastName = request.lastName,
             language = request.language,
             roles = request.roles,
             measurementSystem = request.measurementSystem
