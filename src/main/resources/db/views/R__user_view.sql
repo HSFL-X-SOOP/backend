@@ -2,8 +2,8 @@ DROP VIEW IF EXISTS marlin.user_view;
 
 CREATE VIEW marlin.user_view AS
 SELECT u.id,
-       up.first_name,
-       up.last_name,
+       u.first_name,
+       u.last_name,
        u.email,
        u.verified,
        u.role        AS authority_role,
