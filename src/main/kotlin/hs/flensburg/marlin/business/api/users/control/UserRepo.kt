@@ -6,6 +6,8 @@ import hs.flensburg.marlin.business.Page
 import hs.flensburg.marlin.business.PageResult
 import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
+import hs.flensburg.marlin.business.setIfNotNull
+import hs.flensburg.marlin.business.setWhen
 import hs.flensburg.marlin.database.generated.enums.Language
 import hs.flensburg.marlin.database.generated.enums.MeasurementSystem
 import hs.flensburg.marlin.database.generated.enums.UserActivityRole
@@ -132,14 +134,18 @@ object UserRepo {
             .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.UserProfile::class.java)!!
     }
 
-    fun updateUser(
+    fun update(
         userId: Long,
+        firstName: String?,
+        lastName: String?,
         authorityRole: UserAuthorityRole,
         verified: Boolean
     ): JIO<User?> = Jooq.query {
         update(USER)
             .set(USER.ROLE, authorityRole)
             .set(USER.VERIFIED, verified)
+            .setWhen(USER.FIRST_NAME, firstName) { !firstName.isNullOrBlank() }
+            .setWhen(USER.LAST_NAME, lastName) { !lastName.isNullOrBlank() }
             .where(USER.ID.eq(userId))
             .returning()
             .fetchOneInto(User::class.java)
@@ -147,14 +153,22 @@ object UserRepo {
 
     fun updateProfile(
         userId: Long,
+        firstName: String?,
+        lastName: String?,
         language: Language?,
         roles: List<UserActivityRole>?,
         measurementSystem: MeasurementSystem?
     ): JIO<hs.flensburg.marlin.database.generated.tables.pojos.UserProfile?> = Jooq.query {
+        update(USER)
+            .setWhen(USER.FIRST_NAME, firstName) { !firstName.isNullOrBlank() }
+            .setWhen(USER.LAST_NAME, lastName) { !lastName.isNullOrBlank() }
+            .where(USER.ID.eq(userId))
+            .execute()
+
         update(USER_PROFILE)
-            .set(USER_PROFILE.LANGUAGE, language)
-            .set(USER_PROFILE.ROLE, roles?.toTypedArray())
-            .set(USER_PROFILE.MEASUREMENT_SYSTEM, measurementSystem)
+            .setIfNotNull(USER_PROFILE.LANGUAGE, language)
+            .setIfNotNull(USER_PROFILE.ROLE, roles?.toTypedArray())
+            .setIfNotNull(USER_PROFILE.MEASUREMENT_SYSTEM, measurementSystem)
             .where(USER_PROFILE.USER_ID.eq(userId))
             .returning()
             .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.UserProfile::class.java)

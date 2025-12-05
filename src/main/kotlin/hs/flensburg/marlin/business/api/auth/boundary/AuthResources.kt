@@ -4,6 +4,7 @@ import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
+import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
@@ -170,6 +171,14 @@ fun Application.configureAuth(envConfig: Config) {
             val googleLoginRequest = call.receive<GoogleLoginRequest>()
 
             call.respondKIO(AuthService.loginGoogleUser(googleLoginRequest.idToken))
+        }
+
+        post("/login/apple", AuthOpenAPISpec.loginApple) {
+            val appleLoginRequest = call.receive<AppleLoginRequest>()
+
+            call.respondKIO(
+                AuthService.loginAppleUser(appleLoginRequest)
+            )
         }
 
         post("/auth/refresh", AuthOpenAPISpec.refreshToken) {

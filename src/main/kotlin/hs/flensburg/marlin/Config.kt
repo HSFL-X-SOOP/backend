@@ -9,7 +9,8 @@ data class Config(
     val mail: Mail,
     val auth: Auth,
     val googleAuth: GoogleAuth,
-    val ipInfo: IPInfo
+    val appleAuth: AppleAuth,
+    val ipInfo: IPInfo,
 ) {
     val frontendUrl: String
         get() = when (mode) {
@@ -62,6 +63,10 @@ data class Config(
         val iosClientId: String,
     )
 
+    data class AppleAuth(
+        val clientId: String,
+    )
+
     data class IPInfo(
         val token: String
     )
@@ -95,6 +100,9 @@ data class Config(
                 clientSecret = get("GOOGLE_CLIENT_SECRET", ""),
                 iosClientId = get("GOOGLE_IOS_CLIENT_ID", "")
             ),
+            appleAuth = AppleAuth(
+                clientId = get("APPLE_CLIENT_ID", "")
+            ),
             ipInfo = IPInfo(
                 token = get("IPINFO_TOKEN", "")
             )
@@ -127,6 +135,9 @@ data class Config(
                 clientId = System.getenv("GOOGLE_CLIENT_ID") ?: "",
                 clientSecret = System.getenv("GOOGLE_CLIENT_SECRET") ?: "",
                 iosClientId = System.getenv("GOOGLE_IOS_CLIENT_ID") ?: ""
+            ),
+            appleAuth = AppleAuth(
+                clientId = System.getenv("APPLE_CLIENT_ID") ?: ""
             ),
             ipInfo = IPInfo(
                 token = System.getenv("IPINFO_TOKEN") ?: ""
