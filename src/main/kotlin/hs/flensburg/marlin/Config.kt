@@ -10,7 +10,7 @@ data class Config(
     val auth: Auth,
     val googleAuth: GoogleAuth,
     val appleAuth: AppleAuth,
-    val firebaseInfo: FirebaseInfo
+    val firebaseInfo: FirebaseInfo,
     val ipInfo: IPInfo,
 ) {
     val frontendUrl: String
