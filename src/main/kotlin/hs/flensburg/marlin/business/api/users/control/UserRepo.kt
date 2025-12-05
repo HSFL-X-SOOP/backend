@@ -4,7 +4,6 @@ import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.marlin.business.Page
 import hs.flensburg.marlin.business.PageResult
-import hs.flensburg.marlin.business.api.users.entity.UpdateUserRequest
 import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.business.setIfNotNull
@@ -12,6 +11,7 @@ import hs.flensburg.marlin.business.setWhen
 import hs.flensburg.marlin.database.generated.enums.Language
 import hs.flensburg.marlin.database.generated.enums.MeasurementSystem
 import hs.flensburg.marlin.database.generated.enums.UserActivityRole
+import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import hs.flensburg.marlin.database.generated.tables.pojos.FailedLoginAttempt
 import hs.flensburg.marlin.database.generated.tables.pojos.LoginBlacklist
 import hs.flensburg.marlin.database.generated.tables.pojos.User
