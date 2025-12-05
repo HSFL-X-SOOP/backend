@@ -11,6 +11,7 @@ data class Config(
     val googleAuth: GoogleAuth,
     val appleAuth: AppleAuth,
     val ipInfo: IPInfo,
+    val firebaseInfo: FirebaseInfo
 ) {
     val frontendUrl: String
         get() = when (mode) {
@@ -71,6 +72,11 @@ data class Config(
         val token: String
     )
 
+    data class FirebaseInfo(
+        val firebaseServiceAccountKeyPath: String,
+        val firebaseCloudMessagingProjectID: String
+    )
+
     companion object {
         fun Dotenv.parseConfig(): Config = Config(
             mode = Mode.valueOf(get("MODE", "DEV").uppercase()),
@@ -105,6 +111,10 @@ data class Config(
             ),
             ipInfo = IPInfo(
                 token = get("IPINFO_TOKEN", "")
+            ),
+            firebaseInfo = FirebaseInfo(
+                firebaseServiceAccountKeyPath = get("FIREBASE_SERVICE_ACCOUNT_KEY_PATH", ""),
+                firebaseCloudMessagingProjectID = get("FIREBASE_CLOUD_PROJECT_ID", "")
             )
         )
 
@@ -141,6 +151,10 @@ data class Config(
             ),
             ipInfo = IPInfo(
                 token = System.getenv("IPINFO_TOKEN") ?: ""
+            ),
+            firebaseInfo = FirebaseInfo(
+                firebaseServiceAccountKeyPath = System.getenv("FIREBASE_SERVICE_ACCOUNT_KEY_PATH") ?: "",
+                firebaseCloudMessagingProjectID = System.getenv("FIREBASE_CLOUD_PROJECT_ID") ?: ""
             )
         )
     }
