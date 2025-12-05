@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.business.api.openAPI
 
+import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginResponse
@@ -103,6 +104,32 @@ object AuthOpenAPISpec {
             }
             HttpStatusCode.Unauthorized to {
                 description = "Google ID token audience verification failed - token not issued for this application"
+                body<String>()
+            }
+        }
+    }
+
+    val loginApple: RouteConfig.() -> Unit = {
+        tags("auth")
+        description = "Authenticates a user using an Apple identity token obtained from Sign in with Apple. " +
+                "This endpoint supports both mobile and web applications. " +
+                "On first sign-in, user information (email, name) is provided by Apple and should be included in the request."
+
+        request {
+            body<AppleLoginRequest>()
+        }
+
+        response {
+            HttpStatusCode.OK to {
+                description = "Login successful"
+                body<LoginResponse>()
+            }
+            HttpStatusCode.BadRequest to {
+                description = "Invalid or expired Apple identity token, or missing required email"
+                body<String>()
+            }
+            HttpStatusCode.Unauthorized to {
+                description = "Apple identity token audience verification failed - token not issued for this application"
                 body<String>()
             }
         }

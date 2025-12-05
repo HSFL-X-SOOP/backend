@@ -7,6 +7,8 @@ import hs.flensburg.marlin.business.PageResult
 import hs.flensburg.marlin.business.api.users.entity.UpdateUserRequest
 import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
+import hs.flensburg.marlin.business.setIfNotNull
+import hs.flensburg.marlin.business.setWhen
 import hs.flensburg.marlin.database.generated.enums.Language
 import hs.flensburg.marlin.database.generated.enums.MeasurementSystem
 import hs.flensburg.marlin.database.generated.enums.UserActivityRole
@@ -132,25 +134,21 @@ object UserRepo {
             .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.UserProfile::class.java)!!
     }
 
-    fun updateUser(
-        updateRequest: UpdateUserRequest
+    fun update(
+        userId: Long,
+        firstName: String?,
+        lastName: String?,
+        authorityRole: UserAuthorityRole,
+        verified: Boolean
     ): JIO<User?> = Jooq.query {
-        val user = update(USER)
-            .set(USER.ROLE, updateRequest.authorityRole)
-            .set(USER.VERIFIED, updateRequest.verified)
-            .where(USER.ID.eq(updateRequest.userId))
+        update(USER)
+            .set(USER.ROLE, authorityRole)
+            .set(USER.VERIFIED, verified)
+            .setWhen(USER.FIRST_NAME, firstName) { !firstName.isNullOrBlank() }
+            .setWhen(USER.LAST_NAME, lastName) { !lastName.isNullOrBlank() }
+            .where(USER.ID.eq(userId))
             .returning()
             .fetchOneInto(User::class.java)
-
-        if (updateRequest.firstName != null || updateRequest.lastName != null) {
-            update(USER_PROFILE)
-                .set(USER_PROFILE.FIRST_NAME, updateRequest.firstName)
-                .set(USER_PROFILE.LAST_NAME, updateRequest.lastName)
-                .where(USER_PROFILE.USER_ID.eq(updateRequest.userId))
-                .execute()
-        }
-
-        user
     }
 
     fun updateProfile(
@@ -161,12 +159,16 @@ object UserRepo {
         roles: List<UserActivityRole>?,
         measurementSystem: MeasurementSystem?
     ): JIO<hs.flensburg.marlin.database.generated.tables.pojos.UserProfile?> = Jooq.query {
+        update(USER)
+            .setWhen(USER.FIRST_NAME, firstName) { !firstName.isNullOrBlank() }
+            .setWhen(USER.LAST_NAME, lastName) { !lastName.isNullOrBlank() }
+            .where(USER.ID.eq(userId))
+            .execute()
+
         update(USER_PROFILE)
-            .set(USER_PROFILE.FIRST_NAME, firstName)
-            .set(USER_PROFILE.LAST_NAME, lastName)
-            .set(USER_PROFILE.LANGUAGE, language)
-            .set(USER_PROFILE.ROLE, roles?.toTypedArray())
-            .set(USER_PROFILE.MEASUREMENT_SYSTEM, measurementSystem)
+            .setIfNotNull(USER_PROFILE.LANGUAGE, language)
+            .setIfNotNull(USER_PROFILE.ROLE, roles?.toTypedArray())
+            .setIfNotNull(USER_PROFILE.MEASUREMENT_SYSTEM, measurementSystem)
             .where(USER_PROFILE.USER_ID.eq(userId))
             .returning()
             .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.UserProfile::class.java)
