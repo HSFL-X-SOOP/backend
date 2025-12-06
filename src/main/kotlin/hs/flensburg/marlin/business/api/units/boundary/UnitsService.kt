@@ -7,9 +7,9 @@ object UnitsService {
 
     const val CELSIUS_TO_FAHRENHEIT_FACTOR = 9 / 5 + 32
     const val CELSIUS_TO_KELVIN_SUMMAND = 273.15
-    const val MS_TO_KMH_FACTOR = 3.6
-    const val MS_TO_MPH_DIVISOR = 0.44704
-    const val MS_TO_KNOTS_FACTOR = 1.943844
+    const val METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR_FACTOR = 3.6
+    const val METERS_PER_SECOND_TO_MILES_PER_HOUR_DIVISOR = 0.44704
+    const val METERS_PER_SECOND_TO_KNOTS_FACTOR = 1.943844
     const val DEGREES_TO_RADIANS_FACTOR = PI/180
     const val HECTOPASCAL_TO_INCH_OF_MERCURY_FACTOR = 0.02953
     const val HECTOPASCAL_TO_POUND_PER_SQUARE_INCH_FACTOR = 0.0145037738
@@ -127,9 +127,9 @@ object UnitsService {
             "°C" to "K"-> convertedValue = value + CELSIUS_TO_KELVIN_SUMMAND
 
             // speed
-            "m/s" to "km/h" -> convertedValue = value * MS_TO_KMH_FACTOR
-            "m/s" to "mph" -> convertedValue = value / MS_TO_MPH_DIVISOR
-            "m/s" to "kn" -> convertedValue = value * MS_TO_KNOTS_FACTOR
+            "m/s" to "km/h" -> convertedValue = value * METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR_FACTOR
+            "m/s" to "mph" -> convertedValue = value / METERS_PER_SECOND_TO_MILES_PER_HOUR_DIVISOR
+            "m/s" to "kn" -> convertedValue = value * METERS_PER_SECOND_TO_KNOTS_FACTOR
 
             "m/s" to "Bft" -> convertedValue = when {
                 value < METERS_PER_SECOND_BEAUFORT_BORDER_0 -> 0.0
