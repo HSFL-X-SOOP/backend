@@ -60,10 +60,7 @@ object UnitsService {
     }
 
     private fun mapCustom(value: Double, measurementName: String, unitSymbol: String, goal: String): ConvertedValueDTO {
-        // Regex, um 'key: "value"' Paare zu finden (z.B. waterTemperature: "°F")
-        // [a-zA-Z]+ : der Messwert-Name (Gruppe 1)
-        // [^,"']+|[^,"']+ : der Einheit-Symbol (Gruppe 2)
-        //\s*([a-zA-Z]+)\s*:\s*["']?([^"']+)["']?,?\s*
+        // Regex for finding 'key: "value"' pairs (i.e. waterTemperature: "°F")
         val unitRegex = """([^:,]+):([^,]+)""".toRegex()
 
         val customUnits: Map<String, String> = unitRegex.findAll(goal).associate { matchResult ->
