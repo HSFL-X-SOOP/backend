@@ -185,7 +185,7 @@ interface ConditionalFactory<T : Conditional> {
  */
 fun <T, R : Record> UpdateSetStep<R>.setIfNotNull(
     field: Field<T>,
-    value: T?
+    value: T
 ): UpdateSetMoreStep<R> {
     return if (value != null) {
         this.set(field, value)
@@ -204,8 +204,8 @@ fun <T, R : Record> UpdateSetStep<R>.setIfNotNull(
  */
 fun <T, R : Record> UpdateSetStep<R>.setWhen(
     field: Field<T>,
-    value: T?,
-    predicate: (T?) -> Boolean
+    value: T,
+    predicate: (T) -> Boolean
 ): UpdateSetMoreStep<R> {
     return if (predicate(value)) {
         this.set(field, value)

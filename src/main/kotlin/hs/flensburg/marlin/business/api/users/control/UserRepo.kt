@@ -164,8 +164,8 @@ object UserRepo {
         update(USER)
             .set(USER.ROLE, authorityRole)
             .set(USER.VERIFIED, verified)
-            .setWhen(USER.FIRST_NAME, firstName) { !firstName.isNullOrBlank() }
-            .setWhen(USER.LAST_NAME, lastName) { !lastName.isNullOrBlank() }
+            .setWhen(USER.FIRST_NAME, firstName) { !it.isNullOrBlank() }
+            .setWhen(USER.LAST_NAME, lastName) { !it.isNullOrBlank() }
             .where(USER.ID.eq(userId))
             .returning()
             .fetchOneInto(User::class.java)
@@ -180,8 +180,8 @@ object UserRepo {
         measurementSystem: MeasurementSystem?
     ): JIO<hs.flensburg.marlin.database.generated.tables.pojos.UserProfile?> = Jooq.query {
         update(USER)
-            .setWhen(USER.FIRST_NAME, firstName) { !firstName.isNullOrBlank() }
-            .setWhen(USER.LAST_NAME, lastName) { !lastName.isNullOrBlank() }
+            .setWhen(USER.FIRST_NAME, firstName) { !it.isNullOrBlank() }
+            .setWhen(USER.LAST_NAME, lastName) { !it.isNullOrBlank() }
             .where(USER.ID.eq(userId))
             .execute()
 
