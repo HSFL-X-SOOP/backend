@@ -1,6 +1,5 @@
 package hs.flensburg.marlin.business.api.units.boundary
 
-import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.units.entity.ConvertedValueDTO
 import kotlin.math.PI
 
@@ -21,12 +20,12 @@ object UnitsService {
         "Station pressure" to "airPressure"
     )
 
-    fun convert(value: Double, currentType: MeasurementTypeDTO, goal: String): ConvertedValueDTO {
+    fun convert(value: Double, measurementName: String, unitSymbol: String, goal: String): ConvertedValueDTO {
         return when (goal) {
-            "", "metric" -> mapMetric(value, currentType.unitSymbol!!)
-            "imperial" -> mapImperial(value, currentType.unitSymbol!!)
-            "shipping" -> mapShipping(value, currentType.unitSymbol!!)
-            else -> mapCustom(value, currentType, goal)
+            "", "metric" -> mapMetric(value, unitSymbol)
+            "imperial" -> mapImperial(value, unitSymbol)
+            "shipping" -> mapShipping(value, unitSymbol)
+            else -> mapCustom(value, measurementName, unitSymbol, goal)
         }
     }
 
@@ -60,7 +59,7 @@ object UnitsService {
         return performConversion(value, currentType, targetUnit)
     }
 
-    private fun mapCustom(value: Double, currentType: MeasurementTypeDTO, goal: String): ConvertedValueDTO {
+    private fun mapCustom(value: Double, measurementName: String, unitSymbol: String, goal: String): ConvertedValueDTO {
         // Regex, um 'key: "value"' Paare zu finden (z.B. waterTemperature: "°F")
         // [a-zA-Z]+ : der Messwert-Name (Gruppe 1)
         // [^,"']+|[^,"']+ : der Einheit-Symbol (Gruppe 2)
@@ -72,21 +71,19 @@ object UnitsService {
             val value = matchResult.groups[2]!!.value.trim()
             key to value
         }
-        println(currentType.name)
-        println(currentType.unitSymbol)
-        val goalUnitSymbol = customUnits[measurementNameMap[currentType.name]]
+        val goalUnitSymbol = customUnits[measurementNameMap[measurementName]]
 
         return if (goalUnitSymbol != null) {
 
             val convertedValue = performConversion(
-                value, currentType.unitSymbol!!, goalUnitSymbol
+                value, unitSymbol, goalUnitSymbol
             )
 
             convertedValue
 
         } else {
             ConvertedValueDTO(
-                value = value, unit = currentType.unitSymbol!!
+                value = value, unit = unitSymbol
             )
         }
     }
