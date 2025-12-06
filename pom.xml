@@ -475,6 +475,7 @@
                     <locations>
                         <location>filesystem:src/main/resources/db/migration</location>
                         <location>filesystem:src/main/resources/db/views</location>
+                        <location>filesystem:src/main/resources/db/functions</location>
                     </locations>
                 </configuration>
                 <dependencies>
