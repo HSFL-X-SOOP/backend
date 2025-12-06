@@ -5,6 +5,7 @@ import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
 import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
+import hs.flensburg.marlin.business.api.auth.entity.AppleNotificationPayload
 import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
@@ -178,6 +179,14 @@ fun Application.configureAuth(envConfig: Config) {
 
             call.respondKIO(
                 AuthService.loginAppleUser(appleLoginRequest)
+            )
+        }
+
+        post("/apple/notification", { hidden = true }) {
+            val notification = call.receive<AppleNotificationPayload>()
+
+            call.respondKIO(
+                AppleNotificationService.handleNotification(notification.payload).transact()
             )
         }
 

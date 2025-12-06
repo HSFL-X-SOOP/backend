@@ -75,6 +75,26 @@ object UserRepo {
             .fetchOneInto(User::class.java)
     }
 
+    fun fetchByAppleUserId(appleUserId: String): JIO<User?> = Jooq.query {
+        selectFrom(USER)
+            .where(USER.APPLE_USER_ID.eq(appleUserId))
+            .fetchOneInto(User::class.java)
+    }
+
+    fun setAppleUserId(userId: Long, appleUserId: String): JIO<Unit> = Jooq.query {
+        update(USER)
+            .set(USER.APPLE_USER_ID, appleUserId)
+            .where(USER.ID.eq(userId))
+            .execute()
+    }
+
+    fun clearAppleUserId(appleUserId: String): JIO<Unit> = Jooq.query {
+        update(USER)
+            .setNull(USER.APPLE_USER_ID)
+            .where(USER.APPLE_USER_ID.eq(appleUserId))
+            .execute()
+    }
+
     fun fetchViewByEmail(email: String): JIO<UserView?> = Jooq.query {
         selectFrom(USER_VIEW)
             .where(USER_VIEW.EMAIL.eq(email))
@@ -177,6 +197,13 @@ object UserRepo {
     fun setEmailIsVerified(id: Long): JIO<Unit> = Jooq.query {
         update(USER)
             .set(USER.VERIFIED, true)
+            .where(USER.ID.eq(id))
+            .execute()
+    }
+
+    fun setEmailVerified(id: Long, verified: Boolean): JIO<Unit> = Jooq.query {
+        update(USER)
+            .set(USER.VERIFIED, verified)
             .where(USER.ID.eq(id))
             .execute()
     }
