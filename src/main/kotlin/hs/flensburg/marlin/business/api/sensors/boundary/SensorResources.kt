@@ -1,6 +1,7 @@
 package hs.flensburg.marlin.business.api.sensors.boundary
 
 import de.lambda9.tailwind.core.KIO
+import hs.flensburg.marlin.business.api.location.boundary.LocationService
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
@@ -54,7 +55,7 @@ fun Application.configureSensors() {
         get(
             path = "/locations",
             builder = {
-                tags("raw")
+                tags("location")
                 description = "Return all locations (raw form)."
                 response {
                     HttpStatusCode.OK to {
@@ -64,7 +65,7 @@ fun Application.configureSensors() {
                 }
             }
         ) {
-            call.respondKIO(SensorService.getAllLocations())
+            call.respondKIO(LocationService.getAllLocations())
         }
 
         get(

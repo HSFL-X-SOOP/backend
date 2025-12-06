@@ -8,7 +8,6 @@ import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.sensors.control.SensorRepo
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
@@ -42,11 +41,6 @@ object SensorService {
     fun getAllMeasurementTypes(): App<Error, List<MeasurementTypeDTO>> = KIO.comprehension {
         val measurementTypes = !SensorRepo.fetchAllMeasurementTypes().orDie().onNullFail { Error.NotFound }
         KIO.ok(measurementTypes.map { it.toMeasurementTypeDTO() })
-    }
-
-    fun getAllLocations(): App<Error, List<LocationDTO>> = KIO.comprehension {
-        val locations = !SensorRepo.fetchAllLocations().orDie().onNullFail { Error.NotFound }
-        KIO.ok(locations.map { LocationDTO.fromLocation(it) })
     }
 
     fun getAllMeasurements(): App<Error, List<MeasurementDTO>> = KIO.comprehension {

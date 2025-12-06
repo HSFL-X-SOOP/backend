@@ -2,6 +2,7 @@ package hs.flensburg.marlin.business.api.auth.boundary
 
 import com.auth0.jwt.JWT
 import de.lambda9.tailwind.core.KIO
+import de.lambda9.tailwind.core.extensions.kio.attempt
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
@@ -17,13 +18,17 @@ import hs.flensburg.marlin.business.api.auth.entity.MagicLinkLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
 import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
+import hs.flensburg.marlin.business.api.email.boundary.EmailService
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.jwt.JWTCredential
+
+private val logger = KotlinLogging.logger { }
 
 object AuthService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -50,7 +55,7 @@ object AuthService {
 
     private const val MAX_FAILED_LOGIN_ATTEMPTS = 3
 
-    fun register(credentials: RegisterRequest): App<Error, LoginResponse> = KIO.comprehension {
+    fun register(credentials: RegisterRequest): App<ServiceLayerError, LoginResponse> = KIO.comprehension {
         val email = credentials.email
         val password = credentials.password
         val existingUser = !UserRepo.fetchByEmail(email).orDie()
@@ -66,6 +71,16 @@ object AuthService {
         }
 
         val userID = !UserRepo.insert(userRecord).orDie().map { it.id!! }
+
+        (!EmailService.sendWelcomeEmail(userID).attempt()).fold(
+            onSuccess = { },
+            onError = { logger.error { "Cannot send welcome email to user $userID: ${it.toApiError().message}" } }
+        )
+
+        (!EmailService.sendVerificationEmail(userID).attempt()).fold(
+            onSuccess = { },
+            onError = { logger.error { "Cannot send verification email to user $userID: ${it.toApiError().message}" } }
+        )
 
         val user = !UserRepo.fetchViewById(userID).orDie()
 
