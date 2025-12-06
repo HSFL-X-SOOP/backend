@@ -9,7 +9,10 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
-import hs.flensburg.marlin.database.generated.tables.pojos.*
+import hs.flensburg.marlin.database.generated.tables.pojos.Location
+import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
+import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
+import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
 import hs.flensburg.marlin.database.generated.tables.references.*
 import org.jooq.Record
 import org.jooq.ResultQuery
@@ -41,89 +44,8 @@ object SensorRepo {
 
     fun fetchLocationsWithLatestMeasurements(timezone: String): JIO<List<LocationWithLatestMeasurementsDTO>> =
         Jooq.query {
-            // Query to fetch only the newest measurement within the last 2 hours for each location
-            val sql = """
-        WITH latest AS (
-          SELECT DISTINCT ON (m.location_id, m.type_id)
-            m.sensor_id,
-            m.type_id,
-            m.location_id,
-            m.time,
-            m.value
-          FROM marlin.measurement AS m
-          WHERE m.time >= NOW() - INTERVAL '2 hour' -- last 2 hours
-          ORDER BY m.location_id, m.type_id, m.time DESC
-        )
-        SELECT
-          l.id AS loc_id,
-          l.name AS loc_name,
-          ST_Y(l.coordinates::geometry) AS latitude,
-          ST_X(l.coordinates::geometry) AS longitude,
-        
-          s.id AS sensor_id,
-          s.name AS sensor_name,
-          s.description AS sensor_description,
-          s.is_moving AS sensor_is_moving,
-        
-          mt.id AS type_id,
-          mt.name AS type_name,
-          mt.description AS type_description,
-          mt.unit_name,
-          mt.unit_symbol,
-          mt.unit_definition,
-        
-          lm.time AS meas_time,
-          lm.value AS meas_value
-        
-        FROM latest AS lm
-        JOIN marlin.location l ON lm.location_id = l.id
-        JOIN marlin.sensor s ON lm.sensor_id = s.id
-        JOIN marlin.measurementtype mt ON lm.type_id = mt.id
-        
-        ORDER BY l.id;
-      """.trimIndent()
-
-            resultQuery(sql).fetchGroups(
-                { rec ->
-                    LocationDTO(
-                        id = rec.get("loc_id", Long::class.java)!!,
-                        name = rec.get("loc_name", String::class.java),
-                        coordinates = GeoPoint(
-                            lat = rec.get("latitude", Double::class.java)!!,
-                            lon = rec.get("longitude", Double::class.java)!!
-                        )
-                    )
-                },
-                { rec ->
-                    val sensor = Sensor(
-                        id = rec.get("sensor_id", Long::class.java),
-                        name = rec.get("sensor_name", String::class.java),
-                        description = rec.get("sensor_description", String::class.java),
-                        isMoving = rec.get("sensor_is_moving", Boolean::class.java)
-                    ).toSensorDTO()
-
-                    val type = Measurementtype(
-                        id = rec.get("type_id", Long::class.java),
-                        name = rec.get("type_name", String::class.java),
-                        description = rec.get("type_description", String::class.java),
-                        unitName = rec.get("unit_name", String::class.java),
-                        unitSymbol = rec.get("unit_symbol", String::class.java),
-                        unitDefinition = rec.get("unit_definition", String::class.java)
-                    ).toMeasurementTypeDTO()
-
-                    val time = rec.get("meas_time", OffsetDateTime::class.java)
-                    val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
-
-                    EnrichedMeasurementDTO(
-                        sensor = sensor,
-                        measurementType = type,
-                        time = localTime,
-                        value = rec.get("meas_value", Double::class.java)!!
-                    )
-                }
-            ).map { (location, enrichedMeasurements) ->
-                LocationWithLatestMeasurementsDTO(location, enrichedMeasurements)
-            }
+            selectFrom(LATEST_MEASUREMENTS_VIEW)
+                .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone)
         }
 
 
@@ -151,13 +73,14 @@ object SensorRepo {
         timezone: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
         selectFrom(GET_ENRICHED_MEASUREMENTS(timeRange, locationId, null, null))
-            .fetchAndMapToLocationWithLatestMeasurementsDTO(timezone)
+            .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone)
+            .firstOrNull()
     }
 
 
-    private fun <R : Record> ResultQuery<R>.fetchAndMapToLocationWithLatestMeasurementsDTO(
+    private fun <R : Record> ResultQuery<R>.fetchAndMapToListOfLocationWithLatestMeasurementsDTO(
         timezone: String
-    ): LocationWithLatestMeasurementsDTO? {
+    ): List<LocationWithLatestMeasurementsDTO> {
 
         val grouped = this.fetchGroups(
 
@@ -171,7 +94,6 @@ object SensorRepo {
                     )
                 )
             },
-
             { rec: R ->
                 val sensor = Sensor(
                     id = rec.get("sensor_id", Long::class.javaObjectType),
@@ -195,7 +117,7 @@ object SensorRepo {
                 val time: OffsetDateTime = when {
                     rec.field("meas_time") != null -> rec.get("meas_time", OffsetDateTime::class.java)
                     rec.field("bucket") != null -> rec.get("bucket", OffsetDateTime::class.java)
-                    else -> throw IllegalStateException("Record has neither 'meas_time' nor 'bucket'")
+                    else -> throw IllegalStateException("No timestamp found")
                 }
 
                 // 2. Safe Value Retrieval (View has 'meas_value', Routine has 'avg')
@@ -206,6 +128,7 @@ object SensorRepo {
                 } ?: 0.0
 
                 // TODO: handle: min, max, stddev
+
                 EnrichedMeasurementDTO(
                     sensor = sensor,
                     measurementType = type,
@@ -214,8 +137,8 @@ object SensorRepo {
                 )
             }
         )
-
-        return grouped.entries.firstOrNull()?.let { (location, measurements) ->
+        // Transform the Map into a List
+        return grouped.map { (location, measurements) ->
             LocationWithLatestMeasurementsDTO(location, measurements)
         }
     }

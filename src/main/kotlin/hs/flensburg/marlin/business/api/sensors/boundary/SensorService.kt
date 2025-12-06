@@ -66,7 +66,7 @@ object SensorService {
 
     fun getLocationByIDWithMeasurementsWithinTimespanFAST(
         locationId: Long,
-        timeRange: String, // "today", "week", "month"
+        timeRange: String,
         timezone: String,
         ipAddress: String
     ): App<Error, LocationWithBoxesDTO?> = KIO.comprehension {
