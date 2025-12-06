@@ -4,14 +4,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UnitsWithLocationWithBoxesDTO(
-    val units: MeasurementUnitsDTO,
-    val locationWithBoxes: List<LocationWithBoxesDTO>
+    val units: MeasurementUnitsDTO, val locationWithBoxes: List<LocationWithBoxesDTO>
 )
 
 fun mapToUnitsWithLocationWithBoxesDTO(rawLocations: List<LocationWithLatestMeasurementsDTO>): UnitsWithLocationWithBoxesDTO {
-    val unitMap = rawLocations
-        .flatMap { it.latestMeasurements }
-        .associate { measurement ->
+    val unitMap = rawLocations.flatMap { it.latestMeasurements }.associate { measurement ->
             measurement.measurementType.name to measurement.measurementType.unitSymbol
         }
 
@@ -29,9 +26,7 @@ fun mapToUnitsWithLocationWithBoxesDTO(rawLocations: List<LocationWithLatestMeas
             unitMap["Wind direction, gust"] ?: "",
             unitMap["Humidity, relative"] ?: "",
             unitMap["Station pressure"] ?: ""
-        ),
-        locationWithBoxes = rawLocations.map { it.mapToLocationWithBoxesDTO() }
-    )
+        ), locationWithBoxes = rawLocations.map { it.mapToLocationWithBoxesDTO() })
 }
 
 
