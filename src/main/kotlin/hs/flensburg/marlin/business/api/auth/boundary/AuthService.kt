@@ -285,8 +285,9 @@ object AuthService {
             expectedAudience = appleConfig.clientId
         )
 
-        logger.info { "Apple identity token successfully verified for subject: ${verifiedJWT.subject}" }
-        !KIO.failOn(verifiedJWT.subject.isNullOrBlank()) { Error.BadRequest }
+        val appleUserId = verifiedJWT.subject
+        logger.info { "Apple identity token successfully verified for subject: $appleUserId" }
+        !KIO.failOn(appleUserId.isNullOrBlank()) { Error.BadRequest }
 
         val tokenEmail = verifiedJWT.getClaim("email").asString()
         val emailVerified = verifiedJWT.getClaim("email_verified").let {
@@ -296,18 +297,28 @@ object AuthService {
         val finalEmail = tokenEmail ?: email
         !KIO.failOn(finalEmail.isNullOrBlank()) { Error.BadRequest }
 
-        val existingUser = !UserRepo.fetchByEmail(finalEmail!!).orDie()
+        val existingUserByAppleId = !UserRepo.fetchByAppleUserId(appleUserId).orDie()
+        val existingUserByEmail = !UserRepo.fetchByEmail(finalEmail!!).orDie()
 
-        val userRecord = if (existingUser == null) {
-            val newUserRecord = UserRecord().apply {
-                this.email = finalEmail
-                this.verified = emailVerified ?: true
-                this.firstName = givenName
-                this.lastName = familyName
+        val userRecord = when {
+            existingUserByAppleId != null -> existingUserByAppleId
+            existingUserByEmail != null -> {
+                if (existingUserByEmail.appleUserId == null) {
+                    !UserRepo.setAppleUserId(existingUserByEmail.id!!, appleUserId).orDie()
+                }
+                existingUserByEmail
             }
-            !UserRepo.insert(newUserRecord).orDie()
-        } else {
-            existingUser
+
+            else -> {
+                val newUserRecord = UserRecord().apply {
+                    this.email = finalEmail
+                    this.verified = emailVerified ?: true
+                    this.firstName = givenName
+                    this.lastName = familyName
+                    this.appleUserId = appleUserId
+                }
+                !UserRepo.insert(newUserRecord).orDie()
+            }
         }
 
         val userView = !UserRepo.fetchViewById(userRecord.id!!).orDie().onNullFail { Error.Unknown }
