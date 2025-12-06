@@ -19,3 +19,9 @@ WITH NO DATA;
 
 ALTER MATERIALIZED VIEW marlin.measurement_1d_view
     SET (timescaledb.materialized_only = false);
+
+-- Refresh the 1d view every 6 hours
+SELECT add_continuous_aggregate_policy('marlin.measurement_1d_view',
+       start_offset => INTERVAL '1 month',   -- Look back 1 month (ensure monthly stats are solid)
+       end_offset   => INTERVAL '1 day',     -- Don't materialize today yet (wait until tomorrow)
+       schedule_interval => INTERVAL '6 hours');

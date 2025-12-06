@@ -20,3 +20,9 @@ WITH NO DATA;
 
 ALTER MATERIALIZED VIEW marlin.measurement_2h_view
     SET (timescaledb.materialized_only = false);
+
+-- Refresh the 2h view every 30 minutes
+SELECT add_continuous_aggregate_policy('marlin.measurement_2h_view',
+       start_offset => INTERVAL '3 days',    -- Look back 3 days (matches the 1h view)
+       end_offset   => INTERVAL '2 hours',   -- Don't materialize the current incomplete 2-hour block
+       schedule_interval => INTERVAL '30 minutes');

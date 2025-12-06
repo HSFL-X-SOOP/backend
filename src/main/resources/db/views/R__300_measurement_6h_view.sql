@@ -19,3 +19,9 @@ WITH NO DATA;
 
 ALTER MATERIALIZED VIEW marlin.measurement_6h_view
     SET (timescaledb.materialized_only = false);
+
+-- Refresh the 6h view every hour
+SELECT add_continuous_aggregate_policy('marlin.measurement_6h_view',
+       start_offset => INTERVAL '7 days',    -- Look back 7 days (ensure weekly trends are fixed)
+       end_offset   => INTERVAL '6 hours',   -- Don't materialize the current incomplete 6-hour block
+       schedule_interval => INTERVAL '1 hour');
