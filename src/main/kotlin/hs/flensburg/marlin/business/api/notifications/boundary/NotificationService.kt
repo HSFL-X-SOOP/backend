@@ -18,10 +18,8 @@ import hs.flensburg.marlin.business.api.userDevice.entity.UserDevice
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.ReverseGeoCodingService
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.NotificationMeasurementRule
-import kotlinx.datetime.format
 import kotlinx.datetime.toJavaLocalDateTime
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 
 object NotificationService {
@@ -39,7 +37,7 @@ object NotificationService {
 
     fun sentNotificationMeasurementRules(): App<ReverseGeoCodingService.Error, Unit> = KIO.comprehension {
         val locations: List<Location?> = !LocationRepo.fetchAllLocations().orDie()
-        val locationWithLatestMeasurements: List<LocationWithLatestMeasurementsDTO> = !SensorRepo.fetchLocationsWithLatestMeasurements("").orDie()
+        val locationWithLatestMeasurements: List<LocationWithLatestMeasurementsDTO> = !SensorRepo.fetchLocationsWithLatestMeasurements("", units = "metric").orDie()
         //Go through all Locations
         locations.forEach { location ->
             //Get current location to access measurement values

@@ -9,6 +9,7 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
+import hs.flensburg.marlin.business.api.units.boundary.UnitsService
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
 import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
@@ -36,10 +37,12 @@ object SensorRepo {
             .fetchInto(Measurement::class.java)
     }
 
-    fun fetchLocationsWithLatestMeasurements(timezone: String): JIO<List<LocationWithLatestMeasurementsDTO>> =
-        Jooq.query {
-            // Query to fetch only the newest measurement within the last 2 hours for each location
-            val sql = """
+    fun fetchLocationsWithLatestMeasurements(
+        timezone: String,
+        units: String
+    ): JIO<List<LocationWithLatestMeasurementsDTO>> = Jooq.query {
+        // Query to fetch only the newest measurement within the last 2 hours for each location
+        val sql = """
         WITH latest AS (
           SELECT DISTINCT ON (m.location_id, m.type_id)
             m.sensor_id,
@@ -80,53 +83,62 @@ object SensorRepo {
         ORDER BY l.id;
       """.trimIndent()
 
-            resultQuery(sql).fetchGroups(
-                { rec ->
-                    LocationDTO(
-                        id = rec.get("loc_id", Long::class.java)!!,
-                        name = rec.get("loc_name", String::class.java),
-                        coordinates = GeoPoint(
-                            lat = rec.get("latitude", Double::class.java)!!,
-                            lon = rec.get("longitude", Double::class.java)!!
-                        )
+        resultQuery(sql).fetchGroups(
+            { rec ->
+                LocationDTO(
+                    id = rec.get("loc_id", Long::class.java)!!,
+                    name = rec.get("loc_name", String::class.java),
+                    coordinates = GeoPoint(
+                        lat = rec.get("latitude", Double::class.java)!!,
+                        lon = rec.get("longitude", Double::class.java)!!
                     )
-                },
-                { rec ->
-                    val sensor = Sensor(
-                        id = rec.get("sensor_id", Long::class.java),
-                        name = rec.get("sensor_name", String::class.java),
-                        description = rec.get("sensor_description", String::class.java),
-                        isMoving = rec.get("sensor_is_moving", Boolean::class.java)
-                    ).toSensorDTO()
+                )
+            },
+            { rec ->
+                val sensor = Sensor(
+                    id = rec.get("sensor_id", Long::class.java),
+                    name = rec.get("sensor_name", String::class.java),
+                    description = rec.get("sensor_description", String::class.java),
+                    isMoving = rec.get("sensor_is_moving", Boolean::class.java)
+                ).toSensorDTO()
 
-                    val type = Measurementtype(
-                        id = rec.get("type_id", Long::class.java),
-                        name = rec.get("type_name", String::class.java),
-                        description = rec.get("type_description", String::class.java),
-                        unitName = rec.get("unit_name", String::class.java),
-                        unitSymbol = rec.get("unit_symbol", String::class.java),
-                        unitDefinition = rec.get("unit_definition", String::class.java)
-                    ).toMeasurementTypeDTO()
+                val measurementName = rec.get("type_name", String::class.java)
+                val (valueConverted, newUnitSymbol) = UnitsService.convert(
+                    rec.get("meas_value", Double::class.java)!!,
+                    measurementName,
+                    rec.get("unit_symbol", String::class.java),
+                    units
+                )
 
-                    val time = rec.get("meas_time", OffsetDateTime::class.java)
-                    val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
+                val type = Measurementtype(
+                    id = rec.get("type_id", Long::class.java),
+                    name = measurementName,
+                    description = rec.get("type_description", String::class.java),
+                    unitName = rec.get("unit_name", String::class.java),
+                    unitSymbol = newUnitSymbol,
+                    unitDefinition = rec.get("unit_definition", String::class.java)
+                ).toMeasurementTypeDTO()
 
-                    EnrichedMeasurementDTO(
-                        sensor = sensor,
-                        measurementType = type,
-                        time = localTime,
-                        value = rec.get("meas_value", Double::class.java)!!
-                    )
-                }
-            ).map { (location, enrichedMeasurements) ->
-                LocationWithLatestMeasurementsDTO(location, enrichedMeasurements)
+                val time = rec.get("meas_time", OffsetDateTime::class.java)
+                val localTime = TimezonesService.toLocalDateTimeInZone(time, timezone)
+
+                EnrichedMeasurementDTO(
+                    sensor = sensor,
+                    measurementType = type,
+                    time = localTime,
+                    value = valueConverted
+                )
             }
+        ).map { (location, enrichedMeasurements) ->
+            LocationWithLatestMeasurementsDTO(location, enrichedMeasurements)
         }
+    }
 
     fun fetchLocationByIDWithMeasurementsWithinTimespan(
         locationId: Long,
         timeRange: String,
-        timezone: String
+        timezone: String,
+        units: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
         val intervalCondition = when (timeRange.lowercase()) {
@@ -191,12 +203,20 @@ object SensorRepo {
                     isMoving = rec.get("sensor_is_moving", Boolean::class.java)
                 ).toSensorDTO()
 
+                val measurementName = rec.get("type_name", String::class.java)
+                val (valueConverted, newUnitSymbol) = UnitsService.convert(
+                    rec.get("meas_value", Double::class.java)!!,
+                    measurementName,
+                    rec.get("unit_symbol", String::class.java),
+                    units
+                )
+
                 val type = Measurementtype(
                     id = rec.get("type_id", Long::class.java),
-                    name = rec.get("type_name", String::class.java),
+                    name = measurementName,
                     description = rec.get("type_description", String::class.java),
                     unitName = rec.get("unit_name", String::class.java),
-                    unitSymbol = rec.get("unit_symbol", String::class.java),
+                    unitSymbol = newUnitSymbol,
                     unitDefinition = rec.get("unit_definition", String::class.java)
                 ).toMeasurementTypeDTO()
 
@@ -207,7 +227,7 @@ object SensorRepo {
                     sensor = sensor,
                     measurementType = type,
                     time = localTime,
-                    value = rec.get("meas_value", Double::class.java)!!
+                    value = valueConverted
                 )
             }
         )
@@ -220,7 +240,8 @@ object SensorRepo {
     fun fetchLocationByIDWithMeasurementsWithinTimespanFAST(
         locationId: Long,
         timeRange: String,
-        timezone: String
+        timezone: String,
+        units: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
 
         val (useRaw, bucketWidth, intervalCondition) = when (timeRange.lowercase()) {
@@ -313,12 +334,20 @@ object SensorRepo {
                     isMoving = rec.get("sensor_is_moving", Boolean::class.java)
                 ).toSensorDTO()
 
+                val measurementName = rec.get("type_name", String::class.java)
+                val (valueConverted, newUnitSymbol) = UnitsService.convert(
+                    rec.get("meas_value", Double::class.java)!!,
+                    measurementName,
+                    rec.get("unit_symbol", String::class.java),
+                    units
+                )
+
                 val type = Measurementtype(
                     id = rec.get("type_id", Long::class.java),
-                    name = rec.get("type_name", String::class.java),
+                    name = measurementName,
                     description = rec.get("type_description", String::class.java),
                     unitName = rec.get("unit_name", String::class.java),
-                    unitSymbol = rec.get("unit_symbol", String::class.java),
+                    unitSymbol = newUnitSymbol,
                     unitDefinition = rec.get("unit_definition", String::class.java)
                 ).toMeasurementTypeDTO()
 
@@ -329,8 +358,10 @@ object SensorRepo {
                     sensor = sensor,
                     measurementType = type,
                     time = localTime,
-                    value = rec.get("meas_value", Double::class.java)!!
+                    value = valueConverted
                 )
+
+
             }
         )
 
