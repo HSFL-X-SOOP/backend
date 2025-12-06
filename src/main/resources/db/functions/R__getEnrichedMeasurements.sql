@@ -65,5 +65,3 @@ BEGIN
         ORDER BY rd.bucket DESC;
 END;
 $$;
-
-ALTER FUNCTION marlin.get_enriched_measurements(text, bigint, bigint, bigint) OWNER TO "user";
