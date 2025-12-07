@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CreateUserProfileRequest(
     val roles: List<UserActivityRole>,
+    val firstName: String?,
+    val lastName: String?,
     val language: Language,
     val measurementSystem: MeasurementSystem
 ) {

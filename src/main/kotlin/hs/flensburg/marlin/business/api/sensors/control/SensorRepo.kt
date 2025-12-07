@@ -9,7 +9,7 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
-import hs.flensburg.marlin.database.generated.tables.pojos.Location
+import hs.flensburg.marlin.business.api.units.boundary.UnitsService
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurement
 import hs.flensburg.marlin.database.generated.tables.pojos.Measurementtype
 import hs.flensburg.marlin.database.generated.tables.pojos.Sensor
@@ -30,22 +30,19 @@ object SensorRepo {
         selectFrom(MEASUREMENTTYPE).fetchInto(Measurementtype::class.java)
     }
 
-    fun fetchAllLocations(): JIO<List<Location>> = Jooq.query {
-        selectFrom(LOCATION)
-            .orderBy(LOCATION.ID.asc())
-            .fetchInto(Location::class.java)
-    }
-
     fun fetchAllMeasurements(): JIO<List<Measurement>> = Jooq.query {
         selectFrom(MEASUREMENT)
             .orderBy(MEASUREMENT.TIME.desc())
             .fetchInto(Measurement::class.java)
     }
 
-    fun fetchLocationsWithLatestMeasurements(timezone: String): JIO<List<LocationWithLatestMeasurementsDTO>> =
+    fun fetchLocationsWithLatestMeasurements(
+        timezone: String,
+        units: String
+    ): JIO<List<LocationWithLatestMeasurementsDTO>> =
         Jooq.query {
             selectFrom(LATEST_MEASUREMENTS_VIEW)
-                .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone)
+                .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone, units)
         }
 
 
@@ -70,16 +67,18 @@ object SensorRepo {
     fun getLatestMeasurementTimeEnriched(
         locationId: Long,
         timeRange: String,
-        timezone: String
+        timezone: String,
+        units: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
         selectFrom(GET_ENRICHED_MEASUREMENTS(timeRange, locationId, null, null))
-            .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone)
+            .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone, units)
             .firstOrNull()
     }
 
 
     private fun <R : Record> ResultQuery<R>.fetchAndMapToListOfLocationWithLatestMeasurementsDTO(
-        timezone: String
+        timezone: String,
+        units: String
     ): List<LocationWithLatestMeasurementsDTO> {
 
         val grouped = this.fetchGroups(
@@ -104,12 +103,27 @@ object SensorRepo {
                     else false
                 ).toSensorDTO()
 
+                // 2. Safe Value Retrieval (View has 'meas_value', Routine has 'avg')
+                val value: Double = when {
+                    rec.field("meas_value") != null -> rec.get("meas_value", Double::class.javaObjectType)
+                    rec.field("avg") != null -> rec.get("avg", Double::class.javaObjectType)
+                    else -> 0.0
+                } ?: 0.0
+
+                val measurementName = rec.get("type_name", String::class.java)
+                val (valueConverted, newUnitSymbol) = UnitsService.convert(
+                    value,
+                    measurementName,
+                    rec.get("unit_symbol", String::class.java),
+                    units
+                )
+
                 val type = Measurementtype(
-                    id = rec.get("type_id", Long::class.javaObjectType),
-                    name = rec.get("type_name", String::class.java),
+                    id = rec.get("type_id", Long::class.java),
+                    name = measurementName,
                     description = rec.get("type_description", String::class.java),
                     unitName = rec.get("unit_name", String::class.java),
-                    unitSymbol = rec.get("unit_symbol", String::class.java),
+                    unitSymbol = newUnitSymbol,
                     unitDefinition = rec.get("unit_definition", String::class.java)
                 ).toMeasurementTypeDTO()
 
@@ -120,20 +134,13 @@ object SensorRepo {
                     else -> throw IllegalStateException("No timestamp found")
                 }
 
-                // 2. Safe Value Retrieval (View has 'meas_value', Routine has 'avg')
-                val value: Double = when {
-                    rec.field("meas_value") != null -> rec.get("meas_value", Double::class.javaObjectType)
-                    rec.field("avg") != null -> rec.get("avg", Double::class.javaObjectType)
-                    else -> 0.0
-                } ?: 0.0
-
                 // TODO: handle: min, max, stddev
 
                 EnrichedMeasurementDTO(
                     sensor = sensor,
                     measurementType = type,
                     time = TimezonesService.toLocalDateTimeInZone(time, timezone),
-                    value = value
+                    value = valueConverted
                 )
             }
         )
