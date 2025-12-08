@@ -1,20 +1,19 @@
 DROP MATERIALIZED VIEW IF EXISTS marlin.measurement_2h_view CASCADE;
 
 CREATE MATERIALIZED VIEW marlin.measurement_2h_view
-            WITH (timescaledb.continuous) AS
-SELECT
-    sensor_id,
-    type_id,
-    location_id,
-    public.time_bucket('2 hours', bucket) AS bucket,
-    public.average(public.rollup(stats)) AS avg,
-    MIN(min) AS min,
-    MAX(max) AS max,
-    public.num_vals(public.rollup(stats)) AS count,
-    public.stddev(public.rollup(stats)) AS stddev,
-    public.rollup(stats) AS stats
+    WITH (timescaledb.continuous) AS
+SELECT sensor_id,
+       type_id,
+       location_id,
+       public.time_bucket('2 hours', bucket) AS bucket,
+       public.average(public.rollup(stats))  AS avg,
+       MIN(min)                              AS min,
+       MAX(max)                              AS max,
+       public.num_vals(public.rollup(stats)) AS count,
+       public.stddev(public.rollup(stats))   AS stddev,
+       public.rollup(stats)                  AS stats
 FROM marlin.measurement_1h_view
-GROUP BY 1,2,3,4
+GROUP BY 1, 2, 3, 4
 WITH NO DATA;
 
 
@@ -23,6 +22,6 @@ ALTER MATERIALIZED VIEW marlin.measurement_2h_view
 
 -- Refresh the 2h view every 30 minutes
 SELECT public.add_continuous_aggregate_policy('marlin.measurement_2h_view',
-       start_offset => INTERVAL '3 days',    -- Look back 3 days (matches the 1h view)
-       end_offset   => INTERVAL '2 hours',   -- Don't materialize the current incomplete 2-hour block
-       schedule_interval => INTERVAL '30 minutes');
+                                              start_offset => INTERVAL '3 days', -- Look back 3 days (matches the 1h view)
+                                              end_offset => INTERVAL '2 hours', -- Don't materialize the current incomplete 2-hour block
+                                              schedule_interval => INTERVAL '30 minutes');
