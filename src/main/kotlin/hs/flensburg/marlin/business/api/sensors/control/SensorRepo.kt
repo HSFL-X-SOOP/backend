@@ -5,6 +5,7 @@ import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.marlin.business.api.location.entity.GeoPoint
 import hs.flensburg.marlin.business.api.sensors.entity.EnrichedMeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
+import hs.flensburg.marlin.business.api.sensors.entity.SensorMeasurementsTimeRange
 import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toMeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.toSensorDTO
@@ -66,11 +67,11 @@ object SensorRepo {
 
     fun getLatestMeasurementTimeEnriched(
         locationId: Long,
-        timeRange: String,
+        timeRange: SensorMeasurementsTimeRange,
         timezone: String,
         units: String
     ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
-        selectFrom(GET_ENRICHED_MEASUREMENTS(timeRange, locationId, null, null))
+        selectFrom(GET_ENRICHED_MEASUREMENTS(timeRange.sqlExpression, locationId, null, null))
             .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone, units)
             .firstOrNull()
     }

@@ -1,9 +1,9 @@
 package hs.flensburg.marlin.business.api.sensors.boundary
 
-import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.business.api.location.boundary.LocationService
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
+import hs.flensburg.marlin.business.api.sensors.entity.SensorMeasurementsTimeRange
 import hs.flensburg.marlin.business.api.sensors.entity.UnitsWithLocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
@@ -14,6 +14,7 @@ import io.github.smiley4.ktoropenapi.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.plugins.origin
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 
 fun Application.configureSensors() {
@@ -114,7 +115,8 @@ fun Application.configureSensors() {
                         required = false
                     }
                     queryParameter<String>("units") {
-                        description = "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
                         required = false
                     }
                 }
@@ -200,7 +202,8 @@ fun Application.configureSensors() {
                         required = false
                     }
                     queryParameter<String>("units") {
-                        description = "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
                         required = false
                     }
                 }
@@ -215,17 +218,18 @@ fun Application.configureSensors() {
                 }
             }
         ) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
-            val timeRange = call.parameters["timeRange"] ?: "DEFAULT"
+            val locationId = call.parameters["id"]?.toLongOrNull()
+                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@get
-            }
+            val timeRange = call.parameters["timeRange"] ?: "24h"
+
             call.respondKIO(
                 SensorService.getLocationByIDWithMeasurementsWithinTimespanFAST(
-                    locationID,
-                    timeRange,
+                    locationId,
+                    SensorMeasurementsTimeRange.fromString(timeRange) ?: return@get call.respondText(
+                        "wrong timeRange",
+                        status = HttpStatusCode.BadRequest
+                    ),
                     call.parameters["timezone"] ?: "DEFAULT",
                     call.request.origin.remoteAddress,
                     call.parameters["units"] ?: "metric"
@@ -255,11 +259,13 @@ fun Application.configureSensors() {
                         required = false
                     }
                     queryParameter<String>("timezone") {
-                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                     queryParameter<String>("units") {
-                        description = "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
                         required = false
                     }
                 }
@@ -274,17 +280,18 @@ fun Application.configureSensors() {
                 }
             }
         ) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
-            val timeRange = call.parameters["timeRange"] ?: "DEFAULT"
+            val locationId = call.parameters["id"]?.toLongOrNull()
+                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@get
-            }
+            val timeRange = call.parameters["timeRange"] ?: "24h"
+
             call.respondKIO(
                 SensorService.getLocationByIDWithMeasurementsWithinTimespanV3(
-                    locationID,
-                    timeRange,
+                    locationId,
+                    SensorMeasurementsTimeRange.fromString(timeRange) ?: return@get call.respondText(
+                        "wrong timeRange",
+                        status = HttpStatusCode.BadRequest
+                    ),
                     call.parameters["timezone"] ?: "DEFAULT",
                     call.request.origin.remoteAddress,
                     call.parameters["units"] ?: "metric"

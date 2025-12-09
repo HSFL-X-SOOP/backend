@@ -74,16 +74,11 @@ object SensorService {
 
     fun getLocationByIDWithMeasurementsWithinTimespanFAST(
         locationId: Long,
-        timeRange: String,
+        timeRange: SensorMeasurementsTimeRange,
         timezone: String,
         ipAddress: String,
         units: String
     ): App<Error, LocationWithBoxesDTO?> = KIO.comprehension {
-        val validTimeRange = when (timeRange.lowercase()) {
-            "24h", "48h", "7d", "30d", "90d", "180d", "1y" -> true
-            else -> false
-        }
-        !KIO.failOn(!validTimeRange) { Error.BadRequest }
 
         SensorRepo.getLatestMeasurementTimeEnriched(
             locationId, timeRange,
@@ -95,7 +90,7 @@ object SensorService {
 
     fun getLocationByIDWithMeasurementsWithinTimespanV3(
         locationId: Long,
-        timeRange: String, // "today", "week", "month"
+        timeRange: SensorMeasurementsTimeRange,
         timezone: String,
         ipAddress: String,
         units: String
