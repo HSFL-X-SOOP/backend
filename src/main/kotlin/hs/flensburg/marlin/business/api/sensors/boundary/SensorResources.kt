@@ -144,14 +144,17 @@ fun Application.configureSensors() {
             path = "/latestmeasurements_v3",
             builder = {
                 tags("measurements")
-                description = "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
+                description =
+                    "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
                 request {
                     queryParameter<String>("timezone") {
-                        description = "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
                     queryParameter<String>("units") {
-                        description = "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
                         required = false
                     }
                 }
