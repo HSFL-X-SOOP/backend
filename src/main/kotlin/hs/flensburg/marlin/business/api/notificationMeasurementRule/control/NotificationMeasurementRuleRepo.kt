@@ -80,6 +80,13 @@ object NotificationMeasurementRuleRepo {
             .fetchOneInto(NotificationMeasurementRule::class.java)
     }
 
+    fun fetchAllByUserIdAndLocationId(userId: Long, locationId: Long): JIO<List<NotificationMeasurementRuleDTO?>> = Jooq.query {
+        selectFrom(NOTIFICATION_MEASUREMENT_RULE)
+            .where(NOTIFICATION_MEASUREMENT_RULE.USER_ID.eq(userId), NOTIFICATION_MEASUREMENT_RULE.LOCATION_ID.eq(locationId))
+            .fetchInto(NotificationMeasurementRule::class.java)
+            .map { NotificationMeasurementRuleDTO.from(it) }
+    }
+
     fun fetchAllByUserId(userId: Long): JIO<List<NotificationMeasurementRuleDTO?>> = Jooq.query {
         selectFrom(NOTIFICATION_MEASUREMENT_RULE)
             .where(NOTIFICATION_MEASUREMENT_RULE.USER_ID.eq(userId))
