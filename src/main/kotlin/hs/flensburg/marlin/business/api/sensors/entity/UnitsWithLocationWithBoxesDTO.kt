@@ -26,7 +26,7 @@ fun mapToUnitsWithLocationWithBoxesDTO(rawLocations: List<LocationWithLatestMeas
             unitMap["Wind direction, gust"] ?: "",
             unitMap["Humidity, relative"] ?: "",
             unitMap["Station pressure"] ?: ""
-        ), locationWithBoxes = rawLocations.map { it.mapToLocationWithBoxesDTO() })
+        ), locationWithBoxes = rawLocations.map { it.toLocationWithBoxesDTO() })
 }
 
 
