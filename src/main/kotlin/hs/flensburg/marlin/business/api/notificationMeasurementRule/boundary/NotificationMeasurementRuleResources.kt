@@ -64,6 +64,34 @@ fun Application.configureNotificationMeasurementRules() {
         }
 
         get(
+            path = "/notification-measurement-rules/user/{userId}/location/{locationId}",
+            builder = {
+                description = "Get all notification measurement rules from a user by the user ID and Location ID"
+                tags("notification-measurement-rules")
+                request {
+                    pathParameter<Long>("userId") {
+                        description = "ID of the user"
+                    }
+                    pathParameter<Long>("locationId") {
+                        description = "ID of the location"
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        body<NotificationMeasurementRuleDTO>()
+                    }
+                    HttpStatusCode.NotFound to {
+                        body<String>()
+                    }
+                }
+            }
+        ) {
+            val userId = call.parameters["userId"]!!.toLong()
+            val locationId = call.parameters["locationId"]!!.toLong()
+            call.respondKIO(NotificationMeasurementRuleService.getAllotificationMeasurementRuleByUserIdAndLocationId(userId, locationId))
+        }
+
+        get(
             path = "/notification-measurement-rules/user/{userId}/location/{locationId}/measurementTypeId/{measurementTypeId}",
             builder = {
                 description = "Get all notification measurement rules from a user by the user ID"

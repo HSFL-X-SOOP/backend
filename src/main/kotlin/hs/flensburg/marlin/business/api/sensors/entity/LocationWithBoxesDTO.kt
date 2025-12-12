@@ -11,7 +11,7 @@ data class LocationWithBoxesDTO(
     val boxes: List<BoxDTO>
 )
 
-fun LocationWithLatestMeasurementsDTO.mapToLocationWithBoxesDTO(): LocationWithBoxesDTO {
+fun LocationWithLatestMeasurementsDTO.toLocationWithBoxesDTO(): LocationWithBoxesDTO {
     val boxes = latestMeasurements
         .groupBy { it.sensor.id }
         .map { (_, measurements) ->
