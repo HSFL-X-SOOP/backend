@@ -1,13 +1,13 @@
-package hs.flensburg.marlin.business.unit
+package hs.flensburg.marlin.business.app.sort
 
 import hs.flensburg.marlin.business.OrderBy
 import hs.flensburg.marlin.database.generated.tables.references.USER_VIEW
+import org.jooq.SQLDialect
 import org.jooq.impl.DSL
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 
-class SortTest {
+class UNIT_SORT_TEST {
 
     @Test
     fun `test Sort toSortField with ascending order`() {
@@ -15,8 +15,8 @@ class SortTest {
         val sortField = sort.toOrderField()
 
         val sqlString = sortField.toString()
-        assertTrue(sqlString.contains("email"), "Sort field should contain 'email'")
-        assertTrue(sqlString.contains("asc"), "Sort field should be ascending")
+        Assertions.assertTrue(sqlString.contains("email"), "Sort field should contain 'email'")
+        Assertions.assertTrue(sqlString.contains("asc"), "Sort field should be ascending")
 
         println("Ascending sort SQL: $sqlString")
     }
@@ -27,42 +27,42 @@ class SortTest {
         val sortField = sort.toOrderField()
 
         val sqlString = sortField.toString()
-        assertTrue(sqlString.contains("CREATED_AT"), "Sort field should contain 'created_at'")
-        assertTrue(sqlString.contains("desc"), "Sort field should be descending")
+        Assertions.assertTrue(sqlString.contains("CREATED_AT"), "Sort field should contain 'created_at'")
+        Assertions.assertTrue(sqlString.contains("desc"), "Sort field should be descending")
 
         println("Descending sort SQL: $sqlString")
     }
 
     @Test
     fun `test Sort parse with asc modifier`() {
-        val sort = OrderBy.parse("email.asc")
+        val sort = OrderBy.Companion.parse("email.asc")
 
-        assertEquals("email", sort.orderBy, "Sort field should be 'EMAIL'")
-        assertEquals(true, sort.ascending, "Sort should be ascending")
+        Assertions.assertEquals("email", sort.orderBy, "Sort field should be 'EMAIL'")
+        Assertions.assertEquals(true, sort.ascending, "Sort should be ascending")
     }
 
     @Test
     fun `test Sort parse with desc modifier`() {
-        val sort = OrderBy.parse("created_at.desc")
+        val sort = OrderBy.Companion.parse("created_at.desc")
 
-        assertEquals("created_at", sort.orderBy, "Sort field should be 'CREATED_AT'")
-        assertEquals(false, sort.ascending, "Sort should be descending")
+        Assertions.assertEquals("created_at", sort.orderBy, "Sort field should be 'CREATED_AT'")
+        Assertions.assertEquals(false, sort.ascending, "Sort should be descending")
     }
 
     @Test
     fun `test Sort parse without modifier defaults to asc`() {
-        val sort = OrderBy.parse("username")
+        val sort = OrderBy.Companion.parse("username")
 
-        assertEquals("username", sort.orderBy, "Sort field should be 'username'")
-        assertEquals(true, sort.ascending, "Sort should default to ascending")
+        Assertions.assertEquals("username", sort.orderBy, "Sort field should be 'username'")
+        Assertions.assertEquals(true, sort.ascending, "Sort should default to ascending")
     }
 
     @Test
     fun `test Sort parse with invalid modifier defaults to asc`() {
-        val sort = OrderBy.parse("email.invalid")
+        val sort = OrderBy.Companion.parse("email.invalid")
 
-        assertEquals("email", sort.orderBy, "Sort field should be 'EMAIL'")
-        assertEquals(true, sort.ascending, "Invalid modifier should default to ascending")
+        Assertions.assertEquals("email", sort.orderBy, "Sort field should be 'EMAIL'")
+        Assertions.assertEquals(true, sort.ascending, "Invalid modifier should default to ascending")
     }
 
     @Test
@@ -73,16 +73,16 @@ class SortTest {
         val sortFieldAsc = sortAsc.toOrderField()
         val sortFieldDesc = sortDesc.toOrderField()
 
-        val query = DSL.using(org.jooq.SQLDialect.POSTGRES)
+        val query = DSL.using(SQLDialect.POSTGRES)
             .selectFrom(USER_VIEW)
             .orderBy(sortFieldAsc, sortFieldDesc)
 
         val sql = query.getSQL()
         println("Generated SQL query: $sql")
 
-        assertTrue(sql.contains("order by"), "Query should contain ORDER BY clause")
-        assertTrue(sql.contains("email"), "Query should sort by email")
-        assertTrue(sql.contains("id"), "Query should sort by id")
+        Assertions.assertTrue(sql.contains("order by"), "Query should contain ORDER BY clause")
+        Assertions.assertTrue(sql.contains("email"), "Query should sort by email")
+        Assertions.assertTrue(sql.contains("id"), "Query should sort by id")
     }
 
     @Test
@@ -93,15 +93,15 @@ class SortTest {
         val primaryField = primarySort.toOrderField()
         val secondaryField = secondarySort.toOrderField()
 
-        val query = DSL.using(org.jooq.SQLDialect.POSTGRES)
+        val query = DSL.using(SQLDialect.POSTGRES)
             .selectFrom(USER_VIEW)
             .orderBy(primaryField, secondaryField)
 
         val sql = query.getSQL()
         println("Multi-sort SQL query: $sql")
 
-        assertTrue(sql.contains("created_at"), "Query should include primary sort field")
-        assertTrue(sql.contains("email"), "Query should include secondary sort field")
+        Assertions.assertTrue(sql.contains("created_at"), "Query should include primary sort field")
+        Assertions.assertTrue(sql.contains("email"), "Query should include secondary sort field")
     }
 
     @Test
@@ -110,7 +110,7 @@ class SortTest {
         val sortField = sort.toOrderField()
 
         val sqlString = sortField.toString()
-        assertTrue(sqlString.contains("user_activity_role"), "Sort field should handle underscores")
+        Assertions.assertTrue(sqlString.contains("user_activity_role"), "Sort field should handle underscores")
 
         println("Sort with underscores SQL: $sqlString")
     }
