@@ -1,12 +1,12 @@
-package hs.flensburg.marlin.business.integration
+package hs.flensburg.marlin.business.app.sort
 
 import hs.flensburg.marlin.business.OrderBy
-import hs.flensburg.marlin.database.generated.tables.references.USER_VIEW
 import hs.flensburg.marlin.core.IntegrationTest
+import hs.flensburg.marlin.database.generated.tables.references.USER_VIEW
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertTrue
 
-class SortIntegrationTest : IntegrationTest() {
+class IT_SORT_TEST : IntegrationTest() {
 
     @Test
     fun `test Sort toSortField with actual database query - ascending`() {
@@ -23,8 +23,8 @@ class SortIntegrationTest : IntegrationTest() {
         val results = query.fetch()
         println("Query executed successfully, fetched ${results.size} rows")
 
-        assertTrue(sql.contains("order by"), "SQL should contain ORDER BY")
-        assertTrue(sql.lowercase().contains("email"), "SQL should sort by email")
+        Assertions.assertTrue(sql.contains("order by"), "SQL should contain ORDER BY")
+        Assertions.assertTrue(sql.lowercase().contains("email"), "SQL should sort by email")
     }
 
     @Test
@@ -42,9 +42,9 @@ class SortIntegrationTest : IntegrationTest() {
         val results = query.fetch()
         println("Query executed successfully, fetched ${results.size} rows")
 
-        assertTrue(sql.contains("order by"), "SQL should contain ORDER BY")
-        assertTrue(sql.lowercase().contains("user_created_at"), "SQL should sort by created_at")
-        assertTrue(sql.lowercase().contains("desc"), "SQL should use DESC ordering")
+        Assertions.assertTrue(sql.contains("order by"), "SQL should contain ORDER BY")
+        Assertions.assertTrue(sql.lowercase().contains("user_created_at"), "SQL should sort by created_at")
+        Assertions.assertTrue(sql.lowercase().contains("desc"), "SQL should use DESC ordering")
     }
 
     @Test
@@ -62,9 +62,9 @@ class SortIntegrationTest : IntegrationTest() {
         val results = query.fetch()
         println("Query executed successfully, fetched ${results.size} rows")
 
-        assertTrue(sql.contains("order by"), "SQL should contain ORDER BY")
-        assertTrue(sql.lowercase().contains("user_created_at"), "SQL should sort by created_at")
-        assertTrue(sql.lowercase().contains("email"), "SQL should sort by email")
+        Assertions.assertTrue(sql.contains("order by"), "SQL should contain ORDER BY")
+        Assertions.assertTrue(sql.lowercase().contains("user_created_at"), "SQL should sort by created_at")
+        Assertions.assertTrue(sql.lowercase().contains("email"), "SQL should sort by email")
     }
 
     @Test
@@ -82,6 +82,6 @@ class SortIntegrationTest : IntegrationTest() {
         val results = query.fetch()
         println("Query executed successfully, fetched ${results.size} rows")
 
-        assertTrue(results.size <= 5, "Should fetch at most 5 rows")
+        Assertions.assertTrue(results.size <= 5, "Should fetch at most 5 rows")
     }
 }

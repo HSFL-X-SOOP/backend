@@ -4,17 +4,18 @@ CREATE OR REPLACE FUNCTION marlin.get_measurements(
     p_sensor_id bigint DEFAULT NULL,
     p_type_id bigint DEFAULT NULL
 )
-    RETURNS TABLE(
-                     sensor_id bigint,
-                     type_id bigint,
-                     location_id bigint,
-                     bucket timestamp with time zone,
-                     avg double precision,
-                     min double precision,
-                     max double precision,
-                     count bigint,
-                     stddev double precision
-                 )
+    RETURNS TABLE
+            (
+                sensor_id   bigint,
+                type_id     bigint,
+                location_id bigint,
+                bucket      timestamp with time zone,
+                avg         double precision,
+                min         double precision,
+                max         double precision,
+                count       bigint,
+                stddev      double precision
+            )
     LANGUAGE plpgsql
 AS
 $$
@@ -23,8 +24,7 @@ DECLARE
 BEGIN
     -- Choose correct view based on time range
     CASE lower(p_time_range)
-        WHEN '24h' THEN
-            sql := '
+        WHEN '24h' THEN sql := '
                 SELECT sensor_id, type_id, location_id, time AS bucket,
                        value AS avg, value AS min, value AS max, 
                        1::bigint AS count,
@@ -35,8 +35,7 @@ BEGIN
                   AND ($2 IS NULL OR sensor_id = $2)
                   AND ($3 IS NULL OR type_id = $3)
                 ORDER BY time DESC';
-        WHEN '48h' THEN
-            sql := '
+        WHEN '48h' THEN sql := '
                 SELECT sensor_id, type_id, location_id, time AS bucket,
                        value AS avg, value AS min, value AS max, 
                        1::bigint AS count,
@@ -48,8 +47,7 @@ BEGIN
                   AND ($3 IS NULL OR type_id = $3)
                 ORDER BY time DESC';
 
-        WHEN '7d' THEN
-            sql := '
+        WHEN '7d' THEN sql := '
                 SELECT sensor_id, type_id, location_id, bucket,
                        avg, min, max, count, stddev
                 FROM marlin.measurement_2h_view
@@ -59,8 +57,7 @@ BEGIN
                   AND ($3 IS NULL OR type_id = $3)
                 ORDER BY bucket DESC';
 
-        WHEN '30d' THEN
-            sql := '
+        WHEN '30d' THEN sql := '
                 SELECT sensor_id, type_id, location_id, bucket,
                        avg, min, max, count, stddev
                 FROM marlin.measurement_6h_view
@@ -70,8 +67,7 @@ BEGIN
                   AND ($3 IS NULL OR type_id = $3)
                 ORDER BY bucket DESC';
 
-        WHEN '90d' THEN
-            sql := '
+        WHEN '90d' THEN sql := '
                 SELECT sensor_id, type_id, location_id, bucket,
                        avg, min, max, count, stddev
                 FROM marlin.measurement_12h_view
@@ -81,8 +77,7 @@ BEGIN
                   AND ($3 IS NULL OR type_id = $3)
                 ORDER BY bucket DESC';
 
-        WHEN '180d' THEN
-            sql := '
+        WHEN '180d' THEN sql := '
                 SELECT sensor_id, type_id, location_id, bucket,
                        avg, min, max, count, stddev
                 FROM marlin.measurement_1d_view
@@ -92,8 +87,7 @@ BEGIN
                   AND ($3 IS NULL OR type_id = $3)
                 ORDER BY bucket DESC';
 
-        WHEN '1y' THEN
-            sql := '
+        WHEN '1y' THEN sql := '
                 SELECT sensor_id, type_id, location_id, bucket,
                        avg, min, max, count, stddev
                 FROM marlin.measurement_1d_view
@@ -103,8 +97,7 @@ BEGIN
                   AND ($3 IS NULL OR type_id = $3)
                 ORDER BY bucket DESC';
 
-        ELSE
-            RAISE EXCEPTION 'Invalid time range: %', p_time_range;
+        ELSE RAISE EXCEPTION 'Invalid time range: %', p_time_range;
         END CASE;
 
     -- Execute dynamic SQL passing all 3 parameters
