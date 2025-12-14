@@ -21,6 +21,8 @@ private val logger = KotlinLogging.logger { }
 fun main(args: Array<String>) {
     val mode = System.getenv("MODE")?.uppercase() ?: "DEV"
 
+    throw Exception("ROLLBACK TEST")
+
     logger.info { "Starting Marlin-Backend in $mode mode" }
 
     val config = when (mode) {
