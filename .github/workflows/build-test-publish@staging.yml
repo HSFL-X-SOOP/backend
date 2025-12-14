@@ -158,7 +158,7 @@ jobs:
                   echo "WARNING: Rollback health check also failed - manual intervention required"
                 fi
               else
-                echo "No previous image to rollback to - first deployment failed"
+                echo "No previous image to rollback to"
               fi
 
               exit 1
