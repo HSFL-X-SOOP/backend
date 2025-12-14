@@ -86,8 +86,85 @@ jobs:
           username: ${{ env.SERVER_USER }}
           key: ${{ env.DEPLOY_KEY }}
           script: |
-            sudo systemctl stop marlin-test.service
-            docker pull ${{ env.CONTAINER_REGISTRY_USERNAME }}/${{ env.CONTAINER_IMAGE_NAME }}:beta
-            sudo systemctl start marlin-test.service
+            set -e
+
+            CONTAINER_NAME="${{ env.CONTAINER_REGISTRY_USERNAME }}/${{ env.CONTAINER_IMAGE_NAME }}"
+            NEW_IMAGE="${CONTAINER_NAME}:beta"
+
+            echo "=== Starting deployment ==="
+
+            echo "Saving current image as rollback..."
+            if docker image inspect $NEW_IMAGE >/dev/null 2>&1; then
+              docker tag $NEW_IMAGE ${CONTAINER_NAME}:beta-rollback
+              echo "Current image tagged as beta-rollback"
+              HAS_ROLLBACK="true"
+            else
+              echo "No existing image found"
+              HAS_ROLLBACK="false"
+            fi
+
+            echo "Pulling new image: $NEW_IMAGE"
+            if ! docker pull $NEW_IMAGE; then
+              echo "ERROR: Failed to pull new image"
+              exit 1
+            fi
+
+            echo "Restarting marlin-test.service"
+            sudo systemctl restart marlin-test.service
+
+            echo "Waiting 10 seconds for service to initialize..."
+            sleep 10
+
+            echo "Performing health checks..."
+            HEALTH_CHECK_PASSED=false
+            for i in {1..6}; do
+              if curl -f -o /dev/null https://test.marlin-live.com/api/health; then
+                echo "Health check passed on attempt $i"
+                HEALTH_CHECK_PASSED=true
+                break
+              else
+                echo "Health check failed on attempt $i/6"
+                sleep 5
+              fi
+            done
+
+            if [ "$HEALTH_CHECK_PASSED" = false ]; then
+              echo "=== DEPLOYMENT FAILED: Health checks did not pass ==="
+              echo "=== ERROR LOGS ==="
+
+              echo "--- Service Status ---"
+              sudo systemctl status marlin-test.service --no-pager || true
+              echo ""
+
+              echo "--- Last 50 lines from systemd journal ---"
+              sudo journalctl -u marlin-test.service -n 50 --no-pager || true
+              echo ""
+
+              echo "--- Docker container logs ---"
+              docker logs marlin-backend --tail 100 2>&1 || echo "Could not fetch container logs"
+              echo ""
+
+              if [ "$HAS_ROLLBACK" = "true" ]; then
+                echo "Rolling back to previous image..."
+
+                docker tag ${CONTAINER_NAME}:beta-rollback $NEW_IMAGE
+
+                sudo systemctl restart marlin-test.service
+                sleep 10
+
+                if curl -f -s -o /dev/null https://test.marlin-live.com/api/health; then
+                  echo "Rollback successful - service is healthy with previous image"
+                else
+                  echo "WARNING: Rollback health check also failed - manual intervention required"
+                fi
+              else
+                echo "No previous image to rollback to - first deployment failed"
+              fi
+
+              exit 1
+            fi
+
+            echo "=== Deployment successful ==="
+            echo "Cleaning up old Docker images (keeping rollback for next deployment)"
             docker image prune -f
-            echo "Cleaned up unused Docker images"
+            echo "Deployment completed successfully"
