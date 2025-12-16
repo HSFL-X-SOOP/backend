@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.business.api.openAPI
 
+import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginResponse
@@ -84,8 +85,9 @@ object AuthOpenAPISpec {
 
     val loginGoogleAndroid: RouteConfig.() -> Unit = {
         tags("auth")
-        description = "Authenticates a user using a Google ID token obtained from the Android Google Sign-In SDK. " +
-                "This endpoint is specifically for mobile applications."
+        description = "Authenticates a user using a Google ID token obtained from Google Sign-In SDK. " +
+                "This endpoint supports both Android and iOS mobile applications. " +
+                "The ID token must be issued for one of the registered client IDs (Web or iOS)."
 
         request {
             body<GoogleLoginRequest>()
@@ -98,6 +100,36 @@ object AuthOpenAPISpec {
             }
             HttpStatusCode.BadRequest to {
                 description = "Invalid or expired Google ID token"
+                body<String>()
+            }
+            HttpStatusCode.Unauthorized to {
+                description = "Google ID token audience verification failed - token not issued for this application"
+                body<String>()
+            }
+        }
+    }
+
+    val loginApple: RouteConfig.() -> Unit = {
+        tags("auth")
+        description = "Authenticates a user using an Apple identity token obtained from Sign in with Apple. " +
+                "This endpoint supports both mobile and web applications. " +
+                "On first sign-in, user information (email, name) is provided by Apple and should be included in the request."
+
+        request {
+            body<AppleLoginRequest>()
+        }
+
+        response {
+            HttpStatusCode.OK to {
+                description = "Login successful"
+                body<LoginResponse>()
+            }
+            HttpStatusCode.BadRequest to {
+                description = "Invalid or expired Apple identity token, or missing required email"
+                body<String>()
+            }
+            HttpStatusCode.Unauthorized to {
+                description = "Apple identity token audience verification failed - token not issued for this application"
                 body<String>()
             }
         }

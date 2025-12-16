@@ -1,8 +1,11 @@
 package hs.flensburg.marlin.business.api.auth.boundary
 
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
+import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
+import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
+import hs.flensburg.marlin.business.api.auth.entity.AppleNotificationPayload
 import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
@@ -136,7 +139,7 @@ fun Application.configureAuth(envConfig: Config) {
         post("/register", AuthOpenAPISpec.register) {
             val registerRequest = call.receive<RegisterRequest>()
 
-            call.respondKIO(AuthService.register(registerRequest))
+            call.respondKIO(AuthService.register(registerRequest).transact())
         }
 
         post("/login", AuthOpenAPISpec.login) {
@@ -171,6 +174,22 @@ fun Application.configureAuth(envConfig: Config) {
             call.respondKIO(AuthService.loginGoogleUser(googleLoginRequest.idToken))
         }
 
+        post("/login/apple", AuthOpenAPISpec.loginApple) {
+            val appleLoginRequest = call.receive<AppleLoginRequest>()
+
+            call.respondKIO(
+                AuthService.loginAppleUser(appleLoginRequest)
+            )
+        }
+
+        post("/apple/notification", { hidden = true }) {
+            val notification = call.receive<AppleNotificationPayload>()
+
+            call.respondKIO(
+                AppleNotificationService.handleNotification(notification.payload).transact()
+            )
+        }
+
         post("/auth/refresh", AuthOpenAPISpec.refreshToken) {
             val refreshToken = call.receive<RefreshTokenRequest>()
 
@@ -199,7 +218,7 @@ fun Application.configureAuth(envConfig: Config) {
             post("/send-verification-email", AuthOpenAPISpec.sendVerificationEmail) {
                 val user = call.principal<LoggedInUser>()!!
 
-                call.respondKIO(EmailService.sendVerificationEmail(user.id))
+                call.respondKIO(EmailService.sendVerificationEmail(user.id).transact())
             }
         }
     }

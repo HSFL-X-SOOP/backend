@@ -1,10 +1,12 @@
 package hs.flensburg.marlin.business.api.sensors.boundary
 
-import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.business.api.location.boundary.LocationService
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
+import hs.flensburg.marlin.business.api.sensors.entity.SensorMeasurementsTimeRange
+import hs.flensburg.marlin.business.api.sensors.entity.UnitsWithLocationWithBoxesDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
@@ -13,6 +15,7 @@ import io.github.smiley4.ktoropenapi.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.plugins.origin
+import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 
 fun Application.configureSensors() {
@@ -112,6 +115,11 @@ fun Application.configureSensors() {
                             "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
+                    queryParameter<String>("units") {
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        required = false
+                    }
                 }
                 response {
                     HttpStatusCode.OK to {
@@ -125,62 +133,52 @@ fun Application.configureSensors() {
             }
         ) {
             call.respondKIO(
-                SensorService.getLocationWithLatestMeasurementsNEW(
+                SensorService.getLocationsWithLatestMeasurementsNEW(
                     call.parameters["timezone"] ?: "DEFAULT",
-                    call.request.origin.remoteAddress
+                    call.request.origin.remoteAddress,
+                    call.parameters["units"] ?: "metric"
                 )
             )
         }
 
         get(
-            path = "/location/{id}/measurementsWithinTimeRange",
+            path = "/latestmeasurements_v3",
             builder = {
-                tags("location")
-                description = "Get all measurements for a location within a given time range"
+                tags("measurements")
+                description =
+                    "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
                 request {
-                    pathParameter<Long>("id") {
-                        description = "The location ID (not the sensor ID)"
-                    }
-                    queryParameter<String>("timeRange") {
-                        description =
-                            "Optional time range ('48h', '7d', '30d', '90d', '180d' '1y'). Defaults to 24h. Warning: '90d', '180d' and '1y' can take a while to load."
-                        required = false
-                    }
                     queryParameter<String>("timezone") {
                         description =
                             "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
+                    queryParameter<String>("units") {
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        required = false
+                    }
                 }
                 response {
                     HttpStatusCode.OK to {
-                        description = "Successful response with measurements"
-                        body<LocationWithBoxesDTO>()
+                        description = "Successful response with latest measurements for each location"
+                        body<UnitsWithLocationWithBoxesDTO>()
                     }
-                    HttpStatusCode.BadRequest to {
-                        description = "Invalid parameters"
+                    HttpStatusCode.InternalServerError to {
+                        description = "Error occurred while retrieving the latest measurements"
                     }
                 }
             }
         ) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
-            val timeRange = call.parameters["timeRange"] ?: "DEFAULT"
-
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@get
-            }
             call.respondKIO(
-                SensorService.getLocationByIDWithMeasurementsWithinTimespan(
-                    locationID,
-                    timeRange,
+                SensorService.getLocationsWithLatestMeasurementsV3(
                     call.parameters["timezone"] ?: "DEFAULT",
-                    call.request.origin.remoteAddress
+                    call.request.origin.remoteAddress,
+                    call.parameters["units"] ?: "metric"
                 )
             )
         }
-        //testing purposes
-        //TODO: remove
+
         get(
             path = "/location/{id}/measurementsWithinTimeRangeFAST",
             builder = {
@@ -207,6 +205,11 @@ fun Application.configureSensors() {
                             "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
                         required = false
                     }
+                    queryParameter<String>("units") {
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        required = false
+                    }
                 }
                 response {
                     HttpStatusCode.OK to {
@@ -219,19 +222,83 @@ fun Application.configureSensors() {
                 }
             }
         ) {
-            val locationID = call.parameters["id"]?.toLongOrNull()
-            val timeRange = call.parameters["timeRange"] ?: "DEFAULT"
+            val locationId = call.parameters["id"]?.toLongOrNull()
+                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            if (locationID == null) {
-                call.respondKIO(KIO.ok("LocationID fehlt oder ungültig"))
-                return@get
-            }
+            val timeRange = call.parameters["timeRange"] ?: "24h"
+
             call.respondKIO(
                 SensorService.getLocationByIDWithMeasurementsWithinTimespanFAST(
-                    locationID,
-                    timeRange,
+                    locationId,
+                    SensorMeasurementsTimeRange.fromString(timeRange) ?: return@get call.respondText(
+                        "wrong timeRange",
+                        status = HttpStatusCode.BadRequest
+                    ),
                     call.parameters["timezone"] ?: "DEFAULT",
-                    call.request.origin.remoteAddress
+                    call.request.origin.remoteAddress,
+                    call.parameters["units"] ?: "metric"
+                )
+            )
+        }
+
+        get(
+            path = "/location/{id}/measurementsWithinTimeRange_v3",
+            builder = {
+                tags("location")
+                description = "Get all measurements for a location within a given time range"
+                request {
+                    pathParameter<Long>("id") {
+                        description = "The location ID (not the sensor ID)"
+                    }
+                    queryParameter<String>("timeRange") {
+                        description = """Optional time range ('48h', '7d', '30d', '1y'). Defaults to 24h.
+                            |           "24h" -> raw;
+                                        "48h" -> raw;
+                                        "7d"  -> avg: 2 hours;
+                                        "30d" -> avg: 6 hours;
+                                        "90d"  -> avg: 12 hours;
+                                        "180d" -> avg: 1 day;
+                                        "1y"  -> avg: 2 days;
+                        """.trimMargin()
+                        required = false
+                    }
+                    queryParameter<String>("timezone") {
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        required = false
+                    }
+                    queryParameter<String>("units") {
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        required = false
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response with measurements"
+                        body<UnitsWithLocationWithBoxesDTO>()
+                    }
+                    HttpStatusCode.BadRequest to {
+                        description = "Invalid parameters"
+                    }
+                }
+            }
+        ) {
+            val locationId = call.parameters["id"]?.toLongOrNull()
+                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
+
+            val timeRange = call.parameters["timeRange"] ?: "24h"
+
+            call.respondKIO(
+                SensorService.getLocationByIDWithMeasurementsWithinTimespanV3(
+                    locationId,
+                    SensorMeasurementsTimeRange.fromString(timeRange) ?: return@get call.respondText(
+                        "wrong timeRange",
+                        status = HttpStatusCode.BadRequest
+                    ),
+                    call.parameters["timezone"] ?: "DEFAULT",
+                    call.request.origin.remoteAddress,
+                    call.parameters["units"] ?: "metric"
                 )
             )
         }

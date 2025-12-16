@@ -65,7 +65,10 @@ object UserService {
         UserRepo.fetchViewById(userId).orDie().onNullFail { Error.NotFound }.map { UserProfile.from(it) }
     }
 
-    fun updateProfile(userId: Long, request: UpdateUserProfileRequest): App<Error, UserProfile> = KIO.comprehension {
+    fun updateProfile(
+        userId: Long,
+        request: UpdateUserProfileRequest
+    ): App<Error, UserProfile> = KIO.comprehension {
         !UserRepo.updateProfile(
             userId = userId,
             firstName = request.firstName,
@@ -81,8 +84,12 @@ object UserService {
     fun updateProfile(
         request: UpdateUserRequest
     ): App<Error, Unit> = KIO.comprehension {
-        UserRepo.updateUser(
-            request
+        UserRepo.update(
+            userId = request.userId,
+            firstName = null,
+            lastName = null,
+            authorityRole = request.authorityRole,
+            verified = request.verified
         ).orDie().onNullFail { Error.NotFound }.map { }
     }
 

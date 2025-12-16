@@ -1,14 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="error">
+    <Properties>
+        <Property name="LOG_DIR">${env:LOG_DIR:-target/logs}</Property>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable</Property>
+    </Properties>
+
     <Appenders>
+        <!-- Console Appender - Plain text -->
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
+            <PatternLayout pattern="${LOG_PATTERN}" />
         </Console>
+
+        <!-- Rolling File Appender - ALL logs -->
+        <RollingFile name="RollingFile"
+                     fileName="${LOG_DIR}/marlin.log"
+                     filePattern="${LOG_DIR}/marlin-%d{yyyy-MM-dd}-%i.log.gz"
+                     ignoreExceptions="false">
+            <PatternLayout pattern="${LOG_PATTERN}" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true" />
+                <SizeBasedTriggeringPolicy size="100 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="30" />
+        </RollingFile>
     </Appenders>
 
     <Loggers>
+        <Logger name="io.ktor" level="info" />
+        <Logger name="org.jooq" level="info" />
+        <Logger name="com.zaxxer.hikari" level="info" />
+        <Logger name="org.flywaydb" level="info" />
+        <Logger name="hs.flensburg.marlin" level="info" />
+
         <Root level="info">
             <AppenderRef ref="Console" />
+            <AppenderRef ref="RollingFile" />
         </Root>
     </Loggers>
 </Configuration>

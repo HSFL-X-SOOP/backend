@@ -1,12 +1,17 @@
 package hs.flensburg.marlin.plugins
 
+import configureNotificationLocations
+import configureUserLocations
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.admin.boundary.configureAdmin
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
+import hs.flensburg.marlin.business.api.notifications.boundary.configureNotifications
 import hs.flensburg.marlin.business.api.location.boundary.configureLocation
+import hs.flensburg.marlin.business.api.notificationMeasurementRule.boundary.configureNotificationMeasurementRules
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
+import hs.flensburg.marlin.business.api.userDevice.boundary.configureUserDevices
 import hs.flensburg.marlin.business.api.users.boundary.configureUsers
 import io.github.smiley4.ktoropenapi.OpenApi
 import io.github.smiley4.ktoropenapi.config.AuthScheme
@@ -37,7 +42,12 @@ fun Application.configureRouting(config: Config) {
     configureSensors()
     configureAdmin()
     configurePotentialSensors()
+    configureNotifications()
     configureLocation()
+    configureUserDevices()
+    configureNotificationMeasurementRules()
+    configureUserLocations()
+    configureNotificationLocations()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)

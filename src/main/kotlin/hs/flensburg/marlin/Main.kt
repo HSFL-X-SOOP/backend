@@ -3,6 +3,7 @@ package hs.flensburg.marlin
 import hs.flensburg.marlin.Config.Companion.parseConfig
 import hs.flensburg.marlin.business.Env
 import hs.flensburg.marlin.business.JEnv
+import hs.flensburg.marlin.business.api.notifications.configureFirebase
 import hs.flensburg.marlin.business.configureScheduling
 import hs.flensburg.marlin.plugins.configureCORS
 import hs.flensburg.marlin.plugins.configureKIO
@@ -33,7 +34,7 @@ fun main(args: Array<String>) {
         Flyway.configure()
             .driver("org.postgresql.Driver")
             .dataSource(dsl)
-            .locations("classpath:db/migration", "classpath:db/views")
+            .locations("classpath:db/migration", "classpath:db/views", "classpath:db/functions")
             .schemas("marlin")
     ).migrate()
 
@@ -51,4 +52,5 @@ fun Application.modules(env: JEnv) {
     configureScheduling(env)
     configureCORS()
     configureRouting(env.env.config)
+    configureFirebase(env.env.config.firebaseInfo)
 }

@@ -2,14 +2,18 @@ package hs.flensburg.marlin.business.api.auth.boundary
 
 import com.auth0.jwt.JWT
 import de.lambda9.tailwind.core.KIO
+import de.lambda9.tailwind.core.extensions.kio.attempt
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
+import hs.flensburg.marlin.business.api.auth.control.AppleAuthVerifier
 import hs.flensburg.marlin.business.api.auth.control.AuthRepo
 import hs.flensburg.marlin.business.api.auth.control.Hashing
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
+import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginResponse
@@ -17,13 +21,17 @@ import hs.flensburg.marlin.business.api.auth.entity.MagicLinkLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
 import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
+import hs.flensburg.marlin.business.api.email.boundary.EmailService
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.auth.OAuthAccessTokenResponse
 import io.ktor.server.auth.jwt.JWTCredential
+
+private val logger = KotlinLogging.logger { }
 
 object AuthService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -50,7 +58,7 @@ object AuthService {
 
     private const val MAX_FAILED_LOGIN_ATTEMPTS = 3
 
-    fun register(credentials: RegisterRequest): App<Error, LoginResponse> = KIO.comprehension {
+    fun register(credentials: RegisterRequest): App<ServiceLayerError, LoginResponse> = KIO.comprehension {
         val email = credentials.email
         val password = credentials.password
         val existingUser = !UserRepo.fetchByEmail(email).orDie()
@@ -66,6 +74,16 @@ object AuthService {
         }
 
         val userID = !UserRepo.insert(userRecord).orDie().map { it.id!! }
+
+        (!EmailService.sendWelcomeEmail(userID).attempt()).fold(
+            onSuccess = { },
+            onError = { logger.error { "Cannot send welcome email to user $userID: ${it.toApiError().message}" } }
+        )
+
+        (!EmailService.sendVerificationEmail(userID).attempt()).fold(
+            onSuccess = { },
+            onError = { logger.error { "Cannot send verification email to user $userID: ${it.toApiError().message}" } }
+        )
 
         val user = !UserRepo.fetchViewById(userID).orDie()
 
@@ -105,6 +123,17 @@ object AuthService {
 
     fun loginGoogleUser(idToken: String): App<Error, LoginResponse> = KIO.comprehension {
         loginWithGoogleIdToken(idToken)
+    }
+
+    fun loginAppleUser(
+        loginRequest: AppleLoginRequest
+    ): App<Error, LoginResponse> = KIO.comprehension {
+        loginWithAppleIdToken(
+            loginRequest.identityToken,
+            loginRequest.email,
+            loginRequest.givenName,
+            loginRequest.familyName
+        )
     }
 
     fun loginViaMagicLink(magicLinkRequest: MagicLinkLoginRequest): App<Error, LoginResponse> = KIO.comprehension {
@@ -204,6 +233,16 @@ object AuthService {
             !KIO.fail(Error.BadRequest)
         }
 
+        val googleConfig = (!KIO.access<JEnv>()).env.config.googleAuth
+
+        val audience = credentials.audience
+        val validAudiences = listOf(googleConfig.clientId, googleConfig.iosClientId)
+
+        !KIO.failOn(audience.none { it in validAudiences }) {
+            logger.warn { "Invalid Google ID token audience: $audience" }
+            Error.Unauthorized
+        }
+
         val email = credentials.getClaim("email").asString()
         val emailVerified = credentials.getClaim("email_verified").asBoolean()
 
@@ -224,6 +263,65 @@ object AuthService {
 
 
         val userView = !UserRepo.fetchViewById(user.id!!).orDie().onNullFail { Error.Unknown }
+
+        !BlacklistHandler.checkUserIsNotBlacklisted(userView.id!!)
+
+        val accessToken = JWTAuthority.generateAccessToken(userView)
+        val refreshToken = JWTAuthority.generateRefreshToken(userView)
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(userView)))
+    }
+
+    private fun loginWithAppleIdToken(
+        identityToken: String,
+        email: String?,
+        givenName: String?,
+        familyName: String?
+    ): App<Error, LoginResponse> = KIO.comprehension {
+        val appleConfig = (!KIO.access<JEnv>()).env.config.appleAuth
+
+        val verifiedJWT = !AppleAuthVerifier.verifyAndDecodeToken(
+            identityToken = identityToken,
+            expectedAudience = appleConfig.clientId
+        )
+
+        val appleUserId = verifiedJWT.subject
+        logger.info { "Apple identity token successfully verified for subject: $appleUserId" }
+        !KIO.failOn(appleUserId.isNullOrBlank()) { Error.BadRequest }
+
+        val tokenEmail = verifiedJWT.getClaim("email").asString()
+        val emailVerified = verifiedJWT.getClaim("email_verified").let {
+            if (it.isNull) true else it.asBoolean()
+        }
+
+        val finalEmail = tokenEmail ?: email
+        !KIO.failOn(finalEmail.isNullOrBlank()) { Error.BadRequest }
+
+        val existingUserByAppleId = !UserRepo.fetchByAppleUserId(appleUserId).orDie()
+        val existingUserByEmail = !UserRepo.fetchByEmail(finalEmail!!).orDie()
+
+        val userRecord = when {
+            existingUserByAppleId != null -> existingUserByAppleId
+            existingUserByEmail != null -> {
+                if (existingUserByEmail.appleUserId == null) {
+                    !UserRepo.setAppleUserId(existingUserByEmail.id!!, appleUserId).orDie()
+                }
+                existingUserByEmail
+            }
+
+            else -> {
+                val newUserRecord = UserRecord().apply {
+                    this.email = finalEmail
+                    this.verified = emailVerified ?: true
+                    this.firstName = givenName
+                    this.lastName = familyName
+                    this.appleUserId = appleUserId
+                }
+                !UserRepo.insert(newUserRecord).orDie()
+            }
+        }
+
+        val userView = !UserRepo.fetchViewById(userRecord.id!!).orDie().onNullFail { Error.Unknown }
 
         !BlacklistHandler.checkUserIsNotBlacklisted(userView.id!!)
 

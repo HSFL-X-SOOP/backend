@@ -7,7 +7,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.Parameters
 import kotlinx.serialization.Serializable
 import org.jooq.Condition
+import org.jooq.Field
 import org.jooq.OrderField
+import org.jooq.Record
+import org.jooq.UpdateSetMoreStep
+import org.jooq.UpdateSetStep
 import org.jooq.impl.DSL
 import javax.sql.DataSource
 
@@ -170,4 +174,42 @@ interface Conditional {
  */
 interface ConditionalFactory<T : Conditional> {
     fun from(queryParams: Parameters): T
+}
+
+/**
+ * Sets the field to the given value if the value is not null.
+ *
+ * @param field The field to set.
+ * @param value The value to set.
+ * @return The updated [UpdateSetMoreStep] if the value is not null, otherwise
+ */
+fun <T, R : Record> UpdateSetStep<R>.setIfNotNull(
+    field: Field<T>,
+    value: T
+): UpdateSetMoreStep<R> {
+    return if (value != null) {
+        this.set(field, value)
+    } else {
+        this as UpdateSetMoreStep<R>
+    }
+}
+
+/**
+ * Sets the field to the given value if the predicate returns true for the value.
+ *
+ * @param field The field to set.
+ * @param value The value to set.
+ * @param predicate The predicate to evaluate the value.
+ * @return The updated [UpdateSetMoreStep] if the predicate returns true, otherwise
+ */
+fun <T, R : Record> UpdateSetStep<R>.setWhen(
+    field: Field<T>,
+    value: T,
+    predicate: (T) -> Boolean
+): UpdateSetMoreStep<R> {
+    return if (predicate(value)) {
+        this.set(field, value)
+    } else {
+        this as UpdateSetMoreStep<R>
+    }
 }
