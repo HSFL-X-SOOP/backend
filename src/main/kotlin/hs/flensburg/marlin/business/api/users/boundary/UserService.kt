@@ -10,6 +10,8 @@ import hs.flensburg.marlin.business.PageResult
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.boundary.BlacklistHandler
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
+import hs.flensburg.marlin.business.api.location.control.LocationRepo
+import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.business.api.users.entity.BlacklistUserRequest
 import hs.flensburg.marlin.business.api.users.entity.CreateUserProfileRequest
@@ -17,6 +19,7 @@ import hs.flensburg.marlin.business.api.users.entity.UpdateUserProfileRequest
 import hs.flensburg.marlin.business.api.users.entity.UpdateUserRequest
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
+import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 
 object UserService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -36,7 +39,18 @@ object UserService {
     }
 
     fun getProfile(userId: Long): App<Error, UserProfile> = KIO.comprehension {
-        UserRepo.fetchViewById(userId).orDie().onNullFail { Error.NotFound }.map { UserProfile.from(it) }
+        val userView = !UserRepo.fetchViewById(userId).orDie().onNullFail { Error.NotFound }
+        val profile = UserProfile.from(userView)
+
+        if (userView.authorityRole == UserAuthorityRole.HARBOR_MASTER) {
+            val locationId = !UserRepo.fetchUserAssignedLocationId(userId).orDie()
+            val location = !LocationRepo.fetchLocationByID(locationId).orDie()
+            if (location != null) {
+                profile.assignedLocation = LocationDTO.fromLocation(location)
+            }
+        }
+
+        KIO.ok(profile)
     }
 
     fun getRecentActivity(userId: Long): App<Error, PageResult<String>> = KIO.comprehension {

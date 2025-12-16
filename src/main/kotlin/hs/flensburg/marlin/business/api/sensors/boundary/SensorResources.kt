@@ -1,6 +1,7 @@
 package hs.flensburg.marlin.business.api.sensors.boundary
 
 import hs.flensburg.marlin.business.api.location.boundary.LocationService
+import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.sensors.entity.SensorMeasurementsTimeRange
@@ -58,11 +59,11 @@ fun Application.configureSensors() {
             path = "/locations",
             builder = {
                 tags("location")
-                description = "Return all locations (raw form)."
+                description = "Return all locations."
                 response {
                     HttpStatusCode.OK to {
                         description = "List of locations"
-                        body<List<LocationDTO>>()
+                        body<List<DetailedLocationDTO>>()
                     }
                 }
             }
@@ -73,7 +74,7 @@ fun Application.configureSensors() {
         get(
             path = "/measurements",
             builder = {
-                tags("raw")
+                tags("measurements")
                 description = "Return all measurements (raw form)."
                 response {
                     HttpStatusCode.OK to {
@@ -89,7 +90,7 @@ fun Application.configureSensors() {
         get(
             path = "/latestmeasurements",
             builder = {
-                tags("raw")
+                tags("measurements")
                 description = "Return the latest measurement for each location (raw form)."
                 response {
                     HttpStatusCode.OK to {

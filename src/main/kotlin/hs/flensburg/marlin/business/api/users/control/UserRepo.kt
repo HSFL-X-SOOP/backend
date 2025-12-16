@@ -4,6 +4,7 @@ import de.lambda9.tailwind.jooq.JIO
 import de.lambda9.tailwind.jooq.Jooq
 import hs.flensburg.marlin.business.Page
 import hs.flensburg.marlin.business.PageResult
+import hs.flensburg.marlin.business.api.users.entity.UpdateUserRequest
 import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.business.setIfNotNull
@@ -220,6 +221,18 @@ object UserRepo {
             .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.HarborMasterLocation::class.java)!!
 
         harborMasterLocation.locationId!!
+    }
+
+    fun assignLocationToHarborMaster(userId: Long, locationId: Long, assignedBy: Long): JIO<Unit> = Jooq.query {
+        insertInto(HARBOR_MASTER_LOCATION)
+            .set(HARBOR_MASTER_LOCATION.USER_ID, userId)
+            .set(HARBOR_MASTER_LOCATION.LOCATION_ID, locationId)
+            .set(HARBOR_MASTER_LOCATION.ASSIGNED_BY, assignedBy)
+            .onConflict(HARBOR_MASTER_LOCATION.USER_ID)
+            .doUpdate()
+            .set(HARBOR_MASTER_LOCATION.LOCATION_ID, locationId)
+            .set(HARBOR_MASTER_LOCATION.ASSIGNED_BY, assignedBy)
+            .execute()
     }
 
 }

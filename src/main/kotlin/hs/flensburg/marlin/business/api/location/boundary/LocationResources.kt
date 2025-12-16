@@ -80,8 +80,12 @@ fun Application.configureLocation() {
                 .fold(
                     onSuccess = { it },
                     onError = { error ->
-                        val e = error.failures().first().toApiError()
-                        call.respond(e.statusCode, e.message)
+                        val e = error.failures().firstOrNull()?.toApiError()
+                        if (e != null) {
+                            call.respond(e.statusCode, e.message)
+                        } else {
+                            call.respond(HttpStatusCode.InternalServerError, "Unknown error")
+                        }
                         return@get
                     }
                 )

@@ -1,13 +1,18 @@
 package hs.flensburg.marlin.business.api.admin.boundary
 
+import hs.flensburg.marlin.business.api.admin.entity.AssignLocationRequest
 import hs.flensburg.marlin.business.api.admin.entity.DashboardInfo
+import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.respondKIO
 import io.ktor.server.application.Application
+import io.ktor.server.request.receive
 import io.ktor.server.routing.routing
 import io.github.smiley4.ktoropenapi.get
+import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.auth.principal
 
 fun Application.configureAdmin() {
     routing {
@@ -27,6 +32,39 @@ fun Application.configureAdmin() {
             ) {
                 call.respondKIO(
                     AdminService.getDashboardInformation()
+                )
+            }
+
+            post(
+                path = "/admin/assignLocation",
+                builder = {
+                    description = "Assign a location to a harbor master (Admin only)"
+                    tags("admin")
+                    request {
+                        body<AssignLocationRequest>()
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            description = "Location successfully assigned to harbor master"
+                        }
+                        HttpStatusCode.BadRequest to {
+                            description = "Invalid request (user is not a harbor master)"
+                        }
+                        HttpStatusCode.NotFound to {
+                            description = "User or location not found"
+                        }
+                    }
+                }
+            ) {
+                val admin = call.principal<LoggedInUser>()!!
+                val request = call.receive<AssignLocationRequest>()
+
+                call.respondKIO(
+                    AdminService.assignLocationToHarborMaster(
+                        userId = request.userId,
+                        locationId = request.locationId,
+                        adminId = admin.id
+                    )
                 )
             }
         }
