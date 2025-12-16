@@ -75,7 +75,8 @@ object NotificationMeasurementRuleService {
                 measurementTypeId = rule.measurementTypeId,
                 operator = rule.operator,
                 measurementValue = rule.measurementValue,
-                isActive = rule.isActive
+                isActive = rule.isActive,
+                lastState = false
             )
         ).orDie()
         NotificationMeasurementRuleRepo.fetchById(id).orDie().onNullFail { NotificationMeasurementRuleService.Error.NotFound }.map { NotificationMeasurementRuleDTO.from(it) }
