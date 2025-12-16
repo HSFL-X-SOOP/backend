@@ -5,6 +5,7 @@ import hs.flensburg.marlin.database.generated.enums.Language
 import hs.flensburg.marlin.database.generated.enums.MeasurementSystem
 import hs.flensburg.marlin.database.generated.enums.UserActivityRole
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
+import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.UserView
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toKotlinLocalDateTime
@@ -12,23 +13,23 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserProfile(
-    var id: Long,
-    var email: String,
-    var verified: Boolean,
-    var authorityRole: UserAuthorityRole,
-    var activityRoles: List<UserActivityRole?>,
-    var firstName: String?,
-    var lastName: String?,
-    var language: Language?,
-    var measurementSystem: MeasurementSystem?,
-    var userCreatedAt: LocalDateTime,
-    var userUpdatedAt: LocalDateTime?,
-    var profileCreatedAt: LocalDateTime?,
-    var profileUpdatedAt: LocalDateTime?,
-    var assignedLocation: LocationDTO? = null
+    val id: Long,
+    val email: String,
+    val verified: Boolean,
+    val authorityRole: UserAuthorityRole,
+    val activityRoles: List<UserActivityRole?>,
+    val firstName: String?,
+    val lastName: String?,
+    val language: Language?,
+    val measurementSystem: MeasurementSystem?,
+    val userCreatedAt: LocalDateTime,
+    val userUpdatedAt: LocalDateTime?,
+    val profileCreatedAt: LocalDateTime?,
+    val profileUpdatedAt: LocalDateTime?,
+    val assignedLocation: LocationDTO?
 ) {
     companion object {
-        fun from(userView: UserView): UserProfile {
+        fun from(userView: UserView, location: Location? = null): UserProfile {
             return UserProfile(
                 id = userView.id!!,
                 email = userView.email!!,
@@ -43,6 +44,7 @@ data class UserProfile(
                 userUpdatedAt = userView.userUpdatedAt?.toKotlinLocalDateTime(),
                 profileCreatedAt = userView.profileCreatedAt?.toKotlinLocalDateTime(),
                 profileUpdatedAt = userView.profileUpdatedAt?.toKotlinLocalDateTime(),
+                assignedLocation = location?.let { LocationDTO.fromLocation(it) }
             )
         }
     }

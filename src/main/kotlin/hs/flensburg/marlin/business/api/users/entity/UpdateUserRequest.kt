@@ -8,4 +8,5 @@ data class UpdateUserRequest(
     val userId: Long,
     val authorityRole: UserAuthorityRole,
     val verified: Boolean,
+    val locationId: Long? = null
 )

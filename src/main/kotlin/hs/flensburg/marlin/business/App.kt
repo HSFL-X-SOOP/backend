@@ -213,3 +213,22 @@ fun <T, R : Record> UpdateSetStep<R>.setWhen(
         this as UpdateSetMoreStep<R>
     }
 }
+
+/**
+ * Sets the field to null if the predicate returns true.
+ *
+ * @param field The field to set.
+ * @param value The value to set.
+ * @param predicate The predicate to evaluate the value.
+ * @return The updated [UpdateSetMoreStep] if the predicate returns true, otherwise
+ */
+fun <T, R : Record> UpdateSetStep<R>.setNullWhen(
+    field: Field<T>,
+    predicate: () -> Boolean
+): UpdateSetMoreStep<R> {
+    return if (predicate()) {
+        this.setNull(field)
+    } else {
+        this as UpdateSetMoreStep<R>
+    }
+}
