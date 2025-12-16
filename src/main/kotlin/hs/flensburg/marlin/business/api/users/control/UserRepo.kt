@@ -8,12 +8,14 @@ import hs.flensburg.marlin.business.api.users.entity.UpdateUserRequest
 import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.business.setIfNotNull
+import hs.flensburg.marlin.business.setNullWhen
 import hs.flensburg.marlin.business.setWhen
 import hs.flensburg.marlin.database.generated.enums.Language
 import hs.flensburg.marlin.database.generated.enums.MeasurementSystem
 import hs.flensburg.marlin.database.generated.enums.UserActivityRole
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import hs.flensburg.marlin.database.generated.tables.pojos.FailedLoginAttempt
+import hs.flensburg.marlin.database.generated.tables.pojos.HarborMasterLocation
 import hs.flensburg.marlin.database.generated.tables.pojos.LoginBlacklist
 import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.pojos.UserView
@@ -160,9 +162,10 @@ object UserRepo {
         firstName: String?,
         lastName: String?,
         authorityRole: UserAuthorityRole,
-        verified: Boolean
+        verified: Boolean,
+        locationId: Long?
     ): JIO<User?> = Jooq.query {
-        update(USER)
+        val user = update(USER)
             .set(USER.ROLE, authorityRole)
             .set(USER.VERIFIED, verified)
             .setWhen(USER.FIRST_NAME, firstName) { !it.isNullOrBlank() }
@@ -170,6 +173,34 @@ object UserRepo {
             .where(USER.ID.eq(userId))
             .returning()
             .fetchOneInto(User::class.java)
+
+        if (user?.role == UserAuthorityRole.HARBOR_MASTER) {
+            val harborExists = fetchExists(
+                selectFrom(HARBOR_MASTER_LOCATION)
+                    .where(HARBOR_MASTER_LOCATION.USER_ID.eq(userId))
+            )
+
+            if (harborExists) {
+                update(HARBOR_MASTER_LOCATION)
+                    .setIfNotNull(HARBOR_MASTER_LOCATION.LOCATION_ID, locationId)
+                    .where(HARBOR_MASTER_LOCATION.USER_ID.eq(userId))
+                    .execute()
+
+            } else {
+                insertInto(HARBOR_MASTER_LOCATION)
+                    .set(HARBOR_MASTER_LOCATION.USER_ID, userId)
+                    .set(HARBOR_MASTER_LOCATION.LOCATION_ID, locationId)
+                    .onConflict(HARBOR_MASTER_LOCATION.USER_ID)
+                    .doNothing()
+                    .execute()
+            }
+        } else {
+            deleteFrom(HARBOR_MASTER_LOCATION)
+                .where(HARBOR_MASTER_LOCATION.USER_ID.eq(userId))
+                .execute()
+        }
+
+        user
     }
 
     fun updateProfile(
@@ -216,11 +247,9 @@ object UserRepo {
     }
 
     fun fetchUserAssignedLocationId(userId: Long): JIO<Long> = Jooq.query {
-        val harborMasterLocation = selectFrom(HARBOR_MASTER_LOCATION)
+        selectFrom(HARBOR_MASTER_LOCATION)
             .where(HARBOR_MASTER_LOCATION.USER_ID.eq(userId))
-            .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.HarborMasterLocation::class.java)!!
-
-        harborMasterLocation.locationId!!
+            .fetchOneInto(HarborMasterLocation::class.java)!!.locationId!!
     }
 
     fun assignLocationToHarborMaster(userId: Long, locationId: Long, assignedBy: Long): JIO<Unit> = Jooq.query {
