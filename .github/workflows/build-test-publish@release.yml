@@ -139,11 +139,11 @@ jobs:
               echo ""
 
               echo "--- Last 50 lines from systemd journal ---"
-              sudo journalctl -u marlin.service -n 50 --no-pager || true
+              sudo journalctl -u marlin.service -n 200 --no-pager || true
               echo ""
 
               echo "--- Docker container logs ---"
-              docker logs marlin-backend --tail 100 2>&1 || echo "Could not fetch container logs"
+              docker logs marlin-backend --tail 200 2>&1 || echo "Could not fetch container logs"
               echo ""
 
               if [ "$HAS_ROLLBACK" = "true" ]; then
