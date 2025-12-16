@@ -10,4 +10,5 @@ data class UpdateUserRequest(
     val lastName: String?,
     val authorityRole: UserAuthorityRole,
     val verified: Boolean,
+    val locationId: Long? = null
 )

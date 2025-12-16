@@ -22,6 +22,7 @@ import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
 import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
 import hs.flensburg.marlin.business.api.email.boundary.EmailService
+import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
@@ -113,7 +114,9 @@ object AuthService {
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = if (credentials.rememberMe) JWTAuthority.generateRefreshToken(user) else null
 
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user)))
+        val location = user.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user, location)))
     }
 
     fun loginGoogleUser(authResponse: OAuthAccessTokenResponse.OAuth2): App<Error, LoginResponse> = KIO.comprehension {
@@ -152,7 +155,9 @@ object AuthService {
         val accessToken = JWTAuthority.generateAccessToken(user)
         val refreshToken = JWTAuthority.generateRefreshToken(user)
 
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user)))
+        val location = user.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user, location)))
     }
 
     fun refreshToken(refreshTokenRequest: RefreshTokenRequest): App<Error, LoginResponse> = KIO.comprehension {
@@ -174,7 +179,9 @@ object AuthService {
         val newAccessToken = JWTAuthority.generateAccessToken(user)
         val newRefreshToken = JWTAuthority.generateRefreshToken(user)
 
-        KIO.ok(LoginResponse(newAccessToken, newRefreshToken, UserProfile.from(user)))
+        val location = user.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
+
+        KIO.ok(LoginResponse(newAccessToken, newRefreshToken, UserProfile.from(user, location)))
     }
 
     fun verifyEmail(verifyEmailRequest: VerifyEmailRequest): App<Error, Unit> = KIO.comprehension {
@@ -261,7 +268,6 @@ object AuthService {
             }
         }
 
-
         val userView = !UserRepo.fetchViewById(user.id!!).orDie().onNullFail { Error.Unknown }
 
         !BlacklistHandler.checkUserIsNotBlacklisted(userView.id!!)
@@ -269,7 +275,9 @@ object AuthService {
         val accessToken = JWTAuthority.generateAccessToken(userView)
         val refreshToken = JWTAuthority.generateRefreshToken(userView)
 
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(userView)))
+        val location = userView.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(userView, location)))
     }
 
     private fun loginWithAppleIdToken(
@@ -328,7 +336,9 @@ object AuthService {
         val accessToken = JWTAuthority.generateAccessToken(userView)
         val refreshToken = JWTAuthority.generateRefreshToken(userView)
 
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(userView)))
+        val location = userView.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(userView, location)))
     }
 
     private fun checkFailedLoginLimitExceeded(

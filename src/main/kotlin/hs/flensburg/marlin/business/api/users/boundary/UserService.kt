@@ -40,17 +40,9 @@ object UserService {
 
     fun getProfile(userId: Long): App<Error, UserProfile> = KIO.comprehension {
         val userView = !UserRepo.fetchViewById(userId).orDie().onNullFail { Error.NotFound }
-        val profile = UserProfile.from(userView)
+        val location = userView.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
 
-        if (userView.authorityRole == UserAuthorityRole.HARBOR_MASTER) {
-            val locationId = !UserRepo.fetchUserAssignedLocationId(userId).orDie()
-            val location = !LocationRepo.fetchLocationByID(locationId).orDie()
-            if (location != null) {
-                profile.assignedLocation = LocationDTO.fromLocation(location)
-            }
-        }
-
-        KIO.ok(profile)
+        KIO.ok(UserProfile.from(userView, location))
     }
 
     fun getRecentActivity(userId: Long): App<Error, PageResult<String>> = KIO.comprehension {
@@ -89,7 +81,8 @@ object UserService {
             firstName = null,
             lastName = null,
             authorityRole = request.authorityRole,
-            verified = request.verified
+            verified = request.verified,
+            locationId = request.locationId
         ).orDie().onNullFail { Error.NotFound }.map { }
     }
 
