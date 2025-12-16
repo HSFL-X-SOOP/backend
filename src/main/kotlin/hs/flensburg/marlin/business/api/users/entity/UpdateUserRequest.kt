@@ -6,8 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UpdateUserRequest(
     val userId: Long,
-    val firstName: String?,
-    val lastName: String?,
     val authorityRole: UserAuthorityRole,
     val verified: Boolean
 )

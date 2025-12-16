@@ -72,8 +72,8 @@ object UserService {
     ): App<Error, Unit> = KIO.comprehension {
         UserRepo.update(
             userId = request.userId,
-            firstName = request.firstName,
-            lastName = request.lastName,
+            firstName = null,
+            lastName = null,
             authorityRole = request.authorityRole,
             verified = request.verified
         ).orDie().onNullFail { Error.NotFound }.map { }
