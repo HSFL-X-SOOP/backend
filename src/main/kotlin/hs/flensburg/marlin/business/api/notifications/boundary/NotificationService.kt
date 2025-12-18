@@ -9,7 +9,7 @@ import hs.flensburg.marlin.business.api.location.control.LocationRepo
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.control.NotificationMeasurementRuleRepo
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.entity.NotificationMeasurementRuleDTO
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.entity.NotificationMeasurementRuleMessage
-import hs.flensburg.marlin.business.api.notifications.FirebaseNotificationSender
+import hs.flensburg.marlin.business.api.notifications.NotificationSender
 import hs.flensburg.marlin.business.api.sensors.control.SensorRepo
 import hs.flensburg.marlin.business.api.sensors.entity.EnrichedMeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
@@ -18,6 +18,10 @@ import hs.flensburg.marlin.business.api.userDevice.entity.UserDevice
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.ReverseGeoCodingService
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
 import hs.flensburg.marlin.database.generated.tables.pojos.NotificationMeasurementRule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.datetime.toJavaLocalDateTime
 import java.time.LocalDateTime
 
@@ -107,7 +111,9 @@ object NotificationService {
                 //Create a Notification Message from all valid measurementRules and send a Push-Notification to all registered Devices of a User
                 val message = createMeasurementRuleNotificationMessage(notifications)
                 val userDevices: List<UserDevice?> = !UserDeviceRepo.fetchAllByUserId(userId).orDie()
-                sendNotificationToAllUserDevices(userDevices, message, currentLocationWithMeasurement.location.name)
+                CoroutineScope(Dispatchers.IO).launch {
+                    sendNotificationToAllUserDevices(userDevices, message, currentLocationWithMeasurement.location.name)
+                }
             }
         }
         KIO.unit
@@ -121,13 +127,13 @@ object NotificationService {
         return message
     }
 
-    fun sendNotificationToAllUserDevices(userDevices: List<UserDevice?>, message: String, currentLocation: String?) {
+    suspend fun sendNotificationToAllUserDevices(userDevices: List<UserDevice?>, message: String, currentLocation: String?) {
         if (message != "") {
             userDevices.forEach { userDevice ->
-                FirebaseNotificationSender.sendNotification(
-                    token = userDevice!!.fcmToken,
+                NotificationSender.sendNotification(
+                    expoToken = userDevice!!.fcmToken,
                     title = "$currentLocation",
-                    message = message
+                    body = message
                 )
             }
         }
