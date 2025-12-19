@@ -1,6 +1,6 @@
 package hs.flensburg.marlin.business.api.notifications.boundary
 
-import hs.flensburg.marlin.business.api.notifications.FirebaseNotificationSender
+import hs.flensburg.marlin.business.api.notifications.NotificationSender
 import hs.flensburg.marlin.business.api.notifications.entity.TestNotificationRequest
 import io.github.smiley4.ktoropenapi.post
 import io.ktor.http.HttpStatusCode
@@ -29,7 +29,7 @@ fun Application.configureNotifications() {
             }
         ) {
             val request = call.receive<TestNotificationRequest>()
-            FirebaseNotificationSender.sendNotification(request.FCMtoken, request.title, request.message)
+            NotificationSender.sendNotification(request.FCMtoken, request.title, request.message)
         }
     }
 }

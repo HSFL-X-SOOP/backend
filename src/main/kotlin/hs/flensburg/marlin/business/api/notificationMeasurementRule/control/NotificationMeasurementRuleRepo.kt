@@ -45,6 +45,8 @@ object NotificationMeasurementRuleRepo {
             .set(NOTIFICATION_MEASUREMENT_RULE.OPERATOR, notificationMeasurementRule.operator)
             .set(NOTIFICATION_MEASUREMENT_RULE.MEASUREMENT_VALUE, notificationMeasurementRule.measurementValue)
             .set(NOTIFICATION_MEASUREMENT_RULE.IS_ACTIVE, notificationMeasurementRule.isActive)
+            .set(NOTIFICATION_MEASUREMENT_RULE.LAST_STATE, notificationMeasurementRule.lastState)
+            .set(NOTIFICATION_MEASUREMENT_RULE.LAST_NOTIFIED_AT, notificationMeasurementRule.lastNotifiedAt)
             .where(NOTIFICATION_MEASUREMENT_RULE.ID.eq(id))
             .returning()
             .fetchOneInto(NotificationMeasurementRule::class.java)

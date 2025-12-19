@@ -1,0 +1,2 @@
+ALTER TABLE marlin.notification_measurement_rule
+    DROP CONSTRAINT notification_measurement_rule_user_id_location_id_measureme_key;
