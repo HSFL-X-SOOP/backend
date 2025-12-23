@@ -13,7 +13,9 @@ import hs.flensburg.marlin.business.api.auth.control.AppleAuthVerifier
 import hs.flensburg.marlin.business.api.auth.control.AuthRepo
 import hs.flensburg.marlin.business.api.auth.control.Hashing
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
+import hs.flensburg.marlin.business.api.auth.control.MagicLinkCodeRepo
 import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
+import hs.flensburg.marlin.business.api.auth.entity.MagicLinkCodeLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginResponse
@@ -161,6 +163,25 @@ object AuthService {
         KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user, location)))
     }
 
+    fun loginViaMagicLinkCode(request: MagicLinkCodeLoginRequest): App<Error, LoginResponse> = KIO.comprehension {
+        val code = request.code.uppercase()
+
+        val magicLinkCode = !MagicLinkCodeRepo.fetchValidByCode(code).orDie().onNullFail { Error.BadRequest }
+
+        val user = !UserRepo.fetchViewById(magicLinkCode.userId!!).orDie().onNullFail { Error.BadRequest }
+
+        !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
+
+        !MagicLinkCodeRepo.markAsUsed(magicLinkCode.id!!).orDie()
+
+        val accessToken = JWTAuthority.generateAccessToken(user)
+        val refreshToken = JWTAuthority.generateRefreshToken(user)
+
+        val location = user.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user, location)))
+    }
+
     fun refreshToken(refreshTokenRequest: RefreshTokenRequest): App<Error, LoginResponse> = KIO.comprehension {
         val decodedJWT = try {
             JWTAuthority.refreshVerifier.verify(refreshTokenRequest.refreshToken)
@@ -203,17 +224,17 @@ object AuthService {
         KIO.unit
     }
 
-    fun sendVerificationEmail(magicLinkRequest: MagicLinkRequest): App<Error, Unit> = KIO.comprehension {
+    fun sendMagicLink(magicLinkRequest: MagicLinkRequest): App<Error, Unit> = KIO.comprehension {
         val userId = (!UserRepo.fetchByEmail(magicLinkRequest.email).orDie())?.id
 
         if (userId == null) {
             KIO.unit
         } else {
-            (!EmailService.sendVerificationEmail(userId).attempt()).fold(
+            (!EmailService.sendMagicLinkEmail(userId, magicLinkRequest.platform).attempt()).fold(
                 onSuccess = { KIO.unit },
                 onError = {
-                    logger.error { "Cannot send verification email to user ${userId}: ${it.toApiError().message}" }
-                    !KIO.fail(Error.Unknown("Failed to send verification email"))
+                    logger.error { "Cannot send magic link email to user ${userId}: ${it.toApiError().message}" }
+                    !KIO.fail(Error.Unknown("Failed to send magic link email"))
                 }
             )
         }

@@ -10,6 +10,7 @@ import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginResponse
+import hs.flensburg.marlin.business.api.auth.entity.MagicLinkCodeLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.MagicLinkLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.MagicLinkRequest
 import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
@@ -199,13 +200,19 @@ fun Application.configureAuth(envConfig: Config) {
         post("/magic-link", AuthOpenAPISpec.requestMagicLink) {
             val magicLinkRequest = call.receive<MagicLinkRequest>()
 
-            call.respondKIO(AuthService.sendVerificationEmail(magicLinkRequest))
+            call.respondKIO(AuthService.sendMagicLink(magicLinkRequest))
         }
 
         post("/magic-link/login", AuthOpenAPISpec.loginViaMagicLink) {
             val magicLinkLoginRequest = call.receive<MagicLinkLoginRequest>()
 
             call.respondKIO(AuthService.loginViaMagicLink(magicLinkLoginRequest))
+        }
+
+        post("/magic-link/login/code", AuthOpenAPISpec.loginViaMagicLinkCode) {
+            val request = call.receive<MagicLinkCodeLoginRequest>()
+
+            call.respondKIO(AuthService.loginViaMagicLinkCode(request).transact())
         }
 
         post("/verify-email", AuthOpenAPISpec.verifyEmail) {
