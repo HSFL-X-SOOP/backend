@@ -224,7 +224,7 @@ object AuthService {
         KIO.unit
     }
 
-    fun sendMagicLink(magicLinkRequest: MagicLinkRequest): App<Error, Unit> = KIO.comprehension {
+    fun sendMagicLink(magicLinkRequest: MagicLinkRequest): App<ServiceLayerError, Unit> = KIO.comprehension {
         val userId = (!UserRepo.fetchByEmail(magicLinkRequest.email).orDie())?.id
 
         if (userId == null) {
@@ -234,7 +234,7 @@ object AuthService {
                 onSuccess = { KIO.unit },
                 onError = {
                     logger.error { "Cannot send magic link email to user ${userId}: ${it.toApiError().message}" }
-                    !KIO.fail(Error.Unknown("Failed to send magic link email"))
+                    !KIO.fail(it)
                 }
             )
         }
