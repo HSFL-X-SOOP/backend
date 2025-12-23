@@ -17,10 +17,11 @@ object MagicLinkCodeRepo {
             .fetchOne()!!
     }
 
-    fun fetchValidByCode(code: String): JIO<MagicLinkCode?> = Jooq.query {
+    fun fetchValidByCode(userId: Long, code: String): JIO<MagicLinkCode?> = Jooq.query {
         val cutoff = LocalDateTime.now().minusMinutes(CODE_TTL_MINUTES)
         selectFrom(MAGIC_LINK_CODE)
-            .where(MAGIC_LINK_CODE.CODE.eq(code))
+            .where(MAGIC_LINK_CODE.USER_ID.eq(userId))
+            .and(MAGIC_LINK_CODE.CODE.eq(code))
             .and(MAGIC_LINK_CODE.CREATED_AT.greaterThan(cutoff))
             .and(MAGIC_LINK_CODE.USED_AT.isNull)
             .orderBy(MAGIC_LINK_CODE.CREATED_AT.desc())
