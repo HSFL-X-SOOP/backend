@@ -10,7 +10,7 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.control.AuthRepo
 import hs.flensburg.marlin.business.api.email.control.EmailHandler
 import hs.flensburg.marlin.business.api.email.control.EmailRepo
-import hs.flensburg.marlin.business.api.users.control.UserRepo
+import hs.flensburg.marlin.business.api.auth.entity.Platform
 import hs.flensburg.marlin.database.generated.enums.EmailType
 import hs.flensburg.marlin.database.generated.tables.pojos.Email
 import hs.flensburg.marlin.database.generated.tables.records.EmailRecord
@@ -74,9 +74,7 @@ object EmailService {
         KIO.unit
     }
 
-    fun sendMagicLinkEmail(email: String): App<Error, Unit> = KIO.comprehension {
-        val userId = (!UserRepo.fetchByEmail(email).orDie().onNullFail { Error.UserNotFound(email) }).id!!
-
+    fun sendMagicLinkEmail(userId: Long, platform: Platform): App<Error, Unit> = KIO.comprehension {
         !checkNoConsecutiveEmails(userId, EmailType.MAGIC_LINK) { lastEmail ->
             lastEmail == null || lastEmail.sentAt != null && lastEmail.sentAt!!.isBefore(
                 LocalDateTime.now().minusMinutes(30)
@@ -91,7 +89,7 @@ object EmailService {
 
         val res = !EmailRepo.insert(email).orDie()
 
-        !EmailHandler.sendEmail(res).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+        !EmailHandler.sendEmail(res, platform).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit
     }.transact()
@@ -131,8 +129,8 @@ object EmailService {
         }
 
         !EmailHandler.sendEmail(
-            res,
-            *infoFields.toTypedArray()
+            email = res,
+            infoFields = infoFields.toTypedArray()
         ).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit

@@ -109,7 +109,7 @@ object AppleAuthVerifier {
             KIO.unit
         } catch (e: Exception) {
             logger.error(e) { "Failed to fetch Apple public keys: ${e.message}" }
-            !KIO.fail(AuthService.Error.Unknown)
+            !KIO.fail(AuthService.Error.Unknown())
         }
     }
 

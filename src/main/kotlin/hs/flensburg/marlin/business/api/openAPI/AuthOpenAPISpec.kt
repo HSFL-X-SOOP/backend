@@ -4,6 +4,7 @@ import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginResponse
+import hs.flensburg.marlin.business.api.auth.entity.MagicLinkCodeLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.MagicLinkLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.MagicLinkRequest
 import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
@@ -189,6 +190,28 @@ object AuthOpenAPISpec {
             }
             HttpStatusCode.Unauthorized to {
                 description = "Invalid or expired magic link token"
+                body<String>()
+            }
+        }
+    }
+
+    val loginViaMagicLinkCode: RouteConfig.() -> Unit = {
+        tags("auth")
+        description = "Authenticates a user using a 6-character code sent via email for mobile login. " +
+                "Returns JWT access and refresh tokens upon successful authentication. " +
+                "The code is valid for 30 minutes and can only be used once."
+
+        request {
+            body<MagicLinkCodeLoginRequest>()
+        }
+
+        response {
+            HttpStatusCode.OK to {
+                description = "Magic link code login successful"
+                body<LoginResponse>()
+            }
+            HttpStatusCode.BadRequest to {
+                description = "Invalid, expired, or already used code"
                 body<String>()
             }
         }
