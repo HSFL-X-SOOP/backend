@@ -199,7 +199,7 @@ fun Application.configureAuth(envConfig: Config) {
         post("/magic-link", AuthOpenAPISpec.requestMagicLink) {
             val magicLinkRequest = call.receive<MagicLinkRequest>()
 
-            call.respondKIO(EmailService.sendMagicLinkEmail(magicLinkRequest.email))
+            call.respondKIO(AuthService.sendVerificationEmail(magicLinkRequest))
         }
 
         post("/magic-link/login", AuthOpenAPISpec.loginViaMagicLink) {

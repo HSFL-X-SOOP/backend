@@ -74,9 +74,7 @@ object EmailService {
         KIO.unit
     }
 
-    fun sendMagicLinkEmail(email: String): App<Error, Unit> = KIO.comprehension {
-        val userId = (!UserRepo.fetchByEmail(email).orDie().onNullFail { Error.UserNotFound(email) }).id!!
-
+    fun sendMagicLinkEmail(userId: Long): App<Error, Unit> = KIO.comprehension {
         !checkNoConsecutiveEmails(userId, EmailType.MAGIC_LINK) { lastEmail ->
             lastEmail == null || lastEmail.sentAt != null && lastEmail.sentAt!!.isBefore(
                 LocalDateTime.now().minusMinutes(30)

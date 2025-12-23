@@ -18,6 +18,7 @@ import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.auth.entity.LoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.LoginResponse
 import hs.flensburg.marlin.business.api.auth.entity.MagicLinkLoginRequest
+import hs.flensburg.marlin.business.api.auth.entity.MagicLinkRequest
 import hs.flensburg.marlin.business.api.auth.entity.RefreshTokenRequest
 import hs.flensburg.marlin.business.api.auth.entity.RegisterRequest
 import hs.flensburg.marlin.business.api.auth.entity.VerifyEmailRequest
@@ -42,7 +43,7 @@ object AuthService {
         object OAuthRedirectRequired : Error("Redirect required")
         object LoginLimitExceeded : Error("Login limit exceeded, please try again later")
         object Blacklisted : Error("You are temporarily blocked, please try again later")
-        object Unknown : Error("Unknown error")
+        data class Unknown(val msg: String? = null) : Error(msg ?: "Unknown error")
 
         override fun toApiError(): ApiError {
             return when (this) {
@@ -202,6 +203,22 @@ object AuthService {
         KIO.unit
     }
 
+    fun sendVerificationEmail(magicLinkRequest: MagicLinkRequest): App<Error, Unit> = KIO.comprehension {
+        val userId = (!UserRepo.fetchByEmail(magicLinkRequest.email).orDie())?.id
+
+        if (userId == null) {
+            KIO.unit
+        } else {
+            (!EmailService.sendVerificationEmail(userId).attempt()).fold(
+                onSuccess = { KIO.unit },
+                onError = {
+                    logger.error { "Cannot send verification email to user ${userId}: ${it.toApiError().message}" }
+                    !KIO.fail(Error.Unknown("Failed to send verification email"))
+                }
+            )
+        }
+    }
+
     fun validateCommonRealmAccess(credentials: JWTCredential): App<Error, LoggedInUser> =
         validateRealmAccess(credentials) { true }
 
@@ -268,7 +285,7 @@ object AuthService {
             }
         }
 
-        val userView = !UserRepo.fetchViewById(user.id!!).orDie().onNullFail { Error.Unknown }
+        val userView = !UserRepo.fetchViewById(user.id!!).orDie().onNullFail { Error.Unknown() }
 
         !BlacklistHandler.checkUserIsNotBlacklisted(userView.id!!)
 
@@ -329,7 +346,7 @@ object AuthService {
             }
         }
 
-        val userView = !UserRepo.fetchViewById(userRecord.id!!).orDie().onNullFail { Error.Unknown }
+        val userView = !UserRepo.fetchViewById(userRecord.id!!).orDie().onNullFail { Error.Unknown() }
 
         !BlacklistHandler.checkUserIsNotBlacklisted(userView.id!!)
 
