@@ -20,7 +20,7 @@ object EmailService {
     sealed class Error(private val message: String) : ServiceLayerError {
         data class AlreadySent(val userId: Long) : Error("An email has already been sent to this user recently")
         data class UserNotFound(val email: String) : Error("User with email $email not found")
-        data class EmailSendFailed(val emailId: Long, val error: String) :
+        data class EmailSendingFailed(val emailId: Long, val error: String) :
             Error("Failed to send email with ID $emailId: $error")
 
         data class BlacklistEntryNotFound(val userId: Long) :
@@ -30,7 +30,7 @@ object EmailService {
             return when (this) {
                 is AlreadySent -> ApiError.Conflict(message)
                 is UserNotFound -> ApiError.NotFound(message)
-                is EmailSendFailed -> ApiError.Unknown(message)
+                is EmailSendingFailed -> ApiError.Unknown(message)
                 is BlacklistEntryNotFound -> ApiError.NotFound(message)
             }
         }
@@ -49,7 +49,7 @@ object EmailService {
 
         val res = !EmailRepo.insert(email).orDie()
 
-        !EmailHandler.sendEmail(res).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+        !EmailHandler.sendEmail(res).mapError { Error.EmailSendingFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit
     }
@@ -69,7 +69,7 @@ object EmailService {
 
         val res = !EmailRepo.insert(email).orDie()
 
-        !EmailHandler.sendEmail(res).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+        !EmailHandler.sendEmail(res).mapError { Error.EmailSendingFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit
     }
@@ -89,7 +89,7 @@ object EmailService {
 
         val res = !EmailRepo.insert(email).orDie()
 
-        !EmailHandler.sendEmail(res, platform).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+        !EmailHandler.sendEmail(res, platform).mapError { Error.EmailSendingFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit
     }.transact()
@@ -131,7 +131,7 @@ object EmailService {
         !EmailHandler.sendEmail(
             email = res,
             infoFields = infoFields.toTypedArray()
-        ).mapError { Error.EmailSendFailed(res.id!!, it.toApiError().message) }
+        ).mapError { Error.EmailSendingFailed(res.id!!, it.toApiError().message) }
 
         KIO.unit
     }.transact()

@@ -33,6 +33,9 @@ object EmailHandler {
     }
 
     private val templateCache = mutableMapOf<String, String>()
+    private val logo: ByteArray? by lazy {
+        EmailHandler::class.java.getResourceAsStream("/assets/marlin-logo.png")?.use { it.readBytes() }
+    }
 
     private fun loadTemplate(templateName: String): String {
         return templateCache.getOrPut(templateName) {
@@ -51,16 +54,14 @@ object EmailHandler {
         val config = (!KIO.access<JEnv>()).env.config
         val user = !UserRepo.fetchViewById(email.userId!!).orDie().onNullFail { Error.UserNotFound(email.userId!!) }
 
-        val logoStream = EmailHandler::class.java.getResourceAsStream("/assets/marlin-logo.png")
-
         val mailBuilder = EmailBuilder.startingBlank()
             .from(config.mail.sendFrom)
             .to(user.email!!)
             .withSubject(subject(email.type!!))
             .withHTMLText(!buildBody(email, user, config.frontendUrl, platform, *infoFields))
 
-        if (logoStream != null) {
-            mailBuilder.withEmbeddedImage("marlin-logo", logoStream.readBytes(), "image/png")
+        if (logo != null) {
+            mailBuilder.withEmbeddedImage("marlin-logo", logo!!, "image/png")
         }
 
         val mail = mailBuilder.buildEmail()

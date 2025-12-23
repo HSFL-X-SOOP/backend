@@ -36,8 +36,7 @@ object MagicLinkCodeRepo {
             .execute()
     }
 
-    fun deleteExpiredCodes(): JIO<Int> = Jooq.query {
-        val cutoff = LocalDateTime.now().minusMinutes(CODE_TTL_MINUTES)
+    fun deleteExpiredCodes(cutoff: LocalDateTime): JIO<Unit> = Jooq.query {
         deleteFrom(MAGIC_LINK_CODE)
             .where(MAGIC_LINK_CODE.CREATED_AT.lessThan(cutoff))
             .execute()
