@@ -164,11 +164,11 @@ object AuthService {
     }
 
     fun loginViaMagicLinkCode(request: MagicLinkCodeLoginRequest): App<Error, LoginResponse> = KIO.comprehension {
+        val user = !UserRepo.fetchViewByEmail(request.email).orDie().onNullFail { Error.BadRequest }
         val code = request.code.uppercase()
 
-        val magicLinkCode = !MagicLinkCodeRepo.fetchValidByCode(code).orDie().onNullFail { Error.BadRequest }
-
-        val user = !UserRepo.fetchViewById(magicLinkCode.userId!!).orDie().onNullFail { Error.BadRequest }
+        val magicLinkCode =
+            !MagicLinkCodeRepo.fetchValidByCode(user.id!!, code).orDie().onNullFail { Error.BadRequest }
 
         !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
 
