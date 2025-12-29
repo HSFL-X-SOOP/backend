@@ -3,6 +3,7 @@ package hs.flensburg.marlin.business.api.users.boundary
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.extensions.kio.onNullFail
 import de.lambda9.tailwind.core.extensions.kio.orDie
+import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.business.ApiError
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.Page
@@ -20,6 +21,7 @@ import hs.flensburg.marlin.business.api.users.entity.UpdateUserRequest
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.business.api.users.entity.UserSearchParameters
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
+import hs.flensburg.marlin.database.generated.tables.records.UserProfileRecord
 
 object UserService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -53,7 +55,16 @@ object UserService {
         userId: Long,
         profile: CreateUserProfileRequest
     ): App<Error, UserProfile> = KIO.comprehension {
-        !UserRepo.insertProfile(userId, profile.roles, profile.language, profile.measurementSystem).orDie()
+        !UserRepo.insertProfile(
+            UserProfileRecord().apply {
+                this.userId = userId
+                this.language = profile.language
+                this.role = profile.roles.toTypedArray()
+                this.measurementSystem = profile.measurementSystem
+            },
+            profile.firstName,
+            profile.lastName
+        ).transact().orDie()
         UserRepo.fetchViewById(userId).orDie().onNullFail { Error.NotFound }.map { UserProfile.from(it) }
     }
 
