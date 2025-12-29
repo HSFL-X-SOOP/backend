@@ -19,6 +19,7 @@ import hs.flensburg.marlin.database.generated.tables.pojos.HarborMasterLocation
 import hs.flensburg.marlin.database.generated.tables.pojos.LoginBlacklist
 import hs.flensburg.marlin.database.generated.tables.pojos.User
 import hs.flensburg.marlin.database.generated.tables.pojos.UserView
+import hs.flensburg.marlin.database.generated.tables.records.UserProfileRecord
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
 import hs.flensburg.marlin.database.generated.tables.references.FAILED_LOGIN_ATTEMPT
 import hs.flensburg.marlin.database.generated.tables.references.HARBOR_MASTER_LOCATION
@@ -143,16 +144,18 @@ object UserRepo {
     }
 
     fun insertProfile(
-        userId: Long,
-        roles: List<UserActivityRole>,
-        language: Language?,
-        measurementSystem: MeasurementSystem?
+        userRecord: UserProfileRecord,
+        firstName: String?,
+        lastName: String?
     ): JIO<hs.flensburg.marlin.database.generated.tables.pojos.UserProfile> = Jooq.query {
+        update(USER)
+            .setWhen(USER.FIRST_NAME, firstName) { !it.isNullOrBlank() }
+            .setWhen(USER.LAST_NAME, lastName) { !it.isNullOrBlank() }
+            .where(USER.ID.eq(userRecord.userId))
+            .execute()
+
         insertInto(USER_PROFILE)
-            .set(USER_PROFILE.USER_ID, userId)
-            .set(USER_PROFILE.LANGUAGE, language ?: Language.EN)
-            .set(USER_PROFILE.ROLE, roles.toTypedArray())
-            .set(USER_PROFILE.MEASUREMENT_SYSTEM, measurementSystem ?: MeasurementSystem.METRIC)
+            .set(userRecord)
             .returning()
             .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.UserProfile::class.java)!!
     }
