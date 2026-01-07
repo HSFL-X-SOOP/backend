@@ -8,10 +8,13 @@ import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
+import hs.flensburg.marlin.business.api.auth.control.MagicLinkCodeRepo
+import hs.flensburg.marlin.business.api.auth.entity.Platform
 import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.database.generated.enums.EmailType
 import hs.flensburg.marlin.database.generated.tables.pojos.Email
 import hs.flensburg.marlin.database.generated.tables.pojos.UserView
+import hs.flensburg.marlin.database.generated.tables.records.MagicLinkCodeRecord
 import org.simplejavamail.api.mailer.config.TransportStrategy
 import org.simplejavamail.email.EmailBuilder
 import org.simplejavamail.mailer.MailerBuilder
@@ -30,6 +33,9 @@ object EmailHandler {
     }
 
     private val templateCache = mutableMapOf<String, String>()
+    private val logo: ByteArray? by lazy {
+        EmailHandler::class.java.getResourceAsStream("/assets/marlin-logo.png")?.use { it.readBytes() }
+    }
 
     private fun loadTemplate(templateName: String): String {
         return templateCache.getOrPut(templateName) {
@@ -40,20 +46,22 @@ object EmailHandler {
         }
     }
 
-    fun sendEmail(email: Email, vararg infoFields: Pair<String, String>): App<Error, Unit> = KIO.comprehension {
+    fun sendEmail(
+        email: Email,
+        platform: Platform? = null,
+        vararg infoFields: Pair<String, String>
+    ): App<Error, Unit> = KIO.comprehension {
         val config = (!KIO.access<JEnv>()).env.config
         val user = !UserRepo.fetchViewById(email.userId!!).orDie().onNullFail { Error.UserNotFound(email.userId!!) }
-
-        val logoStream = EmailHandler::class.java.getResourceAsStream("/assets/marlin-logo.png")
 
         val mailBuilder = EmailBuilder.startingBlank()
             .from(config.mail.sendFrom)
             .to(user.email!!)
             .withSubject(subject(email.type!!))
-            .withHTMLText(body(email, user, config.frontendUrl, *infoFields))
+            .withHTMLText(!buildBody(email, user, config.frontendUrl, platform, *infoFields))
 
-        if (logoStream != null) {
-            mailBuilder.withEmbeddedImage("marlin-logo", logoStream.readBytes(), "image/png")
+        if (logo != null) {
+            mailBuilder.withEmbeddedImage("marlin-logo", logo!!, "image/png")
         }
 
         val mail = mailBuilder.buildEmail()
@@ -84,13 +92,29 @@ object EmailHandler {
         }
     }
 
-    private fun body(email: Email, user: UserView, frontendUrl: String, vararg infoFields: Pair<String, String>): String {
+    private fun buildBody(
+        email: Email,
+        user: UserView,
+        frontendUrl: String,
+        platform: Platform?,
+        vararg infoFields: Pair<String, String>
+    ): App<Error, String> = KIO.comprehension {
         val baseTemplate = loadTemplate("base")
-        val contentTemplate = loadTemplate(templateNameForType(email.type!!))
+        val contentTemplate = loadTemplate(templateNameForType(email.type!!, platform))
 
-        val token = when (email.type) {
-            EmailType.EMAIL_VERIFICATION -> JWTAuthority.generateEmailVerificationToken(user)
-            EmailType.MAGIC_LINK -> JWTAuthority.generateMagicLinkToken(user)
+        val token = when {
+            email.type == EmailType.EMAIL_VERIFICATION -> JWTAuthority.generateEmailVerificationToken(user)
+            email.type == EmailType.MAGIC_LINK && platform == Platform.MOBILE -> {
+                val code = MagicLinkCodeRepo.generateCode()
+                val record = MagicLinkCodeRecord().apply {
+                    this.userId = user.id
+                    this.code = code
+                }
+                !MagicLinkCodeRepo.insert(record).orDie()
+                code
+            }
+
+            email.type == EmailType.MAGIC_LINK -> JWTAuthority.generateMagicLinkToken(user)
             else -> ""
         }
 
@@ -99,17 +123,19 @@ object EmailHandler {
             .replace("{{frontendUrl}}", frontendUrl)
             .replace("{{infoFields}}", infoFields.toList().toInfoListHtml())
 
-        return baseTemplate
-            .replace("{{subject}}", subject(email.type!!))
-            .replace("{{email}}", user.email ?: "")
-            .replace("{{frontendUrl}}", frontendUrl)
-            .replace("{{content}}", content)
+        KIO.ok(
+            baseTemplate
+                .replace("{{subject}}", subject(email.type!!))
+                .replace("{{email}}", user.email ?: "")
+                .replace("{{frontendUrl}}", frontendUrl)
+                .replace("{{content}}", content)
+        )
     }
 
-    private fun templateNameForType(type: EmailType): String = when (type) {
+    private fun templateNameForType(type: EmailType, platform: Platform? = null): String = when (type) {
         EmailType.WELCOME -> "welcome"
         EmailType.EMAIL_VERIFICATION -> "email-verification"
-        EmailType.MAGIC_LINK -> "magic-link"
+        EmailType.MAGIC_LINK -> if (platform == Platform.MOBILE) "magic-link-mobile" else "magic-link"
         EmailType.TOO_MANY_FAILED_LOGIN_ATTEMPTS -> "too-many-failed-login-attempts"
     }
 

@@ -75,7 +75,7 @@ object UserRepo {
 
     fun fetchByEmail(email: String): JIO<User?> = Jooq.query {
         selectFrom(USER)
-            .where(USER.EMAIL.eq(email))
+            .where(USER.EMAIL.equalIgnoreCase(email))
             .fetchOneInto(User::class.java)
     }
 

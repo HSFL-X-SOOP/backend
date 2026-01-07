@@ -44,6 +44,10 @@ fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
     }
 
     schedule(1.minutes, true, env) {
+        AuthSchedulerService.deleteExpiredMagicLinkCodes(LocalDateTime.now())
+    }
+
+    schedule(1.minutes, true, env) {
         NotificationService.sentNotificationMeasurementRules()
     }
 }
