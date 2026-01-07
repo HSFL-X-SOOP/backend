@@ -30,6 +30,7 @@ import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import hs.flensburg.marlin.database.generated.tables.pojos.User
+import hs.flensburg.marlin.database.generated.tables.pojos.UserView
 import hs.flensburg.marlin.database.generated.tables.records.UserRecord
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.auth.OAuthAccessTokenResponse
@@ -114,12 +115,7 @@ object AuthService {
             !KIO.fail(Error.PasswordIncorrect)
         }
 
-        val accessToken = JWTAuthority.generateAccessToken(user)
-        val refreshToken = if (credentials.rememberMe) JWTAuthority.generateRefreshToken(user) else null
-
-        val location = user.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
-
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user, location)))
+        issueAuthCredentials(user)
     }
 
     fun loginGoogleUser(authResponse: OAuthAccessTokenResponse.OAuth2): App<Error, LoginResponse> = KIO.comprehension {
@@ -151,16 +147,7 @@ object AuthService {
 
         val userId = decodedJWT.getClaim("id").asLong()
 
-        val user = !UserRepo.fetchViewById(userId).orDie().onNullFail { Error.BadRequest }
-
-        !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
-
-        val accessToken = JWTAuthority.generateAccessToken(user)
-        val refreshToken = JWTAuthority.generateRefreshToken(user)
-
-        val location = user.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
-
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user, location)))
+        finalizeAuthentication(userId)
     }
 
     fun loginViaMagicLinkCode(request: MagicLinkCodeLoginRequest): App<Error, LoginResponse> = KIO.comprehension {
@@ -170,16 +157,9 @@ object AuthService {
         val magicLinkCode =
             !MagicLinkCodeRepo.fetchValidByCode(user.id!!, code).orDie().onNullFail { Error.BadRequest }
 
-        !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
-
         !MagicLinkCodeRepo.markAsUsed(magicLinkCode.id!!).orDie()
 
-        val accessToken = JWTAuthority.generateAccessToken(user)
-        val refreshToken = JWTAuthority.generateRefreshToken(user)
-
-        val location = user.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
-
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user, location)))
+        finalizeAuthentication(user)
     }
 
     fun refreshToken(refreshTokenRequest: RefreshTokenRequest): App<Error, LoginResponse> = KIO.comprehension {
@@ -253,6 +233,31 @@ object AuthService {
             user.role == UserAuthorityRole.ADMIN
         }
 
+    private fun finalizeAuthentication(
+        userId: Long
+    ): App<Error, LoginResponse> = KIO.comprehension {
+        val user = !UserRepo.fetchViewById(userId).orDie().onNullFail { Error.Unknown() }
+        finalizeAuthentication(user)
+    }
+
+    private fun finalizeAuthentication(
+        user: UserView
+    ): App<Error, LoginResponse> = KIO.comprehension {
+        !BlacklistHandler.checkUserIsNotBlacklisted(user.id!!)
+        issueAuthCredentials(user)
+    }
+
+    private fun issueAuthCredentials(
+        user: UserView
+    ): App<Error, LoginResponse> = KIO.comprehension {
+        val accessToken = JWTAuthority.generateAccessToken(user)
+        val refreshToken = JWTAuthority.generateRefreshToken(user)
+
+        val location = user.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
+
+        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(user, location)))
+    }
+
     private fun validateRealmAccess(
         credentials: JWTCredential,
         predict: ((User) -> Boolean)
@@ -306,16 +311,7 @@ object AuthService {
             }
         }
 
-        val userView = !UserRepo.fetchViewById(user.id!!).orDie().onNullFail { Error.Unknown() }
-
-        !BlacklistHandler.checkUserIsNotBlacklisted(userView.id!!)
-
-        val accessToken = JWTAuthority.generateAccessToken(userView)
-        val refreshToken = JWTAuthority.generateRefreshToken(userView)
-
-        val location = userView.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
-
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(userView, location)))
+        finalizeAuthentication(user.id!!)
     }
 
     private fun loginWithAppleIdToken(
@@ -367,16 +363,7 @@ object AuthService {
             }
         }
 
-        val userView = !UserRepo.fetchViewById(userRecord.id!!).orDie().onNullFail { Error.Unknown() }
-
-        !BlacklistHandler.checkUserIsNotBlacklisted(userView.id!!)
-
-        val accessToken = JWTAuthority.generateAccessToken(userView)
-        val refreshToken = JWTAuthority.generateRefreshToken(userView)
-
-        val location = userView.assignedLocationId?.let { !LocationRepo.fetchLocationByID(it).orDie() }
-
-        KIO.ok(LoginResponse(accessToken, refreshToken, UserProfile.from(userView, location)))
+        finalizeAuthentication(userRecord.id!!)
     }
 
     private fun checkFailedLoginLimitExceeded(
