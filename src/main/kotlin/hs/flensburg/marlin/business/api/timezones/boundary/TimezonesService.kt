@@ -3,14 +3,13 @@ package hs.flensburg.marlin.business.api.timezones.boundary
 import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.JEnv
+import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.boundary.IPAddressLookupService
-import io.ktor.server.application.ApplicationCall
-import io.ktor.server.plugins.origin
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import java.time.OffsetDateTime
-import java.time.ZoneId
 import kotlin.time.ExperimentalTime
 import kotlin.time.toKotlinInstant
 
@@ -29,6 +28,10 @@ object TimezonesService {
         }
         // Convert the instant to LocalDateTime in the specified timezone
         return instant.toLocalDateTime(zone)
+    }
+
+    fun toLocalDateInZone(utcTime: OffsetDateTime, timezone: String?): LocalDate {
+        return toLocalDateTimeInZone(utcTime, timezone).date
     }
 
     fun getClientTimeZoneFromIPOrQueryParam(timezone: String, clientIp: String): App<Nothing, String> =
@@ -51,6 +54,22 @@ object TimezonesService {
             // fallback to UTC
             KIO.ok("UTC")
         }
+
+    // This function is used in routing to determine the timezone
+    // is provided or retrieved via Ipaddress
+    fun <T> withResolvedTimezone(
+        timezoneParam: String?,
+        remoteIp: String,
+        block: (resolvedTimezone: String) -> App<ServiceLayerError, T>
+    ): App<ServiceLayerError, T> = KIO.comprehension {
+
+        val timezone = !getClientTimeZoneFromIPOrQueryParam(
+            timezone = timezoneParam ?: "DEFAULT",
+            clientIp = remoteIp
+        )
+        // function to run with timezone
+        block(timezone)
+    }
 
 
     private fun isValidTimezone(tz: String): Boolean =

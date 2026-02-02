@@ -11,3 +11,6 @@ FROM LocationMinTime
 WHERE marlin.Location.id = LocationMinTime.location_id
   -- Only update if it's older
   AND LocationMinTime.earliest_measurement_time < marlin.Location.created_at;
+
+Alter table marlin.Location
+    alter column created_at set not null;

@@ -1,7 +1,10 @@
 package hs.flensburg.marlin.business.api.location.entity
 
+import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
+import java.time.ZoneOffset
 
 @Serializable
 data class DetailedLocationDTO(
@@ -11,10 +14,11 @@ data class DetailedLocationDTO(
     val address: String?,
     val openingHours: String?,
     val contact: Contact?,
-    val coordinates: GeoPoint?
+    val coordinates: GeoPoint?,
+    val operationalSince: LocalDate?
 ) {
     companion object {
-        fun fromLocation(location: Location): DetailedLocationDTO {
+        fun fromLocation(location: Location, timezone: String?): DetailedLocationDTO {
             return DetailedLocationDTO(
                 id = location.id,
                 name = location.name,
@@ -22,11 +26,15 @@ data class DetailedLocationDTO(
                 address = location.address,
                 openingHours = location.openingHours,
                 contact = Contact(
-                        location.contactPhone,
-                        location.contactEmail,
-                        location.contactWebsite
-                    ),
-                coordinates = location.coordinates
+                    location.contactPhone,
+                    location.contactEmail,
+                    location.contactWebsite
+                ),
+                coordinates = location.coordinates,
+                operationalSince = TimezonesService.toLocalDateInZone(
+                    location.createdAt!!.atOffset(ZoneOffset.UTC),
+                    timezone
+                )
             )
         }
     }

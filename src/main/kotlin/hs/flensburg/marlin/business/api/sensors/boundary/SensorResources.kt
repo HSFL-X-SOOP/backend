@@ -6,10 +6,10 @@ import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
 import hs.flensburg.marlin.business.api.sensors.entity.SensorMeasurementsTimeRange
 import hs.flensburg.marlin.business.api.sensors.entity.UnitsWithLocationWithBoxesDTO
-import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
+import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
 import io.ktor.http.HttpStatusCode
@@ -60,6 +60,13 @@ fun Application.configureSensors() {
             builder = {
                 tags("location")
                 description = "Return all locations."
+                request {
+                    queryParameter<String>("timezone") {
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        required = false
+                    }
+                }
                 response {
                     HttpStatusCode.OK to {
                         description = "List of locations"
@@ -68,7 +75,13 @@ fun Application.configureSensors() {
                 }
             }
         ) {
-            call.respondKIO(LocationService.getAllLocations())
+            val result = TimezonesService.withResolvedTimezone<List<DetailedLocationDTO>>(
+                call.parameters["timezone"],
+                call.request.origin.remoteAddress
+            ) { tz ->
+                LocationService.getAllLocations(tz)
+            }
+            call.respondKIO(result)
         }
 
         get(

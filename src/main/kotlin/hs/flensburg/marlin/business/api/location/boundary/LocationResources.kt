@@ -6,6 +6,7 @@ import hs.flensburg.marlin.business.api.location.entity.Contact
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.location.entity.ImageRequest
 import hs.flensburg.marlin.business.api.location.entity.UpdateLocationRequest
+import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.kioEnv
@@ -17,6 +18,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.PartData
 import io.ktor.server.application.Application
 import io.ktor.server.auth.principal
+import io.ktor.server.plugins.origin
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondFile
@@ -34,6 +36,11 @@ fun Application.configureLocation() {
                     pathParameter<Long>("id") {
                         description = "The location ID (not the sensor ID)"
                     }
+                    queryParameter<String>("timezone") {
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        required = false
+                    }
                 }
                 response {
                     HttpStatusCode.OK to {
@@ -49,7 +56,13 @@ fun Application.configureLocation() {
             val locationId = call.parameters["id"]?.toLongOrNull()
                 ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            call.respondKIO(LocationService.getLocationByID(locationId))
+            val result = TimezonesService.withResolvedTimezone<DetailedLocationDTO>(
+                call.parameters["timezone"],
+                call.request.origin.remoteAddress
+            ) { tz ->
+                LocationService.getLocationByID(locationId, tz)
+            }
+            call.respondKIO(result)
         }
 
         get(
@@ -98,6 +111,13 @@ fun Application.configureLocation() {
                 builder = {
                     tags("harbourMaster")
                     description = "Get the assigned location for the authenticated harbor master"
+                    request {
+                        queryParameter<String>("timezone") {
+                            description =
+                                "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                            required = false
+                        }
+                    }
                     response {
                         HttpStatusCode.OK to {
                             description = "Successful response with location details"
@@ -113,7 +133,14 @@ fun Application.configureLocation() {
                 }
             ) {
                 val user = call.principal<LoggedInUser>()!!
-                call.respondKIO(LocationService.getHarborMasterAssignedLocation(user.id))
+
+                val result = TimezonesService.withResolvedTimezone<DetailedLocationDTO>(
+                    call.parameters["timezone"],
+                    call.request.origin.remoteAddress
+                ) { tz ->
+                    LocationService.getHarborMasterAssignedLocation(user.id, tz)
+                }
+                call.respondKIO(result)
             }
 
             put(
@@ -124,6 +151,11 @@ fun Application.configureLocation() {
                     request {
                         pathParameter<Long>("id") {
                             description = "The location ID (not the sensor ID)"
+                        }
+                        queryParameter<String>("timezone") {
+                            description =
+                                "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                            required = false
                         }
                         body<UpdateLocationRequest> {
                             example("Update Location Example") {
@@ -161,7 +193,14 @@ fun Application.configureLocation() {
                 val user = call.principal<LoggedInUser>()!!
                 val request = call.receive<UpdateLocationRequest>()
 
-                call.respondKIO(LocationService.updateLocationByID(user.id, id, request))
+
+                val result = TimezonesService.withResolvedTimezone<DetailedLocationDTO>(
+                    call.parameters["timezone"],
+                    call.request.origin.remoteAddress
+                ) { tz ->
+                    LocationService.updateLocationByID(user.id, id, request, tz)
+                }
+                call.respondKIO(result)
             }
 
             delete(
