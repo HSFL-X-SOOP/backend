@@ -33,28 +33,34 @@ object LocationService {
         }
     }
 
-    fun getAllLocations(): App<Error, List<DetailedLocationDTO>> = KIO.comprehension {
+    fun getAllLocations(timezone: String): App<Error, List<DetailedLocationDTO>> = KIO.comprehension {
         val locations = !LocationRepo.fetchAllLocations().orDie().onNullFail { Error.NotFound }
-        KIO.ok(locations.map { DetailedLocationDTO.fromLocation(it) })
+        KIO.ok(locations.map { DetailedLocationDTO.fromLocation(it, timezone) })
     }
 
-    fun getLocationByID(locationId: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
+    fun getLocationByID(locationId: Long, timezone: String): App<Error, DetailedLocationDTO> = KIO.comprehension {
         val location = !LocationRepo.fetchLocationByID(locationId).orDie().onNullFail { Error.NotFound }
-        KIO.ok(DetailedLocationDTO.fromLocation(location))
+        KIO.ok(DetailedLocationDTO.fromLocation(location, timezone))
     }
 
-    fun getHarborMasterAssignedLocation(userId: Long): App<Error, DetailedLocationDTO> = KIO.comprehension {
-        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.NotFound }
+    fun getHarborMasterAssignedLocation(userId: Long, timezone: String): App<Error, DetailedLocationDTO> =
+        KIO.comprehension {
+            val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.NotFound }
 
-        !KIO.failOn(user.role != UserAuthorityRole.HARBOR_MASTER) { Error.Unauthorized }
-        val assignedLocation = !UserRepo.fetchUserAssignedLocationId(userId).orDie().onNullFail { Error.NotFound }
-        val location = !LocationRepo.fetchLocationByID(assignedLocation).orDie().onNullFail { Error.NotFound }
+            !KIO.failOn(user.role != UserAuthorityRole.HARBOR_MASTER) { Error.Unauthorized }
+            val assignedLocation = !UserRepo.fetchUserAssignedLocationId(userId).orDie().onNullFail { Error.NotFound }
+            val location = !LocationRepo.fetchLocationByID(assignedLocation).orDie().onNullFail { Error.NotFound }
 
-        KIO.ok(DetailedLocationDTO.fromLocation(location))
-    }
+            KIO.ok(DetailedLocationDTO.fromLocation(location, timezone))
+        }
 
 
-    fun updateLocationByID(userId: Long, id: Long, request: UpdateLocationRequest): App<Error, DetailedLocationDTO> =
+    fun updateLocationByID(
+        userId: Long,
+        id: Long,
+        request: UpdateLocationRequest,
+        timezone: String
+    ): App<Error, DetailedLocationDTO> =
         KIO.comprehension {
             !checkLocationAccess(userId, id)
 
@@ -84,7 +90,7 @@ object LocationService {
                 }
             }
 
-            KIO.ok(DetailedLocationDTO.fromLocation(location))
+            KIO.ok(DetailedLocationDTO.fromLocation(location, timezone))
         }.transact()
 
     fun getLocationImage(id: Long): App<Error, File> = KIO.comprehension {
