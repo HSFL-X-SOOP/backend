@@ -16,7 +16,8 @@ const val DISTANCE_COMBINE_SENSORS = 5 // meters
 
 data class SaveResult(
     val locationId: Long,
-    val newMeasurementsSaved: Boolean
+    val newMeasurementsSaved: Boolean,
+    val timestamp: OffsetDateTime? = null
 )
 
 object SensorDataRepo {
@@ -61,6 +62,8 @@ object SensorDataRepo {
 
         // Process Measurements
         var totalInserted = 0
+        var time: OffsetDateTime? = null
+
         measurementStreams.forEach { datastream ->
             val typeId = insertInto(MEASUREMENTTYPE)
                 .columns(
@@ -87,7 +90,7 @@ object SensorDataRepo {
 
             // save Measurements
             datastream.measurements.forEach { measurement ->
-                val time = OffsetDateTime.parse(
+                time = OffsetDateTime.parse(
                     measurement.timestamp,
                     DateTimeFormatter.ISO_OFFSET_DATE_TIME
                 )
@@ -111,6 +114,6 @@ object SensorDataRepo {
                     .execute()
             }
         }
-        SaveResult(locationId = locationId, newMeasurementsSaved = totalInserted > 0)
+        SaveResult(locationId = locationId, newMeasurementsSaved = totalInserted > 0, timestamp = time)
     }
 }

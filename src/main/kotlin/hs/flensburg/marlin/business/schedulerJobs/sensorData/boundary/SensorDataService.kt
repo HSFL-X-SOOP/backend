@@ -14,6 +14,8 @@ import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.toClean
 import io.ktor.client.call.body
 import io.ktor.client.request.get
 import kotlinx.coroutines.runBlocking
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 object SensorDataService {
     suspend fun getSensorData(id: Int = 10) {
@@ -68,10 +70,19 @@ object SensorDataService {
             // Save the sensor data to the database
             val result = !SensorDataRepo.saveSensorData(thingProcessed).orDie()
 
-            if (result.newMeasurementsSaved) {
-                // \u001B[31m = Red, \u001B[0m = Reset
-                print("\u001B[31m NEW MEASUREMENTS SAVED FOR STATION $id\u001B[0m")
-                printStationInfo(id, thingProcessed)
+            // Trigger if new measurement within 1 hour
+            // Use for notification or anomaly detection
+            if (result.newMeasurementsSaved && result.timestamp != null) {
+                // Sensor data and db use UTC
+                val oneHourAgo = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1)
+
+                if (result.timestamp.isAfter(oneHourAgo)) {
+                    println("\u001B[31m FRESH DATA DETECTED FOR STATION $id, NOW: ${OffsetDateTime.now()}\u001B[0m")
+                    printStationInfo(id, thingClean)
+                    //!onNewData(result.locationId).orDie()
+                } else {
+                    println("Saved historical/delayed data for $id, skipping notification.")
+                }
             }
         }
         KIO.unit
