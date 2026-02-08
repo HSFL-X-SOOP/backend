@@ -10,13 +10,7 @@ import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.Pote
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.ReverseGeoCodingService
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.SensorDataService
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.time.LocalDateTime
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -32,7 +26,16 @@ fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
     }
 
     schedule(1.minutes, true, env) {
-        SensorDataService.getSensorDataFromActiveSensors()
+        SensorDataService.getSensorDataFromActiveSensors { locationId ->
+            // This block triggers if a new measurement is available for a location within the last hour
+            KIO.comprehension {
+                println("\u001B[31m New measurements for Location $locationId -> Trigger\u001B[0m")
+
+                // TODO: Call other services here, like anomaly detection and notification
+
+                KIO.unit
+            }
+        }
     }
 
     schedule(1.minutes, true, env) {

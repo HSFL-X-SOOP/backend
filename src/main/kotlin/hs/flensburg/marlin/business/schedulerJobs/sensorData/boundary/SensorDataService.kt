@@ -47,9 +47,11 @@ object SensorDataService {
         }
     }
 
-    fun getSensorDataFromActiveSensors(): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
+    fun getSensorDataFromActiveSensors(
+        onNewData: (Long) -> App<PotentialSensorService.Error, Unit> = { KIO.unit }
+    ): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
         val activeSensorIds = !PotentialSensorService.getActivePotentialSensorIds()
-        getAndSaveAllSensorsData(activeSensorIds)
+        getAndSaveAllSensorsData(activeSensorIds, onNewData)
     }
 
     fun fetchSensorDataFrostServer(id: Long): ThingRaw = runBlocking {
@@ -58,7 +60,10 @@ object SensorDataService {
         httpclient.get(url).body<ThingRaw>()
     }
 
-    fun getAndSaveAllSensorsData(ids: List<Long>): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
+    fun getAndSaveAllSensorsData(
+        ids: List<Long>,
+        onNewData: (Long) -> App<PotentialSensorService.Error, Unit> = { KIO.unit }
+    ): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
         ids.forEach { id ->
             // Fetch Frost Server
             // Response to clean
@@ -77,9 +82,8 @@ object SensorDataService {
                 val oneHourAgo = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1)
 
                 if (result.timestamp.isAfter(oneHourAgo)) {
-                    println("\u001B[31m FRESH DATA DETECTED FOR STATION $id, NOW: ${OffsetDateTime.now()}\u001B[0m")
-                    printStationInfo(id, thingClean)
-                    //!onNewData(result.locationId).orDie()
+                    printStationInfo(id, result.locationId, thingClean)
+                    !onNewData(result.locationId)
                 } else {
                     println("Saved historical/delayed data for $id, skipping notification.")
                 }
@@ -89,12 +93,12 @@ object SensorDataService {
     }.transact()
 
 
-    private fun printStationInfo(id: Long, thingClean: ThingClean) {
+    private fun printStationInfo(id: Long, locationId: Long, thingClean: ThingClean) {
         println("\n=== Station ${thingClean.name} (ID: $id) ===")
 
         val tideMeasurement = formatTideMeasurement(thingClean)
         println(tideMeasurement)
-        println("Position: ${thingClean.location} \n")
+        println("Position: ${thingClean.location}, LocationID: ${locationId}\n")
     }
 
     private fun formatTideMeasurement(thingClean: ThingClean): String {
