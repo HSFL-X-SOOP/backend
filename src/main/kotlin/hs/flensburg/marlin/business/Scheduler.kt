@@ -29,7 +29,7 @@ fun configureScheduling(env: JEnv) = GlobalScope.launch(Dispatchers.IO) {
         SensorDataService.getSensorDataFromActiveSensors { locationId ->
             // This block triggers if a new measurement is available for a location within the last hour
             KIO.comprehension {
-                println("\u001B[31m New measurements for Location $locationId -> Trigger\u001B[0m")
+                logger.debug { "New measurements for Location $locationId -> Trigger" }
 
                 // TODO: Call other services here, like anomaly detection and notification
 
