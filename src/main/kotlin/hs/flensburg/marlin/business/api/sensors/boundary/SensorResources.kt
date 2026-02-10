@@ -193,6 +193,53 @@ fun Application.configureSensors() {
         }
 
         get(
+            path = "/location/{id}/latestmeasurements",
+            builder = {
+                tags("location")
+                description = "Get the latest measurements for a single location."
+                request {
+                    pathParameter<Long>("id") {
+                        description = "The location ID (not the sensor ID)"
+                    }
+                    queryParameter<String>("timezone") {
+                        description =
+                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                        required = false
+                    }
+                    queryParameter<String>("units") {
+                        description =
+                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                        required = false
+                    }
+                }
+                response {
+                    HttpStatusCode.OK to {
+                        description = "Successful response with latest measurements for a location"
+                        body<UnitsWithLocationWithBoxesDTO>()
+                    }
+                    HttpStatusCode.InternalServerError to {
+                        description = "Error occurred while retrieving the latest measurements"
+                    }
+                }
+            }
+        ) {
+            val locationId = call.parameters["id"]?.toLongOrNull()
+                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
+
+            val result = TimezonesService.withResolvedTimezone<UnitsWithLocationWithBoxesDTO>(
+                call.parameters["timezone"],
+                call.request.origin.remoteAddress
+            ) { tz ->
+                SensorService.getSingleLocationWithLatestMeasurements(
+                    locationId,
+                    tz,
+                    call.parameters["units"] ?: "metric"
+                )
+            }
+            call.respondKIO(result)
+        }
+
+        get(
             path = "/location/{id}/measurementsWithinTimeRangeFAST",
             builder = {
                 tags("location")
