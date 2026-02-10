@@ -5,7 +5,8 @@ import kotlin.math.PI
 
 object UnitsService {
 
-    const val CELSIUS_TO_FAHRENHEIT_FACTOR = 9 / 5 + 32
+    const val CELSIUS_TO_FAHRENHEIT_FACTOR = 9.0 / 5.0
+    const val CELSIUS_TO_FAHRENHEIT_OFFSET = 32
     const val CELSIUS_TO_KELVIN_SUMMAND = 273.15
     const val METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR_FACTOR = 3.6
     const val METERS_PER_SECOND_TO_MILES_PER_HOUR_DIVISOR = 0.44704
@@ -45,7 +46,7 @@ object UnitsService {
     )
 
     fun convert(value: Double, measurementName: String, unitSymbol: String, goal: String): ConvertedValueDTO {
-        return when (goal) {
+        return when (goal.lowercase()) {
             "", "metric" -> mapMetric(value, unitSymbol)
             "imperial" -> mapImperial(value, unitSymbol)
             "shipping" -> mapShipping(value, unitSymbol)
@@ -123,7 +124,7 @@ object UnitsService {
 
         when (sourceUnit to targetUnit) {
             // temperature
-            "°C" to "°F", "Cel" to "°F" -> convertedValue = value * CELSIUS_TO_FAHRENHEIT_FACTOR
+            "°C" to "°F", "Cel" to "°F" -> convertedValue = value * CELSIUS_TO_FAHRENHEIT_FACTOR + CELSIUS_TO_FAHRENHEIT_OFFSET
             "°C" to "K"-> convertedValue = value + CELSIUS_TO_KELVIN_SUMMAND
 
             // speed
