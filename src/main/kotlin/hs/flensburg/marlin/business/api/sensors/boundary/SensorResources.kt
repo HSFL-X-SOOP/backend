@@ -1,5 +1,6 @@
 package hs.flensburg.marlin.business.api.sensors.boundary
 
+import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.location.boundary.LocationService
 import hs.flensburg.marlin.business.api.location.entity.DetailedLocationDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
@@ -12,11 +13,12 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
-import io.ktor.http.HttpStatusCode
-import io.ktor.server.application.Application
-import io.ktor.server.plugins.origin
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.routing
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.plugins.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 
 fun Application.configureSensors() {
     routing {
@@ -183,11 +185,13 @@ fun Application.configureSensors() {
                 }
             }
         ) {
+            val user = call.principal<LoggedInUser>()
             call.respondKIO(
                 SensorService.getLocationsWithLatestMeasurementsV3(
                     call.parameters["timezone"] ?: "DEFAULT",
                     call.request.origin.remoteAddress,
-                    call.parameters["units"] ?: "metric"
+                    call.parameters["units"],
+                    user?.id
                 )
             )
         }
