@@ -10,6 +10,8 @@ import hs.flensburg.marlin.business.api.sensors.control.SensorRepo
 import hs.flensburg.marlin.business.api.sensors.entity.*
 import hs.flensburg.marlin.business.api.sensors.entity.raw.*
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
+import hs.flensburg.marlin.business.api.users.control.UserRepo
+import hs.flensburg.marlin.business.api.users.entity.UserProfile
 
 object SensorService {
     sealed class Error(private val message: String) : ServiceLayerError {
@@ -62,13 +64,20 @@ object SensorService {
     fun getLocationsWithLatestMeasurementsV3(
         timezone: String,
         ipAddress: String,
-        units: String
-    ): App<Error, UnitsWithLocationWithBoxesDTO> =
-        KIO.comprehension {
-            val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
-                !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
-                units
-            ).orDie().onNullFail { Error.NotFound }
+        units: String?,
+        userId: Long?
+    ): App<Error, UnitsWithLocationWithBoxesDTO> = KIO.comprehension {
+        val finalUnits: String? = userId?.let { id ->
+            val userView = !UserRepo.fetchViewById(id).orDie()
+            userView?.let { view ->
+                UserProfile.from(view).measurementSystem?.literal
+            }
+        }
+
+        val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
+            !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            units ?: finalUnits ?: "metric"
+        ).orDie().onNullFail { Error.NotFound }
             KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocations))
         }
 
