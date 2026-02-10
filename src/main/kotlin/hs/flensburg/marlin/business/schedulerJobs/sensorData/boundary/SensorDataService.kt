@@ -1,7 +1,7 @@
 package hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary
 
 import de.lambda9.tailwind.core.KIO
-import de.lambda9.tailwind.core.extensions.kio.orDie
+import de.lambda9.tailwind.core.extensions.kio.attempt
 import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.JEnv
@@ -25,11 +25,19 @@ private val logger = KotlinLogging.logger { }
 
 object SensorDataService {
 
-    fun getSensorDataFromActiveSensors(
-        onNewData: (Long) -> App<PotentialSensorService.Error, Unit> = { KIO.unit }
-    ): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
+    fun getSensorDataFromActiveSensors(): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
         val activeSensorIds = !PotentialSensorService.getActivePotentialSensorIds()
-        getAndSaveAllSensorsData(activeSensorIds, onNewData)
+
+        getAndSaveAllSensorsData(activeSensorIds) { locationId ->
+            // This block triggers if a new measurement is available for a location within the last hour
+            KIO.comprehension {
+                logger.debug { "New measurements for Location $locationId -> Trigger" }
+
+                // TODO: Call other services here, like anomaly detection and notification
+
+                KIO.unit
+            }
+        }
     }
 
     fun fetchSensorDataFrostServer(baseUrl: String, id: Long): ThingRaw = runBlocking {
@@ -62,24 +70,34 @@ object SensorDataService {
             val thingProcessed = preProcessData(thingClean)
 
             // Save the sensor data to the database
-            val result = !SensorDataRepo.saveSensorData(thingProcessed).orDie()
+            val result = (!SensorDataRepo.saveSensorData(thingProcessed).transact().attempt()).fold(
+                onSuccess = { it },
+                onError = {
+                    logger.error { it.toString() }
+                    null
+                })
+
 
             // Trigger if new measurement within 1 hour
             // Use for notification or anomaly detection
-            if (result.newMeasurementsSaved && result.timestamp != null) {
+            if (result != null && result.newMeasurementsSaved && result.timestamp != null) {
                 // Sensor data and db use UTC
                 val oneHourAgo = OffsetDateTime.now(ZoneOffset.UTC).minusHours(1)
 
                 if (result.timestamp.isAfter(oneHourAgo)) {
                     printStationInfo(id, result.locationId, thingClean)
-                    !onNewData(result.locationId)
+
+                    (!onNewData(result.locationId).attempt()).fold(
+                        onSuccess = { },
+                        onError = { logger.error { it.toString() } })
+
                 } else {
                     logger.debug { "Saved historical/delayed data for $id, skipping notification." }
                 }
             }
         }
         KIO.unit
-    }.transact()
+    }
 
 
     private fun printStationInfo(id: Long, locationId: Long, thingClean: ThingClean) {
