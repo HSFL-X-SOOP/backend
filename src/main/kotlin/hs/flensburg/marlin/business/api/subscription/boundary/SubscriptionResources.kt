@@ -1,17 +1,20 @@
 package hs.flensburg.marlin.business.api.subscription.boundary
 
-import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.openAPI.SubscriptionOpenAPISpec
 import hs.flensburg.marlin.business.api.subscription.entity.CancelSubscriptionRequest
 import hs.flensburg.marlin.business.api.subscription.entity.CreatePortalSessionRequest
 import hs.flensburg.marlin.business.api.subscription.entity.CreateSubscriptionRequest
+import hs.flensburg.marlin.business.api.subscription.entity.PauseSubscriptionRequest
 import hs.flensburg.marlin.business.api.subscription.entity.ReactivateSubscriptionRequest
+import hs.flensburg.marlin.business.api.subscription.entity.ResumeSubscriptionRequest
+import hs.flensburg.marlin.business.api.subscription.entity.UpdatePaymentMethodRequest
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
 import io.github.smiley4.ktoropenapi.post
+import io.github.smiley4.ktoropenapi.put
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.auth.principal
@@ -64,6 +67,59 @@ fun Application.configureSubscriptionResources() {
 
                 call.respondKIO(
                     SubscriptionService.reactivateSubscription(user.id, request)
+                )
+            }
+
+            get("/subscriptions/invoices", SubscriptionOpenAPISpec.listInvoices) {
+                val user = call.principal<LoggedInUser>()!!
+
+                call.respondKIO(
+                    SubscriptionService.listInvoices(user.id)
+                )
+            }
+
+            get("/subscriptions/invoices/{id}/pdf", SubscriptionOpenAPISpec.getInvoicePdf) {
+                val user = call.principal<LoggedInUser>()!!
+                val invoiceId = call.parameters["id"]
+                    ?: return@get call.respond(HttpStatusCode.BadRequest, "Missing invoice id")
+
+                call.respondKIO(
+                    SubscriptionService.getInvoicePdf(user.id, invoiceId)
+                )
+            }
+
+            post("/subscriptions/setup-intent", SubscriptionOpenAPISpec.createSetupIntent) {
+                val user = call.principal<LoggedInUser>()!!
+
+                call.respondKIO(
+                    SubscriptionService.createSetupIntent(user.id)
+                )
+            }
+
+            put("/subscriptions/payment-method", SubscriptionOpenAPISpec.updatePaymentMethod) {
+                val user = call.principal<LoggedInUser>()!!
+                val request = call.receive<UpdatePaymentMethodRequest>()
+
+                call.respondKIO(
+                    SubscriptionService.updatePaymentMethod(user.id, request)
+                )
+            }
+
+            post("/subscriptions/pause", SubscriptionOpenAPISpec.pauseSubscription) {
+                val user = call.principal<LoggedInUser>()!!
+                val request = call.receive<PauseSubscriptionRequest>()
+
+                call.respondKIO(
+                    SubscriptionService.pauseSubscription(user.id, request)
+                )
+            }
+
+            post("/subscriptions/resume", SubscriptionOpenAPISpec.resumeSubscription) {
+                val user = call.principal<LoggedInUser>()!!
+                val request = call.receive<ResumeSubscriptionRequest>()
+
+                call.respondKIO(
+                    SubscriptionService.resumeSubscription(user.id, request)
                 )
             }
         }

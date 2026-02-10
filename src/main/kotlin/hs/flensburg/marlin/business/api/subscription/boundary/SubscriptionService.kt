@@ -17,10 +17,15 @@ import hs.flensburg.marlin.business.api.subscription.control.SubscriptionReposit
 import hs.flensburg.marlin.business.api.subscription.entity.CancelSubscriptionRequest
 import hs.flensburg.marlin.business.api.subscription.entity.CreatePortalSessionRequest
 import hs.flensburg.marlin.business.api.subscription.entity.CreateSubscriptionRequest
+import hs.flensburg.marlin.business.api.subscription.entity.InvoiceResponse
+import hs.flensburg.marlin.business.api.subscription.entity.PauseSubscriptionRequest
 import hs.flensburg.marlin.business.api.subscription.entity.PaymentSheetResponse
 import hs.flensburg.marlin.business.api.subscription.entity.PortalSessionResponse
 import hs.flensburg.marlin.business.api.subscription.entity.ReactivateSubscriptionRequest
+import hs.flensburg.marlin.business.api.subscription.entity.ResumeSubscriptionRequest
+import hs.flensburg.marlin.business.api.subscription.entity.SetupIntentResponse
 import hs.flensburg.marlin.business.api.subscription.entity.SubscriptionStatusResponse
+import hs.flensburg.marlin.business.api.subscription.entity.UpdatePaymentMethodRequest
 import hs.flensburg.marlin.business.api.subscription.entity.UserSubscriptionsResponse
 import hs.flensburg.marlin.database.generated.enums.SubscriptionStatus
 import hs.flensburg.marlin.database.generated.enums.SubscriptionType
@@ -38,6 +43,10 @@ object SubscriptionService {
         object CustomerNotFound : Error("No Stripe customer found for this user")
         object MissingClientSecret : Error("No payment intent or setup intent client secret returned")
         object NotPendingCancellation : Error("Subscription is not pending cancellation")
+        object InvoiceNotFound : Error("Invoice not found")
+        object NoPdfAvailable : Error("No PDF available for this invoice")
+        object NotPaused : Error("Subscription is not paused")
+        object AlreadyPaused : Error("Subscription is already paused")
         data class StripeError(val detail: String) : Error("Stripe error: $detail")
         data class InvalidEvent(val detail: String) : Error("Invalid webhook event: $detail")
 
@@ -49,6 +58,10 @@ object SubscriptionService {
                 is CustomerNotFound -> ApiError.NotFound(message)
                 is MissingClientSecret -> ApiError.BadGateway(message)
                 is NotPendingCancellation -> ApiError.Conflict(message)
+                is InvoiceNotFound -> ApiError.NotFound(message)
+                is NoPdfAvailable -> ApiError.NotFound(message)
+                is NotPaused -> ApiError.Conflict(message)
+                is AlreadyPaused -> ApiError.Conflict(message)
                 is StripeError -> ApiError.BadGateway(message)
                 is InvalidEvent -> ApiError.BadRequest(message)
             }
@@ -197,6 +210,118 @@ object SubscriptionService {
                 status = updated.status,
                 currentPeriodEnd = updated.currentPeriodEnd?.toString(),
                 cancelAtPeriodEnd = false,
+                trialEnd = updated.trialEnd?.toString()
+            )
+        )
+    }
+
+    fun listInvoices(userId: Long): App<ServiceLayerError, List<InvoiceResponse>> = KIO.comprehension {
+        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
+            .onNullFail { Error.CustomerNotFound }
+
+        val customerId = user.stripeCustomerId
+        !KIO.failOn(customerId == null) { Error.CustomerNotFound }
+
+        val invoices = !StripeSubscriptionService.listInvoices(customerId!!)
+
+        KIO.ok(invoices.map { invoice ->
+            InvoiceResponse(
+                id = invoice.id,
+                amountDue = invoice.amountDue,
+                amountPaid = invoice.amountPaid,
+                currency = invoice.currency,
+                status = invoice.status,
+                invoicePdf = invoice.invoicePdf,
+                created = invoice.created,
+                periodStart = invoice.periodStart,
+                periodEnd = invoice.periodEnd
+            )
+        })
+    }
+
+    fun getInvoicePdf(userId: Long, invoiceId: String): App<ServiceLayerError, String> = KIO.comprehension {
+        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
+            .onNullFail { Error.CustomerNotFound }
+
+        val customerId = user.stripeCustomerId
+        !KIO.failOn(customerId == null) { Error.CustomerNotFound }
+
+        val invoice = !StripeSubscriptionService.getInvoice(invoiceId)
+
+        !KIO.failOn(invoice.customer != customerId) { Error.InvoiceNotFound }
+        !KIO.failOn(invoice.invoicePdf == null) { Error.NoPdfAvailable }
+
+        KIO.ok(invoice.invoicePdf)
+    }
+
+    fun createSetupIntent(userId: Long): App<ServiceLayerError, SetupIntentResponse> = KIO.comprehension {
+        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
+            .onNullFail { Error.CustomerNotFound }
+
+        val customerId = user.stripeCustomerId
+        !KIO.failOn(customerId == null) { Error.CustomerNotFound }
+
+        val setupIntent = !StripeSubscriptionService.createSetupIntent(customerId!!)
+
+        KIO.ok(SetupIntentResponse(clientSecret = setupIntent.clientSecret))
+    }
+
+    fun updatePaymentMethod(
+        userId: Long,
+        request: UpdatePaymentMethodRequest
+    ): App<ServiceLayerError, Map<String, Boolean>> = KIO.comprehension {
+        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
+            .onNullFail { Error.CustomerNotFound }
+
+        val customerId = user.stripeCustomerId
+        !KIO.failOn(customerId == null) { Error.CustomerNotFound }
+
+        !StripeSubscriptionService.updateDefaultPaymentMethod(customerId!!, request.paymentMethodId)
+
+        KIO.ok(mapOf("updated" to true))
+    }
+
+    fun pauseSubscription(
+        userId: Long,
+        request: PauseSubscriptionRequest
+    ): App<ServiceLayerError, SubscriptionStatusResponse> = KIO.comprehension {
+        val sub = !SubscriptionRepository.findActiveByUserIdAndType(userId, request.subscriptionType).orDie()
+            .onNullFail { Error.NotFound }
+
+        !StripeSubscriptionService.pauseSubscription(sub.stripeSubscriptionId!!)
+
+        val updated = !SubscriptionRepository.findByStripeSubscriptionId(sub.stripeSubscriptionId!!).orDie()
+            .onNullFail { Error.NotFound }
+
+        KIO.ok(
+            SubscriptionStatusResponse(
+                subscriptionType = request.subscriptionType,
+                status = updated.status,
+                currentPeriodEnd = updated.currentPeriodEnd?.toString(),
+                cancelAtPeriodEnd = updated.cancelAtPeriodEnd ?: false,
+                trialEnd = updated.trialEnd?.toString()
+            )
+        )
+    }
+
+    fun resumeSubscription(
+        userId: Long,
+        request: ResumeSubscriptionRequest
+    ): App<ServiceLayerError, SubscriptionStatusResponse> = KIO.comprehension {
+        val sub = !SubscriptionRepository.findActiveByUserIdAndType(userId, request.subscriptionType).orDie()
+            .onNullFail { Error.NotFound }
+
+        !StripeSubscriptionService.resumeSubscription(sub.stripeSubscriptionId!!)
+
+        val updated = !SubscriptionRepository.findByStripeSubscriptionId(sub.stripeSubscriptionId!!).orDie()
+            .onNullFail { Error.NotFound }
+
+        KIO.ok(
+            SubscriptionStatusResponse(
+                subscriptionType = request.subscriptionType,
+                status = updated.status,
+                currentPeriodEnd = updated.currentPeriodEnd?.toString(),
+                cancelAtPeriodEnd = updated.cancelAtPeriodEnd ?: false,
                 trialEnd = updated.trialEnd?.toString()
             )
         )
