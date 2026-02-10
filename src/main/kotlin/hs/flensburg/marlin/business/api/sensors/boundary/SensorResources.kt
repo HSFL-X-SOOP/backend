@@ -23,6 +23,7 @@ import io.ktor.server.routing.*
 
 fun Application.configureSensors() {
     routing {
+      authenticate(Realm.COMMON.value, Realm.API_KEY.value, optional = true) {
         get(
             path = "/sensors",
             builder = {
@@ -372,5 +373,6 @@ fun Application.configureSensors() {
             }
         }
 
+      }
     }
 }

@@ -3,6 +3,7 @@ package hs.flensburg.marlin.business.api.users.entity
 import hs.flensburg.marlin.business.api.sensors.entity.raw.LocationDTO
 import hs.flensburg.marlin.database.generated.enums.Language
 import hs.flensburg.marlin.database.generated.enums.MeasurementSystem
+import hs.flensburg.marlin.database.generated.enums.SubscriptionStatus
 import hs.flensburg.marlin.database.generated.enums.UserActivityRole
 import hs.flensburg.marlin.database.generated.enums.UserAuthorityRole
 import hs.flensburg.marlin.database.generated.tables.pojos.Location
@@ -26,7 +27,9 @@ data class UserProfile(
     val userUpdatedAt: LocalDateTime?,
     val profileCreatedAt: LocalDateTime?,
     val profileUpdatedAt: LocalDateTime?,
-    val assignedLocation: LocationDTO?
+    val assignedLocation: LocationDTO?,
+    val notificationSubscriptionStatus: SubscriptionStatus?,
+    val apiSubscriptionStatus: SubscriptionStatus?
 ) {
     companion object {
         fun from(userView: UserView, location: Location? = null): UserProfile {
@@ -44,7 +47,9 @@ data class UserProfile(
                 userUpdatedAt = userView.userUpdatedAt?.toKotlinLocalDateTime(),
                 profileCreatedAt = userView.profileCreatedAt?.toKotlinLocalDateTime(),
                 profileUpdatedAt = userView.profileUpdatedAt?.toKotlinLocalDateTime(),
-                assignedLocation = location?.let { LocationDTO.fromLocation(it) }
+                assignedLocation = location?.let { LocationDTO.fromLocation(it) },
+                notificationSubscriptionStatus = userView.notificationSubscriptionStatus,
+                apiSubscriptionStatus = userView.apiSubscriptionStatus
             )
         }
     }
