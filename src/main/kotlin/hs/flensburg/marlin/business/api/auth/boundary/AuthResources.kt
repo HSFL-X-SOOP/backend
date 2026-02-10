@@ -3,7 +3,9 @@ package hs.flensburg.marlin.business.api.auth.boundary
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.Config
+import hs.flensburg.marlin.business.api.auth.control.ApiKeyAuthProvider
 import hs.flensburg.marlin.business.api.auth.control.JWTAuthority
+import hs.flensburg.marlin.business.api.auth.control.apiKey
 import hs.flensburg.marlin.business.api.auth.entity.AppleLoginRequest
 import hs.flensburg.marlin.business.api.auth.entity.AppleNotificationPayload
 import hs.flensburg.marlin.business.api.auth.entity.GoogleLoginRequest
@@ -79,6 +81,8 @@ fun Application.configureAuth(envConfig: Config) {
                 )
             }
         }
+
+        apiKey(Realm.API_KEY.value) {}
 
         oauth("auth-oauth-google") {
             urlProvider = { "${envConfig.backendUrl}/auth/google/callback" }

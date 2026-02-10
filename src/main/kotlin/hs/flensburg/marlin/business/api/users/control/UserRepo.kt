@@ -229,6 +229,13 @@ object UserRepo {
             .fetchOneInto(hs.flensburg.marlin.database.generated.tables.pojos.UserProfile::class.java)
     }
 
+    fun setStripeCustomerId(userId: Long, stripeCustomerId: String): JIO<Unit> = Jooq.query {
+        update(USER)
+            .set(USER.STRIPE_CUSTOMER_ID, stripeCustomerId)
+            .where(USER.ID.eq(userId))
+            .execute()
+    }
+
     fun setEmailIsVerified(id: Long): JIO<Unit> = Jooq.query {
         update(USER)
             .set(USER.VERIFIED, true)

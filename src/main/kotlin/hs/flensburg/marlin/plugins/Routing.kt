@@ -9,8 +9,9 @@ import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
 import hs.flensburg.marlin.business.api.notifications.boundary.configureNotifications
 import hs.flensburg.marlin.business.api.location.boundary.configureLocation
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.boundary.configureNotificationMeasurementRules
-import hs.flensburg.marlin.business.api.payment.boundary.configurePaymentResources
+import hs.flensburg.marlin.business.api.apikey.boundary.configureApiKeyResources
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
+import hs.flensburg.marlin.business.api.subscription.boundary.configureSubscriptionResources
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
 import hs.flensburg.marlin.business.api.userDevice.boundary.configureUserDevices
 import hs.flensburg.marlin.business.api.users.boundary.configureUsers
@@ -49,7 +50,8 @@ fun Application.configureRouting(config: Config) {
     configureNotificationMeasurementRules()
     configureUserLocations()
     configureNotificationLocations()
-    configurePaymentResources(config)
+    configureSubscriptionResources()
+    configureApiKeyResources()
 
     install(XForwardedHeaders)
     install(ForwardedHeaders)
@@ -74,6 +76,15 @@ fun Application.configureRouting(config: Config) {
                 bearerFormat = "JWT"
                 description =
                     "JWT access token with admin role. Only users with 'ADMIN' role in their JWT claims can access admin endpoints. Obtain via login endpoints if user has admin privileges."
+            }
+
+            securityScheme("ApiKeyAuth") {
+                type = AuthType.API_KEY
+                name = "X-API-Key"
+                location = io.github.smiley4.ktoropenapi.config.AuthKeyLocation.HEADER
+                description =
+                    "API key for external programmatic access. Requires an active API_ACCESS subscription. " +
+                    "Obtain via POST /api-keys endpoint."
             }
 
             securityScheme("OAuth2Google") {
@@ -155,7 +166,8 @@ fun Route.authenticate(realm: Realm, block: Route.() -> Unit) {
 enum class Realm(val value: String) {
     COMMON("common"),
     ADMIN("admin"),
-    HARBOUR_CONTROL("harbor_control");
+    HARBOUR_CONTROL("harbor_control"),
+    API_KEY("api-key");
 
     override fun toString(): String = value
 }

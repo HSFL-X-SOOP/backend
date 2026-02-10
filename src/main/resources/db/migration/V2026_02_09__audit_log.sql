@@ -88,10 +88,3 @@ CREATE TRIGGER audit
     ON marlin.user
     FOR EACH ROW
 EXECUTE FUNCTION audit.audit();
-
-DROP TRIGGER IF EXISTS audit_payment_trigger ON marlin.payment;
-CREATE TRIGGER audit
-    AFTER INSERT OR UPDATE OR DELETE
-    ON marlin.payment
-    FOR EACH ROW
-EXECUTE FUNCTION audit.audit();

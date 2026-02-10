@@ -10,19 +10,22 @@ import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.control.NotificationMeasurementRuleRepo
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.entity.CreateOrUpdateNotificationMeasurementRuleRequest
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.entity.NotificationMeasurementRuleDTO
+import hs.flensburg.marlin.business.api.subscription.control.SubscriptionRepository
 import hs.flensburg.marlin.business.api.users.boundary.UserService
+import hs.flensburg.marlin.database.generated.enums.SubscriptionType
 import hs.flensburg.marlin.database.generated.tables.pojos.NotificationMeasurementRule
-import java.time.LocalDateTime
 
 object NotificationMeasurementRuleService {
     sealed class Error(private val message: String) : ServiceLayerError {
         object NotFound : Error("Notification measurement rule not found")
         object BadRequest : Error("Bad request")
+        object SubscriptionRequired : Error("Active APP_NOTIFICATION subscription required")
 
         override fun toApiError(): ApiError {
             return when (this) {
                 is NotFound -> ApiError.NotFound(message)
                 is BadRequest -> ApiError.BadRequest(message)
+                is SubscriptionRequired -> ApiError.Forbidden(message)
             }
         }
     }
@@ -49,7 +52,12 @@ object NotificationMeasurementRuleService {
 
     fun createRule(
         rule: CreateOrUpdateNotificationMeasurementRuleRequest
-    ): App<NotificationMeasurementRuleService.Error, NotificationMeasurementRuleDTO> = KIO.comprehension {
+    ): App<Error, NotificationMeasurementRuleDTO> = KIO.comprehension {
+/*
+        val hasSub = !SubscriptionRepository.hasActiveSubscription(rule.userId, SubscriptionType.APP_NOTIFICATION).orDie()
+        !KIO.failOn(!hasSub) { Error.SubscriptionRequired }
+*/
+
         val rule = !NotificationMeasurementRuleRepo.insert(
             NotificationMeasurementRule(
                 userId = rule.userId,

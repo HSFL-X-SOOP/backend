@@ -10,16 +10,19 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
+import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.origin
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.routing
 
 fun Application.configureSensors() {
     routing {
+      authenticate(Realm.COMMON.value, Realm.API_KEY.value, optional = true) {
         get(
             path = "/sensors",
             builder = {
@@ -316,5 +319,6 @@ fun Application.configureSensors() {
             )
         }
 
+      }
     }
 }

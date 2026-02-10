@@ -8,6 +8,7 @@ import hs.flensburg.marlin.plugins.configureCORS
 import hs.flensburg.marlin.plugins.configureKIO
 import hs.flensburg.marlin.plugins.configureRouting
 import hs.flensburg.marlin.plugins.configureSerialization
+import com.stripe.Stripe
 import io.github.cdimascio.dotenv.dotenv
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.application.Application
@@ -27,7 +28,10 @@ fun main(args: Array<String>) {
         else -> null
     }
 
-    val (env, dsl) = Env.configure(config?.parseConfig() ?: Config.parseConfig())
+    val appConfig = config?.parseConfig() ?: Config.parseConfig()
+    val (env, dsl) = Env.configure(appConfig)
+
+    Stripe.apiKey = appConfig.stripe.secretKey
 
     Flyway(
         Flyway.configure()

@@ -80,7 +80,11 @@ data class Config(
 
     data class Stripe(
         val secretKey: String,
-        val webhookSecret: String
+        val publishableKey: String,
+        val webhookSecret: String,
+        val notificationPriceId: String,
+        val apiAccessPriceId: String,
+        val trialDays: Int
     )
 
     companion object {
@@ -124,7 +128,11 @@ data class Config(
             ),
             stripe = Stripe(
                 secretKey = get("STRIPE_SECRET_KEY", ""),
-                webhookSecret = get("STRIPE_WEBHOOK_SECRET", "")
+                publishableKey = get("STRIPE_PUBLISHABLE_KEY", ""),
+                webhookSecret = get("STRIPE_WEBHOOK_SECRET", ""),
+                notificationPriceId = get("STRIPE_NOTIFICATION_PRICE_ID", ""),
+                apiAccessPriceId = get("STRIPE_API_ACCESS_PRICE_ID", ""),
+                trialDays = get("STRIPE_TRIAL_DAYS", "14").toInt()
             )
         )
 
@@ -168,7 +176,11 @@ data class Config(
             ),
             stripe = Stripe(
                 secretKey = System.getenv("STRIPE_SECRET_KEY") ?: "",
-                webhookSecret = System.getenv("STRIPE_WEBHOOK_SECRET") ?: ""
+                publishableKey = System.getenv("STRIPE_PUBLISHABLE_KEY") ?: "",
+                webhookSecret = System.getenv("STRIPE_WEBHOOK_SECRET") ?: "",
+                notificationPriceId = System.getenv("STRIPE_NOTIFICATION_PRICE_ID") ?: "",
+                apiAccessPriceId = System.getenv("STRIPE_API_ACCESS_PRICE_ID") ?: "",
+                trialDays = (System.getenv("STRIPE_TRIAL_DAYS") ?: "14").toInt()
             )
         )
     }

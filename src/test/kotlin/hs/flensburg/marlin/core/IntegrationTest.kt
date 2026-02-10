@@ -92,6 +92,14 @@ abstract class IntegrationTest {
                 firebaseInfo = Config.FirebaseInfo(
                     firebaseServiceAccountKeyPath = "/test/path",
                     firebaseCloudMessagingProjectID = "test-project-id"
+                ),
+                stripe = Config.Stripe(
+                    secretKey = "test-stripe-api-key",
+                    publishableKey = "test-stripe-publishable-key",
+                    webhookSecret = "test-stripe-webhook-secret",
+                    notificationPriceId = "test-notification-price-id",
+                    apiAccessPriceId = "test-api-access-price-id",
+                    trialDays = 14
                 )
             )
         )
