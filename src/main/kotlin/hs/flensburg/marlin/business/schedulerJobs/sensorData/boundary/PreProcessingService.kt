@@ -1,45 +1,44 @@
 package hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary
 
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingClean
-import kotlinx.serialization.json.Json
-import java.util.Collections.emptyMap
+import kotlinx.serialization.json.*
 
 object PreProcessingService {
 
     fun preProcessData(thing: ThingClean): ThingClean {
-        // read config from json file
         val config = readConfig()
 
-        // Create mappings for name and description
-        val nameMapping = config["name"] ?: emptyMap()
-        val descriptionMapping = config["description"] ?: emptyMap()
+        val processedLocation = getManualLocation(config, thing.id.toString()) ?: thing.location
+        val nameMap = getStringMap(config, "name")
+        val descMap = getStringMap(config, "description")
 
         val newDatastreams = thing.datastreams.map { ds ->
-            // Preprocess the name by looking up in the mapping
-            val processedName = nameMapping[ds.observedProperty.name] ?: ds.observedProperty.name
+            val processedName = nameMap[ds.observedProperty.name] ?: ds.observedProperty.name
 
-            // Optimize description by matching part of the string
-            val processedDesc = descriptionMapping.entries
-                .firstOrNull { ds.observedProperty.description.contains(it.key, ignoreCase = true) }
+            val processedDesc = descMap.entries
+                .firstOrNull { (key, _) -> ds.observedProperty.description.contains(key, ignoreCase = true) }
                 ?.value ?: ds.observedProperty.description
 
-            // Return a copy with porcessed name and description
-            ds.copy(
-                observedProperty = ds.observedProperty.copy(name = processedName, description = processedDesc)
-            )
+            ds.copy(observedProperty = ds.observedProperty.copy(name = processedName, description = processedDesc))
         }
 
-        // Return a new ThingClean with preprocessed datastreams
-        return thing.copy(datastreams = newDatastreams)
+        return thing.copy(location = processedLocation, datastreams = newDatastreams)
     }
 
-    private fun readConfig(): Map<String, Map<String, String>> {
-        // Load the JSON configuration file from resources
-        val resource = {}.javaClass.getResource("/SensorPreProcessing/PreProcessConfig.json")
-            ?: throw IllegalStateException("PreProcessConfig.json not found!")
+    private fun readConfig(): JsonObject {
+        val text = {}.javaClass.getResource("/SensorPreProcessing/PreProcessConfig.json")?.readText()
+            ?: throw IllegalStateException("Config not found!")
+        return Json.parseToJsonElement(text).jsonObject
+    }
 
-        val text = resource.readText()
-        // Parse JSON into a nested Map: field -> mapping
-        return Json.decodeFromString(text)
+    private fun getStringMap(config: JsonObject, key: String): Map<String, String> {
+        return config[key]?.jsonObject?.mapValues { it.value.jsonPrimitive.content } ?: emptyMap()
+    }
+
+    private fun getManualLocation(config: JsonObject, sensorId: String): Pair<Double, Double>? {
+        val coords = config["location"]?.jsonObject?.get(sensorId)?.jsonArray ?: return null
+        return if (coords.size >= 2) {
+            coords[0].jsonPrimitive.double to coords[1].jsonPrimitive.double
+        } else null
     }
 }
