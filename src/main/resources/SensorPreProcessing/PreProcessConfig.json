@@ -1,9 +1,18 @@
 {
-   "name": {
-    "WTemp" : "Temperature, water"
+  "name": {
+    "WTemp": "Temperature, water"
   },
   "description": {
     "temperature_water [°C]": "The measured temperature in the water"
+  },
+  "location": {
+    "14": [
+      9.940,
+      54.671
+    ],
+    "26": [
+      10.683,
+      53.874
+    ]
   }
-
 }

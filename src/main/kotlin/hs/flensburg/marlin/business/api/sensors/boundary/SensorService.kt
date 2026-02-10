@@ -61,6 +61,18 @@ object SensorService {
                 }
         }
 
+    fun getSingleLocationWithLatestMeasurements(
+        locationId: Long,
+        timezone: String,
+        units: String
+    ): App<Error, UnitsWithLocationWithBoxesDTO> =
+        KIO.comprehension {
+            val rawLocation = !SensorRepo.fetchSingleLocationWithLatestMeasurements(
+                locationId, timezone, units
+            ).orDie().onNullFail { Error.NotFound }
+            KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocation))
+        }
+
     fun getLocationByIDWithMeasurementsWithinTimespanFAST(
         locationId: Long,
         timeRange: SensorMeasurementsTimeRange,
