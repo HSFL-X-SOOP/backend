@@ -51,7 +51,7 @@ object SensorService {
         units: String
     ): App<Error, List<LocationWithBoxesDTO>> =
         KIO.comprehension {
-            val clientTimeZone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
+            val clientTimeZone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
             SensorRepo.fetchLocationsWithLatestMeasurements(clientTimeZone, units).orDie()
                 .onNullFail { Error.NotFound }
                 .map { list ->
@@ -66,7 +66,7 @@ object SensorService {
     ): App<Error, UnitsWithLocationWithBoxesDTO> =
         KIO.comprehension {
             val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
-                !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+                TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
                 units
             ).orDie().onNullFail { Error.NotFound }
             KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocations))
@@ -94,7 +94,7 @@ object SensorService {
 
         SensorRepo.getLatestMeasurementTimeEnriched(
             locationId, timeRange,
-            timezone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
             units
         ).orDie().onNullFail { Error.NotFound }
             .map { it.toLocationWithBoxesDTO() }
@@ -109,7 +109,7 @@ object SensorService {
     ): App<Error, UnitsWithLocationWithBoxesDTO> = KIO.comprehension {
         SensorRepo.getLatestMeasurementTimeEnriched(
             locationId, timeRange,
-            timezone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
             units
         ).orDie().onNullFail { Error.NotFound }.map { mapToUnitsWithLocationWithBoxesDTO(listOf(it)) }
     }

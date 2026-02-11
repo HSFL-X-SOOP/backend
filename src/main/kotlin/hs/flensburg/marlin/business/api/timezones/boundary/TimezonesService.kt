@@ -1,10 +1,12 @@
 package hs.flensburg.marlin.business.api.timezones.boundary
 
 import de.lambda9.tailwind.core.KIO
+import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.boundary.IPAddressLookupService
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -14,6 +16,12 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.toKotlinInstant
 
 object TimezonesService {
+    private val logger = KotlinLogging.logger { }
+    private lateinit var ipConfig: Config.IPInfo
+
+    fun init(config: Config.IPInfo) {
+        ipConfig = config
+    }
 
     @OptIn(ExperimentalTime::class)
     fun toLocalDateTimeInZone(utcTime: OffsetDateTime, timezone: String?): LocalDateTime {
@@ -34,26 +42,25 @@ object TimezonesService {
         return toLocalDateTimeInZone(utcTime, timezone).date
     }
 
-    fun getClientTimeZoneFromIPOrQueryParam(timezone: String, clientIp: String): App<Nothing, String> =
-        KIO.comprehension {
-            // optional query param overwrites IP-based timezone
-            if (timezone != "DEFAULT" && isValidTimezone(timezone)) {
-                // Early return
-                return@comprehension KIO.ok(timezone)
-            }
-
-            // IP based timezone
-            //val clientIp = "178.238.11.6" //uk // "85.214.132.117" //german //testing
-            val (_, env) = !KIO.access<JEnv>()
-            val ipInfo = IPAddressLookupService.lookUpIpAddressInfo(clientIp, env.config.ipInfo)
-            if (ipInfo.timezone != null && isValidTimezone(ipInfo.timezone)) {
-                // Early return
-                return@comprehension KIO.ok(ipInfo.timezone)
-            }
-
-            // fallback to UTC
-            KIO.ok("UTC")
+    fun getClientTimeZoneFromIPOrQueryParam(timezone: String, clientIp: String): String {
+        // optional query param overwrites IP-based timezone
+        if (timezone != "DEFAULT" && isValidTimezone(timezone)) {
+            return timezone
         }
+
+        //val clientIp = "178.238.11.6" //uk // "85.214.132.117" //german //testing
+        try {
+            val ipInfo = IPAddressLookupService.lookUpIpAddressInfo(clientIp, ipConfig)
+            if (ipInfo.timezone != null && isValidTimezone(ipInfo.timezone)) {
+                return ipInfo.timezone
+            }
+        } catch (e: Exception) {
+            logger.error(e) { "Failed to lookup timezone for IP $clientIp: ${e.message}" }
+        }
+
+        return "UTC"
+    }
+
 
     // This function is used in routing to determine the timezone
     // is provided or retrieved via Ipaddress
@@ -63,7 +70,7 @@ object TimezonesService {
         block: (resolvedTimezone: String) -> App<ServiceLayerError, T>
     ): App<ServiceLayerError, T> = KIO.comprehension {
 
-        val timezone = !getClientTimeZoneFromIPOrQueryParam(
+        val timezone = getClientTimeZoneFromIPOrQueryParam(
             timezone = timezoneParam ?: "DEFAULT",
             clientIp = remoteIp
         )
