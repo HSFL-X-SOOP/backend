@@ -1,6 +1,12 @@
 package hs.flensburg.marlin.business.api.units.boundary
 
+import de.lambda9.tailwind.core.KIO
+import de.lambda9.tailwind.core.extensions.kio.orDie
+import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.units.entity.ConvertedValueDTO
+import hs.flensburg.marlin.business.api.users.control.UserRepo
+import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import kotlin.math.PI
 
 object UnitsService {
@@ -164,5 +170,19 @@ object UnitsService {
         }
 
         return ConvertedValueDTO(convertedValue, targetUnit)
+    }
+
+    fun <T> withResolvedUnits(
+        units: String?,
+        userId: Long?,
+        block: (resolvedUnits: String) -> App<ServiceLayerError, T>
+    ): App<ServiceLayerError, T> = KIO.comprehension {
+        val resolvedUnits = units ?: userId?.let { id ->
+            val userView = !UserRepo.fetchViewById(id).orDie()
+            userView?.let { view ->
+                UserProfile.from(view).measurementSystem?.literal?.lowercase()
+        }
+    } ?: "metric"
+        block(resolvedUnits)
     }
 }

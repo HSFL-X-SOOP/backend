@@ -11,6 +11,7 @@ import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import hs.flensburg.marlin.business.api.sensors.entity.raw.SensorDTO
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
+import hs.flensburg.marlin.business.api.units.boundary.UnitsService
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
@@ -249,14 +250,18 @@ fun Application.configureSensors() {
                 }
             ) {
                 val user = call.principal<LoggedInUser>()
-                call.respondKIO(
+                val result = UnitsService.withResolvedUnits<UnitsWithLocationWithBoxesDTO>(
+                    call.parameters["units"],
+                    user?.id
+                ) { units ->
                     SensorService.getLocationsWithLatestMeasurementsV3(
                         call.parameters["timezone"] ?: "DEFAULT",
                         call.request.origin.remoteAddress,
-                        call.parameters["units"],
-                        user?.id
+                        units,
                     )
-                )
+                }
+
+                call.respondKIO(result)
             }
 
             get(
@@ -305,23 +310,28 @@ fun Application.configureSensors() {
                 val locationId = call.parameters["id"]?.toLongOrNull()
                     ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-                val timeRange = call.parameters["timeRange"] ?: "24h"
-
                 val user = call.principal<LoggedInUser>()
 
-                call.respondKIO(
+                val timeRange = SensorMeasurementsTimeRange.fromString(call.parameters["timeRange"] ?: "24h") ?: return@get call.respondText(
+                    "wrong timeRange",
+                    status = HttpStatusCode.BadRequest
+                )
+
+                val result = UnitsService.withResolvedUnits<UnitsWithLocationWithBoxesDTO>(
+                    call.parameters["units"],
+                    user?.id
+                ) { units ->
                     SensorService.getLocationByIDWithMeasurementsWithinTimespanV3(
                         locationId,
-                        SensorMeasurementsTimeRange.fromString(timeRange) ?: return@get call.respondText(
-                            "wrong timeRange",
-                            status = HttpStatusCode.BadRequest
-                        ),
+                        timeRange,
                         call.parameters["timezone"] ?: "DEFAULT",
                         call.request.origin.remoteAddress,
-                        call.parameters["units"],
-                        user?.id
+                        units,
                     )
-                )
+                }
+
+                call.respondKIO(result)
+
             }
         }
 
