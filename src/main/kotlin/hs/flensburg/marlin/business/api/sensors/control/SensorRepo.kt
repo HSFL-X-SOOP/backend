@@ -46,6 +46,17 @@ object SensorRepo {
                 .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone, units)
         }
 
+    fun fetchSingleLocationWithLatestMeasurements(
+        locationId: Long,
+        timezone: String,
+        units: String
+    ): JIO<List<LocationWithLatestMeasurementsDTO>> =
+        Jooq.query {
+            selectFrom(LATEST_MEASUREMENTS_VIEW)
+                .where(LATEST_MEASUREMENTS_VIEW.LOCATION_ID.eq(locationId))
+                .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone, units)
+        }
+
 
     fun countAllActiveSensors(): JIO<Int> = Jooq.query {
         selectCount()

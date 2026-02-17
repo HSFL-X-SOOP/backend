@@ -51,12 +51,24 @@ object SensorService {
         units: String
     ): App<Error, List<LocationWithBoxesDTO>> =
         KIO.comprehension {
-            val clientTimeZone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
+            val clientTimeZone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress)
             SensorRepo.fetchLocationsWithLatestMeasurements(clientTimeZone, units).orDie()
                 .onNullFail { Error.NotFound }
                 .map { list ->
                     list.map { it.toLocationWithBoxesDTO() }
                 }
+        }
+
+    fun getSingleLocationWithLatestMeasurements(
+        locationId: Long,
+        timezone: String,
+        units: String
+    ): App<Error, UnitsWithLocationWithBoxesDTO> =
+        KIO.comprehension {
+            val rawLocation = !SensorRepo.fetchSingleLocationWithLatestMeasurements(
+                locationId, timezone, units
+            ).orDie().onNullFail { Error.NotFound }
+            KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocation))
         }
 
     fun getLocationByIDWithMeasurementsWithinTimespanFAST(
@@ -69,7 +81,7 @@ object SensorService {
 
         SensorRepo.getLatestMeasurementTimeEnriched(
             locationId, timeRange,
-            timezone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
             units
         ).orDie().onNullFail { Error.NotFound }
             .map { it.toLocationWithBoxesDTO() }
@@ -102,7 +114,7 @@ object SensorService {
     ): App<Error, UnitsWithLocationWithBoxesDTO> = KIO.comprehension {
         SensorRepo.getLatestMeasurementTimeEnriched(
             locationId, timeRange,
-            timezone = !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
             units
         ).orDie().onNullFail { Error.NotFound }.map { mapToUnitsWithLocationWithBoxesDTO(listOf(it)) }
     }
