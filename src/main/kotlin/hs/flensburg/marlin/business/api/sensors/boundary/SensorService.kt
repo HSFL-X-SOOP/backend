@@ -92,14 +92,8 @@ object SensorService {
         ipAddress: String,
         units: String
     ): App<Error, UnitsWithLocationWithBoxesDTO> = KIO.comprehension {
-        /*val finalUnits: String = units ?: userId?.let { id ->
-            val userView = !UserRepo.fetchViewById(id).orDie()
-            userView?.let { view ->
-                UserProfile.from(view).measurementSystem?.literal?.lowercase()
-            }
-        } ?: "metric"*/
         val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
-            !TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
             units
         ).orDie().onNullFail { Error.NotFound }
         KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocations))
