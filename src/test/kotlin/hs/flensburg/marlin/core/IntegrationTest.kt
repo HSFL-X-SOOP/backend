@@ -100,6 +100,9 @@ abstract class IntegrationTest {
                     notificationPriceId = "test-notification-price-id",
                     apiAccessPriceId = "test-api-access-price-id",
                     trialDays = 14
+                ),
+                dataSources = Config.DataSources(
+                    FrostServerPath = "test-frost-server-path"
                 )
             )
         )
