@@ -59,19 +59,6 @@ object SensorService {
                 }
         }
 
-    fun getLocationsWithLatestMeasurementsV3(
-        timezone: String,
-        ipAddress: String,
-        units: String
-    ): App<Error, UnitsWithLocationWithBoxesDTO> =
-        KIO.comprehension {
-            val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
-                TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
-                units
-            ).orDie().onNullFail { Error.NotFound }
-            KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocations))
-        }
-
     fun getSingleLocationWithLatestMeasurements(
         locationId: Long,
         timezone: String,
@@ -98,6 +85,18 @@ object SensorService {
             units
         ).orDie().onNullFail { Error.NotFound }
             .map { it.toLocationWithBoxesDTO() }
+    }
+
+    fun getLocationsWithLatestMeasurementsV3(
+        timezone: String,
+        ipAddress: String,
+        units: String
+    ): App<Error, UnitsWithLocationWithBoxesDTO> = KIO.comprehension {
+        val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
+            TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            units
+        ).orDie().onNullFail { Error.NotFound }
+        KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocations))
     }
 
     fun getLocationByIDWithMeasurementsWithinTimespanV3(

@@ -1,16 +1,23 @@
 package hs.flensburg.marlin.business.api.units.boundary
 
+import de.lambda9.tailwind.core.KIO
+import de.lambda9.tailwind.core.extensions.kio.orDie
+import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.units.entity.ConvertedValueDTO
+import hs.flensburg.marlin.business.api.users.control.UserRepo
+import hs.flensburg.marlin.business.api.users.entity.UserProfile
 import kotlin.math.PI
 
 object UnitsService {
 
-    const val CELSIUS_TO_FAHRENHEIT_FACTOR = 9 / 5 + 32
+    const val CELSIUS_TO_FAHRENHEIT_FACTOR = 9.0 / 5.0
+    const val CELSIUS_TO_FAHRENHEIT_OFFSET = 32
     const val CELSIUS_TO_KELVIN_SUMMAND = 273.15
     const val METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR_FACTOR = 3.6
     const val METERS_PER_SECOND_TO_MILES_PER_HOUR_DIVISOR = 0.44704
     const val METERS_PER_SECOND_TO_KNOTS_FACTOR = 1.943844
-    const val DEGREES_TO_RADIANS_FACTOR = PI/180
+    const val DEGREES_TO_RADIANS_FACTOR = PI / 180
     const val HECTOPASCAL_TO_INCH_OF_MERCURY_FACTOR = 0.02953
     const val HECTOPASCAL_TO_POUND_PER_SQUARE_INCH_FACTOR = 0.0145037738
     const val CENTIMETER_TO_INCHES_DEVISOR = 2.54
@@ -45,7 +52,7 @@ object UnitsService {
     )
 
     fun convert(value: Double, measurementName: String, unitSymbol: String, goal: String): ConvertedValueDTO {
-        return when (goal) {
+        return when (goal.lowercase()) {
             "", "metric" -> mapMetric(value, unitSymbol)
             "imperial" -> mapImperial(value, unitSymbol)
             "shipping" -> mapShipping(value, unitSymbol)
@@ -123,8 +130,8 @@ object UnitsService {
 
         when (sourceUnit to targetUnit) {
             // temperature
-            "°C" to "°F", "Cel" to "°F" -> convertedValue = value * CELSIUS_TO_FAHRENHEIT_FACTOR
-            "°C" to "K"-> convertedValue = value + CELSIUS_TO_KELVIN_SUMMAND
+            "°C" to "°F", "Cel" to "°F" -> convertedValue = value * CELSIUS_TO_FAHRENHEIT_FACTOR + CELSIUS_TO_FAHRENHEIT_OFFSET
+            "°C" to "K" -> convertedValue = value + CELSIUS_TO_KELVIN_SUMMAND
 
             // speed
             "m/s" to "km/h" -> convertedValue = value * METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR_FACTOR
@@ -163,5 +170,16 @@ object UnitsService {
         }
 
         return ConvertedValueDTO(convertedValue, targetUnit)
+    }
+
+    fun withResolvedUnits(
+        units: String?,
+        userId: Long?
+    ): App<ServiceLayerError, String> = KIO.comprehension {
+        KIO.ok(
+            units ?: userId?.let { id ->
+                (!UserRepo.fetchMeasurementSystemByUserId(id).orDie())?.name
+            } ?: "metric"
+        )
     }
 }
