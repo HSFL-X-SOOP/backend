@@ -79,13 +79,12 @@ fun Application.configureSensors() {
                 }
             }
         ) {
-            val result = TimezonesService.withResolvedTimezone<List<DetailedLocationDTO>>(
+            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
                 call.parameters["timezone"],
                 call.request.origin.remoteAddress
-            ) { tz ->
-                LocationService.getAllLocations(tz)
-            }
-            call.respondKIO(result)
+            )
+
+            call.respondKIO(LocationService.getAllLocations(timezone))
         }
 
         get(
@@ -192,17 +191,18 @@ fun Application.configureSensors() {
             val locationId = call.parameters["id"]?.toLongOrNull()
                 ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            val result = TimezonesService.withResolvedTimezone<UnitsWithLocationWithBoxesDTO>(
+            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
                 call.parameters["timezone"],
                 call.request.origin.remoteAddress
-            ) { tz ->
+            )
+            
+            call.respondKIO(
                 SensorService.getSingleLocationWithLatestMeasurements(
                     locationId,
-                    tz,
+                    timezone,
                     call.parameters["units"] ?: "metric"
                 )
-            }
-            call.respondKIO(result)
+            )
         }
 
         get(

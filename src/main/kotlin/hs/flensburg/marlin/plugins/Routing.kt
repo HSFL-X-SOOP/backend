@@ -13,6 +13,7 @@ import hs.flensburg.marlin.business.api.apikey.boundary.configureApiKeyResources
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
 import hs.flensburg.marlin.business.api.subscription.boundary.configureSubscriptionResources
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
+import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.business.api.userDevice.boundary.configureUserDevices
 import hs.flensburg.marlin.business.api.users.boundary.configureUsers
 import io.github.smiley4.ktoropenapi.OpenApi
@@ -39,6 +40,8 @@ import kotlinx.serialization.SerializationException
 
 
 fun Application.configureRouting(config: Config) {
+    TimezonesService.init(config.ipInfo)
+
     configureAuth(config)
     configureUsers()
     configureSensors()

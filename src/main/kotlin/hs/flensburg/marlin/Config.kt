@@ -12,7 +12,8 @@ data class Config(
     val appleAuth: AppleAuth,
     val ipInfo: IPInfo,
     val firebaseInfo: FirebaseInfo,
-    val stripe: Stripe
+    val stripe: Stripe,
+    val dataSources: DataSources
 ) {
     val frontendUrl: String
         get() = when (mode) {
@@ -87,6 +88,10 @@ data class Config(
         val trialDays: Int
     )
 
+    data class DataSources(
+        val FrostServerPath: String
+    )
+
     companion object {
         fun Dotenv.parseConfig(): Config = Config(
             mode = Mode.valueOf(get("MODE", "DEV").uppercase()),
@@ -133,6 +138,9 @@ data class Config(
                 notificationPriceId = get("STRIPE_NOTIFICATION_PRICE_ID", ""),
                 apiAccessPriceId = get("STRIPE_API_ACCESS_PRICE_ID", ""),
                 trialDays = get("STRIPE_TRIAL_DAYS", "14").toInt()
+            ),
+            dataSources = DataSources(
+                FrostServerPath = get("FROST_SERVER_PATH", "")
             )
         )
 
@@ -181,6 +189,9 @@ data class Config(
                 notificationPriceId = System.getenv("STRIPE_NOTIFICATION_PRICE_ID") ?: "",
                 apiAccessPriceId = System.getenv("STRIPE_API_ACCESS_PRICE_ID") ?: "",
                 trialDays = (System.getenv("STRIPE_TRIAL_DAYS") ?: "14").toInt()
+            ),
+            dataSources = DataSources(
+                FrostServerPath = System.getenv("FROST_SERVER_PATH") ?: ""
             )
         )
     }
