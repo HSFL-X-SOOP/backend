@@ -14,265 +14,118 @@ import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.plugins.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
+import io.ktor.server.plugins.origin
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.routing
 
 fun Application.configureSensors() {
     routing {
-      authenticate(Realm.COMMON.value, Realm.API_KEY.value, optional = true) {
-        get(
-            path = "/sensors",
-            builder = {
-                tags("raw")
-                description = "Return all sensors from the database (raw form, no aggregation)."
-                response {
-                    HttpStatusCode.OK to {
-                        description = "List of sensors"
-                        body<List<SensorDTO>>()
-                    }
-                    HttpStatusCode.InternalServerError to {
-                        description = "Error retrieving sensors"
-                    }
-                }
-            }
-        ) {
-            call.respondKIO(SensorService.getAllSensors())
-        }
-
-        get(
-            path = "/measurementtypes",
-            builder = {
-                tags("raw")
-                description = "Return all measurement types (raw form)."
-                response {
-                    HttpStatusCode.OK to {
-                        description = "List of measurement types"
-                        body<List<MeasurementTypeDTO>>()
-                    }
-                }
-            }
-        ) {
-            call.respondKIO(SensorService.getAllMeasurementTypes())
-        }
-
-        get(
-            path = "/locations",
-            builder = {
-                tags("location")
-                description = "Return all locations."
-                request {
-                    queryParameter<String>("timezone") {
-                        description =
-                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
-                        required = false
-                    }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        description = "List of locations"
-                        body<List<DetailedLocationDTO>>()
-                    }
-                }
-            }
-        ) {
-            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
-                call.parameters["timezone"],
-                call.request.origin.remoteAddress
-            )
-
-            call.respondKIO(LocationService.getAllLocations(timezone))
-        }
-
-        get(
-            path = "/measurements",
-            builder = {
-                tags("measurements")
-                description = "Return all measurements (raw form)."
-                response {
-                    HttpStatusCode.OK to {
-                        description = "List of measurements"
-                        body<List<MeasurementDTO>>()
-                    }
-                }
-            }
-        ) {
-            call.respondKIO(SensorService.getAllMeasurements())
-        }
-
-        get(
-            path = "/latestmeasurements",
-            builder = {
-                tags("measurements")
-                description = "Return the latest measurement for each location (raw form)."
-                response {
-                    HttpStatusCode.OK to {
-                        description = "List of locations with their latest measurements"
-                        body<List<LocationWithLatestMeasurementsDTO>>()
-                    }
-                }
-            }
-        ) {
-            call.respondKIO(SensorService.getLocationsWithLatestMeasurements(""))
-        }
-
-        get(
-            path = "/latestmeasurementsNEW",
-            builder = {
-                tags("measurements")
-                description =
-                    "Get the latest measurement values for all locations. The measurement must be within the last 2 hours."
-                request {
-                    queryParameter<String>("timezone") {
-                        description =
-                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
-                        required = false
-                    }
-                    queryParameter<String>("units") {
-                        description =
-                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
-                        required = false
-                    }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        description = "Successful response with latest measurements for each location"
-                        body<List<LocationWithBoxesDTO>>()
-                    }
-                    HttpStatusCode.InternalServerError to {
-                        description = "Error occurred while retrieving the latest measurements"
-                    }
-                }
-            }
-        ) {
-            call.respondKIO(
-                SensorService.getLocationsWithLatestMeasurementsNEW(
-                    call.parameters["timezone"] ?: "DEFAULT",
-                    call.request.origin.remoteAddress,
-                    call.parameters["units"] ?: "metric"
-                )
-            )
-        }
-
-        get(
-            path = "/location/{id}/latestmeasurements",
-            builder = {
-                tags("location")
-                description = "Get the latest measurements for a single location."
-                request {
-                    pathParameter<Long>("id") {
-                        description = "The location ID (not the sensor ID)"
-                    }
-                    queryParameter<String>("timezone") {
-                        description =
-                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
-                        required = false
-                    }
-                    queryParameter<String>("units") {
-                        description =
-                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
-                        required = false
-                    }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        description = "Successful response with latest measurements for a location"
-                        body<UnitsWithLocationWithBoxesDTO>()
-                    }
-                    HttpStatusCode.InternalServerError to {
-                        description = "Error occurred while retrieving the latest measurements"
-                    }
-                }
-            }
-        ) {
-            val locationId = call.parameters["id"]?.toLongOrNull()
-                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
-
-            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
-                call.parameters["timezone"],
-                call.request.origin.remoteAddress
-            )
-            
-            call.respondKIO(
-                SensorService.getSingleLocationWithLatestMeasurements(
-                    locationId,
-                    timezone,
-                    call.parameters["units"] ?: "metric"
-                )
-            )
-        }
-
-        get(
-            path = "/location/{id}/measurementsWithinTimeRangeFAST",
-            builder = {
-                tags("location")
-                description = "Get all measurements for a location within a given time range"
-                request {
-                    pathParameter<Long>("id") {
-                        description = "The location ID (not the sensor ID)"
-                    }
-                    queryParameter<String>("timeRange") {
-                        description = """Optional time range ('48h', '7d', '30d', '1y'). Defaults to 24h.
-                            |           "24h" -> raw;
-                                        "48h" -> raw;
-                                        "7d"  -> avg: 2 hours;
-                                        "30d" -> avg: 6 hours;
-                                        "90d"  -> avg: 12 hours;
-                                        "180d" -> avg: 1 day;
-                                        "1y"  -> avg: 2 days;
-                        """.trimMargin()
-                        required = false
-                    }
-                    queryParameter<String>("timezone") {
-                        description =
-                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
-                        required = false
-                    }
-                    queryParameter<String>("units") {
-                        description =
-                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
-                        required = false
-                    }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        description = "Successful response with measurements"
-                        body<LocationWithBoxesDTO>()
-                    }
-                    HttpStatusCode.BadRequest to {
-                        description = "Invalid parameters"
-                    }
-                }
-            }
-        ) {
-            val locationId = call.parameters["id"]?.toLongOrNull()
-                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
-
-            val timeRange = call.parameters["timeRange"] ?: "24h"
-
-            call.respondKIO(
-                SensorService.getLocationByIDWithMeasurementsWithinTimespanFAST(
-                    locationId,
-                    SensorMeasurementsTimeRange.fromString(timeRange) ?: return@get call.respondText(
-                        "wrong timeRange",
-                        status = HttpStatusCode.BadRequest
-                    ),
-                    call.parameters["timezone"] ?: "DEFAULT",
-                    call.request.origin.remoteAddress,
-                    call.parameters["units"] ?: "metric"
-                )
-            )
-        }
-        authenticate(Realm.COMMON.toString(), optional = true) {
+        authenticate(Realm.COMMON.value, Realm.API_KEY.value, optional = true) {
             get(
-                path = "/latestmeasurements_v3",
+                path = "/sensors",
+                builder = {
+                    tags("raw")
+                    description = "Return all sensors from the database (raw form, no aggregation)."
+                    response {
+                        HttpStatusCode.OK to {
+                            description = "List of sensors"
+                            body<List<SensorDTO>>()
+                        }
+                        HttpStatusCode.InternalServerError to {
+                            description = "Error retrieving sensors"
+                        }
+                    }
+                }
+            ) {
+                call.respondKIO(SensorService.getAllSensors())
+            }
+
+            get(
+                path = "/measurementtypes",
+                builder = {
+                    tags("raw")
+                    description = "Return all measurement types (raw form)."
+                    response {
+                        HttpStatusCode.OK to {
+                            description = "List of measurement types"
+                            body<List<MeasurementTypeDTO>>()
+                        }
+                    }
+                }
+            ) {
+                call.respondKIO(SensorService.getAllMeasurementTypes())
+            }
+
+            get(
+                path = "/locations",
+                builder = {
+                    tags("location")
+                    description = "Return all locations."
+                    request {
+                        queryParameter<String>("timezone") {
+                            description =
+                                "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                            required = false
+                        }
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            description = "List of locations"
+                            body<List<DetailedLocationDTO>>()
+                        }
+                    }
+                }
+            ) {
+                val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
+                    call.parameters["timezone"],
+                    call.request.origin.remoteAddress
+                )
+
+                call.respondKIO(LocationService.getAllLocations(timezone))
+            }
+
+            get(
+                path = "/measurements",
+                builder = {
+                    tags("measurements")
+                    description = "Return all measurements (raw form)."
+                    response {
+                        HttpStatusCode.OK to {
+                            description = "List of measurements"
+                            body<List<MeasurementDTO>>()
+                        }
+                    }
+                }
+            ) {
+                call.respondKIO(SensorService.getAllMeasurements())
+            }
+
+            get(
+                path = "/latestmeasurements",
+                builder = {
+                    tags("measurements")
+                    description = "Return the latest measurement for each location (raw form)."
+                    response {
+                        HttpStatusCode.OK to {
+                            description = "List of locations with their latest measurements"
+                            body<List<LocationWithLatestMeasurementsDTO>>()
+                        }
+                    }
+                }
+            ) {
+                call.respondKIO(SensorService.getLocationsWithLatestMeasurements(""))
+            }
+
+            get(
+                path = "/latestmeasurementsNEW",
                 builder = {
                     tags("measurements")
                     description =
-                        "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
+                        "Get the latest measurement values for all locations. The measurement must be within the last 2 hours."
                     request {
                         queryParameter<String>("timezone") {
                             description =
@@ -288,6 +141,46 @@ fun Application.configureSensors() {
                     response {
                         HttpStatusCode.OK to {
                             description = "Successful response with latest measurements for each location"
+                            body<List<LocationWithBoxesDTO>>()
+                        }
+                        HttpStatusCode.InternalServerError to {
+                            description = "Error occurred while retrieving the latest measurements"
+                        }
+                    }
+                }
+            ) {
+                call.respondKIO(
+                    SensorService.getLocationsWithLatestMeasurementsNEW(
+                        call.parameters["timezone"] ?: "DEFAULT",
+                        call.request.origin.remoteAddress,
+                        call.parameters["units"] ?: "metric"
+                    )
+                )
+            }
+
+            get(
+                path = "/location/{id}/latestmeasurements",
+                builder = {
+                    tags("location")
+                    description = "Get the latest measurements for a single location."
+                    request {
+                        pathParameter<Long>("id") {
+                            description = "The location ID (not the sensor ID)"
+                        }
+                        queryParameter<String>("timezone") {
+                            description =
+                                "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                            required = false
+                        }
+                        queryParameter<String>("units") {
+                            description =
+                                "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                            required = false
+                        }
+                    }
+                    response {
+                        HttpStatusCode.OK to {
+                            description = "Successful response with latest measurements for a location"
                             body<UnitsWithLocationWithBoxesDTO>()
                         }
                         HttpStatusCode.InternalServerError to {
@@ -296,19 +189,25 @@ fun Application.configureSensors() {
                     }
                 }
             ) {
-                val user = call.principal<LoggedInUser>()
+                val locationId = call.parameters["id"]?.toLongOrNull()
+                    ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
+
+                val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
+                    call.parameters["timezone"],
+                    call.request.origin.remoteAddress
+                )
+
                 call.respondKIO(
-                    SensorService.getLocationsWithLatestMeasurementsV3(
-                        call.parameters["timezone"] ?: "DEFAULT",
-                        call.request.origin.remoteAddress,
-                        call.parameters["units"],
-                        user?.id
+                    SensorService.getSingleLocationWithLatestMeasurements(
+                        locationId,
+                        timezone,
+                        call.parameters["units"] ?: "metric"
                     )
                 )
             }
 
             get(
-                path = "/location/{id}/measurementsWithinTimeRange_v3",
+                path = "/location/{id}/measurementsWithinTimeRangeFAST",
                 builder = {
                     tags("location")
                     description = "Get all measurements for a location within a given time range"
@@ -342,7 +241,7 @@ fun Application.configureSensors() {
                     response {
                         HttpStatusCode.OK to {
                             description = "Successful response with measurements"
-                            body<UnitsWithLocationWithBoxesDTO>()
+                            body<LocationWithBoxesDTO>()
                         }
                         HttpStatusCode.BadRequest to {
                             description = "Invalid parameters"
@@ -355,10 +254,8 @@ fun Application.configureSensors() {
 
                 val timeRange = call.parameters["timeRange"] ?: "24h"
 
-                val user = call.principal<LoggedInUser>()
-
                 call.respondKIO(
-                    SensorService.getLocationByIDWithMeasurementsWithinTimespanV3(
+                    SensorService.getLocationByIDWithMeasurementsWithinTimespanFAST(
                         locationId,
                         SensorMeasurementsTimeRange.fromString(timeRange) ?: return@get call.respondText(
                             "wrong timeRange",
@@ -366,13 +263,115 @@ fun Application.configureSensors() {
                         ),
                         call.parameters["timezone"] ?: "DEFAULT",
                         call.request.origin.remoteAddress,
-                        call.parameters["units"],
-                        user?.id
+                        call.parameters["units"] ?: "metric"
                     )
                 )
             }
-        }
+            authenticate(Realm.COMMON.toString(), optional = true) {
+                get(
+                    path = "/latestmeasurements_v3",
+                    builder = {
+                        tags("measurements")
+                        description =
+                            "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
+                        request {
+                            queryParameter<String>("timezone") {
+                                description =
+                                    "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                                required = false
+                            }
+                            queryParameter<String>("units") {
+                                description =
+                                    "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                                required = false
+                            }
+                        }
+                        response {
+                            HttpStatusCode.OK to {
+                                description = "Successful response with latest measurements for each location"
+                                body<UnitsWithLocationWithBoxesDTO>()
+                            }
+                            HttpStatusCode.InternalServerError to {
+                                description = "Error occurred while retrieving the latest measurements"
+                            }
+                        }
+                    }
+                ) {
+                    val user = call.principal<LoggedInUser>()
+                    call.respondKIO(
+                        SensorService.getLocationsWithLatestMeasurementsV3(
+                            call.parameters["timezone"] ?: "DEFAULT",
+                            call.request.origin.remoteAddress,
+                            call.parameters["units"] ?: "metric",
+                        )
+                    )
+                }
 
-      }
+                get(
+                    path = "/location/{id}/measurementsWithinTimeRange_v3",
+                    builder = {
+                        tags("location")
+                        description = "Get all measurements for a location within a given time range"
+                        request {
+                            pathParameter<Long>("id") {
+                                description = "The location ID (not the sensor ID)"
+                            }
+                            queryParameter<String>("timeRange") {
+                                description = """Optional time range ('48h', '7d', '30d', '1y'). Defaults to 24h.
+                            |           "24h" -> raw;
+                                        "48h" -> raw;
+                                        "7d"  -> avg: 2 hours;
+                                        "30d" -> avg: 6 hours;
+                                        "90d"  -> avg: 12 hours;
+                                        "180d" -> avg: 1 day;
+                                        "1y"  -> avg: 2 days;
+                        """.trimMargin()
+                                required = false
+                            }
+                            queryParameter<String>("timezone") {
+                                description =
+                                    "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
+                                required = false
+                            }
+                            queryParameter<String>("units") {
+                                description =
+                                    "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
+                                required = false
+                            }
+                        }
+                        response {
+                            HttpStatusCode.OK to {
+                                description = "Successful response with measurements"
+                                body<UnitsWithLocationWithBoxesDTO>()
+                            }
+                            HttpStatusCode.BadRequest to {
+                                description = "Invalid parameters"
+                            }
+                        }
+                    }
+                ) {
+                    val locationId = call.parameters["id"]?.toLongOrNull()
+                        ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
+
+                    val timeRange = call.parameters["timeRange"] ?: "24h"
+
+                    val user = call.principal<LoggedInUser>()
+
+                    call.respondKIO(
+                        SensorService.getLocationByIDWithMeasurementsWithinTimespanV3(
+                            locationId,
+                            SensorMeasurementsTimeRange.fromString(timeRange) ?: return@get call.respondText(
+                                "wrong timeRange",
+                                status = HttpStatusCode.BadRequest
+                            ),
+                            call.parameters["timezone"] ?: "DEFAULT",
+                            call.request.origin.remoteAddress,
+                            call.parameters["units"] ?: "metric",
+                        )
+                    )
+                }
+            }
+
+        }
     }
 }

@@ -63,14 +63,13 @@ object SensorService {
         timezone: String,
         ipAddress: String,
         units: String
-    ): App<Error, UnitsWithLocationWithBoxesDTO> =
-        KIO.comprehension {
-            val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
-                TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
-                units
-            ).orDie().onNullFail { Error.NotFound }
-            KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocations))
-        }
+    ): App<Error, UnitsWithLocationWithBoxesDTO> = KIO.comprehension {
+        val rawLocations = !SensorRepo.fetchLocationsWithLatestMeasurements(
+            TimezonesService.getClientTimeZoneFromIPOrQueryParam(timezone, ipAddress),
+            units
+        ).orDie().onNullFail { Error.NotFound }
+        KIO.ok(mapToUnitsWithLocationWithBoxesDTO(rawLocations))
+    }
 
     fun getSingleLocationWithLatestMeasurements(
         locationId: Long,
