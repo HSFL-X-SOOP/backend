@@ -17,7 +17,7 @@ object UnitsService {
     const val METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR_FACTOR = 3.6
     const val METERS_PER_SECOND_TO_MILES_PER_HOUR_DIVISOR = 0.44704
     const val METERS_PER_SECOND_TO_KNOTS_FACTOR = 1.943844
-    const val DEGREES_TO_RADIANS_FACTOR = PI/180
+    const val DEGREES_TO_RADIANS_FACTOR = PI / 180
     const val HECTOPASCAL_TO_INCH_OF_MERCURY_FACTOR = 0.02953
     const val HECTOPASCAL_TO_POUND_PER_SQUARE_INCH_FACTOR = 0.0145037738
     const val CENTIMETER_TO_INCHES_DEVISOR = 2.54
@@ -131,7 +131,7 @@ object UnitsService {
         when (sourceUnit to targetUnit) {
             // temperature
             "°C" to "°F", "Cel" to "°F" -> convertedValue = value * CELSIUS_TO_FAHRENHEIT_FACTOR + CELSIUS_TO_FAHRENHEIT_OFFSET
-            "°C" to "K"-> convertedValue = value + CELSIUS_TO_KELVIN_SUMMAND
+            "°C" to "K" -> convertedValue = value + CELSIUS_TO_KELVIN_SUMMAND
 
             // speed
             "m/s" to "km/h" -> convertedValue = value * METERS_PER_SECOND_TO_KILOMETERS_PER_HOUR_FACTOR
@@ -172,17 +172,14 @@ object UnitsService {
         return ConvertedValueDTO(convertedValue, targetUnit)
     }
 
-    fun <T> withResolvedUnits(
+    fun withResolvedUnits(
         units: String?,
-        userId: Long?,
-        block: (resolvedUnits: String) -> App<ServiceLayerError, T>
-    ): App<ServiceLayerError, T> = KIO.comprehension {
-        val resolvedUnits = units ?: userId?.let { id ->
-            val userView = !UserRepo.fetchViewById(id).orDie()
-            userView?.let { view ->
-                UserProfile.from(view).measurementSystem?.literal?.lowercase()
-        }
-    } ?: "metric"
-        block(resolvedUnits)
+        userId: Long?
+    ): App<ServiceLayerError, String> = KIO.comprehension {
+        KIO.ok(
+            units ?: userId?.let { id ->
+                (!UserRepo.fetchMeasurementSystemByUserId(id).orDie())?.name
+            } ?: "metric"
+        )
     }
 }

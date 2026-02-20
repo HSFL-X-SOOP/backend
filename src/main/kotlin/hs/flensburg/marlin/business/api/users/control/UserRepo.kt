@@ -105,6 +105,13 @@ object UserRepo {
             .fetchOneInto(UserView::class.java)
     }
 
+    fun fetchMeasurementSystemByUserId(userId: Long): JIO<MeasurementSystem?> = Jooq.query {
+        select(USER_PROFILE.MEASUREMENT_SYSTEM)
+            .from(USER_PROFILE)
+            .where(USER_PROFILE.USER_ID.eq(userId))
+            .fetchOneInto(MeasurementSystem::class.java)
+    }
+
     fun fetchRecentActivity(userId: Long): JIO<PageResult<String>> = Jooq.query {
         val blacklistEntries = select(LOGIN_BLACKLIST)
             .where(LOGIN_BLACKLIST.USER_ID.eq(userId))
@@ -266,5 +273,4 @@ object UserRepo {
             .set(HARBOR_MASTER_LOCATION.ASSIGNED_BY, assignedBy)
             .execute()
     }
-
 }
