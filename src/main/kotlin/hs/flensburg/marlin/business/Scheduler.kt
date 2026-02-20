@@ -10,13 +10,7 @@ import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.Pote
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.ReverseGeoCodingService
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.SensorDataService
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.time.LocalDateTime
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
