@@ -6,9 +6,9 @@ import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
 import hs.flensburg.marlin.business.api.admin.boundary.configureAdmin
 import hs.flensburg.marlin.business.api.auth.boundary.configureAuth
-import hs.flensburg.marlin.business.api.notifications.boundary.configureNotifications
 import hs.flensburg.marlin.business.api.location.boundary.configureLocation
 import hs.flensburg.marlin.business.api.notificationMeasurementRule.boundary.configureNotificationMeasurementRules
+import hs.flensburg.marlin.business.api.notifications.boundary.configureNotifications
 import hs.flensburg.marlin.business.api.potentialSensors.boundary.configurePotentialSensors
 import hs.flensburg.marlin.business.api.sensors.boundary.configureSensors
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
@@ -59,19 +59,46 @@ fun Application.configureRouting(config: Config) {
             url = config.backendUrl
         }
 
+        spec("dev") {
+            info {
+                title = "Dev API Documentation"
+                description = "Documentation for the development environment"
+            }
+        }
+
+        spec("public") {
+            info {
+                title = "Public  Marlin API Documentation"
+                version = "1.0"
+                description = "These endpoints provide access to locations and measurements."
+            }
+        }
+
+        // Parameter 1 is the Path (String), Parameter 2 is the Tags (List<String>)
+        specAssigner = { _, tags ->
+            if (tags.contains("Public")) {
+                "public"
+            } else {
+                "dev"
+            }
+        }
+
+
         security {
             securityScheme("BearerAuth") {
                 type = AuthType.HTTP
                 scheme = AuthScheme.BEARER
                 bearerFormat = "JWT"
-                description = "JWT access token for authenticated users. Obtain via /login, /register, /login/google/android, or /magic-link/login endpoints. Token expires after 15 minutes - use /auth/refresh to obtain a new token pair."
+                description =
+                    "JWT access token for authenticated users. Obtain via /login, /register, /login/google/android, or /magic-link/login endpoints. Token expires after 15 minutes - use /auth/refresh to obtain a new token pair."
             }
 
             securityScheme("BearerAuthAdmin") {
                 type = AuthType.HTTP
                 scheme = AuthScheme.BEARER
                 bearerFormat = "JWT"
-                description = "JWT access token with admin role. Only users with 'ADMIN' role in their JWT claims can access admin endpoints. Obtain via login endpoints if user has admin privileges."
+                description =
+                    "JWT access token with admin role. Only users with 'ADMIN' role in their JWT claims can access admin endpoints. Obtain via login endpoints if user has admin privileges."
             }
 
             securityScheme("OAuth2Google") {
@@ -87,7 +114,8 @@ fun Application.configureRouting(config: Config) {
                         )
                     }
                 }
-                description = "Google OAuth2 authentication flow. Redirects to Google for authentication, then returns JWT tokens via callback."
+                description =
+                    "Google OAuth2 authentication flow. Redirects to Google for authentication, then returns JWT tokens via callback."
             }
         }
     }
@@ -119,14 +147,19 @@ fun Application.configureRouting(config: Config) {
             call.respondKIO(KIO.ok("Marlin-Backend is running!"))
         }
 
-        route("/api.json") { openApi() }
+        route("/dev.json") { openApi(specName = "dev") }
+        route("/public.json") { openApi(specName = "public") }
 
         if (config.mode == Config.Mode.PROD || config.mode == Config.Mode.STAGING) {
-            route("/swagger") { swaggerUI("/api/api.json") }
+            route("/swagger") { swaggerUI("/api/dev.json") }
             get({ hidden = true }) { call.respondRedirect("/api/swagger", permanent = false) }
+            route("/public/swagger") { swaggerUI("/api/public.json") }
+            get({ hidden = true }) { call.respondRedirect("/api/public/swagger", permanent = false) }
         } else {
-            route("/swagger") { swaggerUI("/api.json") }
+            route("/swagger") { swaggerUI("/dev.json") }
             get({ hidden = true }) { call.respondRedirect("/swagger", permanent = false) }
+            route("/public/swagger") { swaggerUI("/public.json") }
+            get({ hidden = true }) { call.respondRedirect("/public/swagger", permanent = false) }
         }
     }
 }

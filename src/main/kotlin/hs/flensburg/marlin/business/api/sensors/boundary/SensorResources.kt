@@ -157,7 +157,8 @@ fun Application.configureSensors() {
         get(
             path = "/latestmeasurements_v3",
             builder = {
-                tags("measurements")
+                specName = "public"
+                tags("measurements, public")
                 description =
                     "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
                 request {
