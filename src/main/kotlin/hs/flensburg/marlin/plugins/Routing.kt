@@ -74,9 +74,8 @@ fun Application.configureRouting(config: Config) {
             }
         }
 
-        // Parameter 1 is the Path (String), Parameter 2 is the Tags (List<String>)
-        specAssigner = { _, tags ->
-            if (tags.contains("Public")) {
+        specAssigner = { _, specName ->
+            if (specName.contains("Public")) {
                 "public"
             } else {
                 "dev"

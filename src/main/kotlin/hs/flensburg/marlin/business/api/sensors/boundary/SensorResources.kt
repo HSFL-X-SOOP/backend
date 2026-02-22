@@ -58,6 +58,7 @@ fun Application.configureSensors() {
         get(
             path = "/locations",
             builder = {
+                specName = "public"
                 tags("location")
                 description = "Return all locations."
                 request {
@@ -87,6 +88,7 @@ fun Application.configureSensors() {
         get(
             path = "/measurements",
             builder = {
+                specName = "public"
                 tags("measurements")
                 description = "Return all measurements (raw form)."
                 response {
@@ -158,7 +160,7 @@ fun Application.configureSensors() {
             path = "/latestmeasurements_v3",
             builder = {
                 specName = "public"
-                tags("measurements, public")
+                tags("measurements")
                 description =
                     "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
                 request {
@@ -196,6 +198,7 @@ fun Application.configureSensors() {
         get(
             path = "/location/{id}/latestmeasurements",
             builder = {
+                specName = "public"
                 tags("location")
                 description = "Get the latest measurements for a single location."
                 request {
@@ -305,6 +308,7 @@ fun Application.configureSensors() {
         get(
             path = "/location/{id}/measurementsWithinTimeRange_v3",
             builder = {
+                specName = "public"
                 tags("location")
                 description = "Get all measurements for a location within a given time range"
                 request {

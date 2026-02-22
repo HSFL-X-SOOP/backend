@@ -34,6 +34,7 @@ object SensorRepo {
     fun fetchAllMeasurements(): JIO<List<Measurement>> = Jooq.query {
         selectFrom(MEASUREMENT)
             .orderBy(MEASUREMENT.TIME.desc())
+            .limit(1000)
             .fetchInto(Measurement::class.java)
     }
 
