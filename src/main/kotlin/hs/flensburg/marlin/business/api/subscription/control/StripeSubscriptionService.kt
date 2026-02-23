@@ -203,7 +203,11 @@ object StripeSubscriptionService {
         try {
             val params = SetupIntentCreateParams.builder()
                 .setCustomer(customerId)
-                .addPaymentMethodType("card")
+                .setAutomaticPaymentMethods(
+                    SetupIntentCreateParams.AutomaticPaymentMethods.builder()
+                        .setEnabled(true)
+                        .build()
+                )
                 .build()
 
             val setupIntent = SetupIntent.create(params)
@@ -211,6 +215,16 @@ object StripeSubscriptionService {
             KIO.ok(setupIntent)
         } catch (e: StripeException) {
             logger.error(e) { "Stripe API error creating SetupIntent: ${e.message}" }
+            KIO.fail(Error.StripeApiError(e.message ?: "Unknown Stripe error"))
+        }
+    }
+
+    fun getSetupIntent(setupIntentId: String): App<Error, SetupIntent> = KIO.comprehension {
+        try {
+            val setupIntent = SetupIntent.retrieve(setupIntentId)
+            KIO.ok(setupIntent)
+        } catch (e: StripeException) {
+            logger.error(e) { "Stripe API error retrieving SetupIntent: ${e.message}" }
             KIO.fail(Error.StripeApiError(e.message ?: "Unknown Stripe error"))
         }
     }

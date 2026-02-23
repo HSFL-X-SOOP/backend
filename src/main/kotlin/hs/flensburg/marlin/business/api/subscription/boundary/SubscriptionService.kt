@@ -27,6 +27,7 @@ import hs.flensburg.marlin.business.api.subscription.entity.SetupIntentResponse
 import hs.flensburg.marlin.business.api.subscription.entity.SubscriptionStatusResponse
 import hs.flensburg.marlin.business.api.subscription.entity.UpdatePaymentMethodRequest
 import hs.flensburg.marlin.business.api.subscription.entity.UserSubscriptionsResponse
+import hs.flensburg.marlin.business.api.users.control.UserRepo
 import hs.flensburg.marlin.database.generated.enums.SubscriptionStatus
 import hs.flensburg.marlin.database.generated.enums.SubscriptionType
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -47,6 +48,8 @@ object SubscriptionService {
         object NoPdfAvailable : Error("No PDF available for this invoice")
         object NotPaused : Error("Subscription is not paused")
         object AlreadyPaused : Error("Subscription is already paused")
+        object InvalidPaymentMethodUpdateRequest : Error("Provide either paymentMethodId or setupIntentId")
+        object SetupIntentPaymentMethodMissing : Error("SetupIntent has no payment method")
         data class StripeError(val detail: String) : Error("Stripe error: $detail")
         data class InvalidEvent(val detail: String) : Error("Invalid webhook event: $detail")
 
@@ -62,6 +65,8 @@ object SubscriptionService {
                 is NoPdfAvailable -> ApiError.NotFound(message)
                 is NotPaused -> ApiError.Conflict(message)
                 is AlreadyPaused -> ApiError.Conflict(message)
+                is InvalidPaymentMethodUpdateRequest -> ApiError.BadRequest(message)
+                is SetupIntentPaymentMethodMissing -> ApiError.BadRequest(message)
                 is StripeError -> ApiError.BadGateway(message)
                 is InvalidEvent -> ApiError.BadRequest(message)
             }
@@ -130,8 +135,7 @@ object SubscriptionService {
         userId: Long,
         request: CreatePortalSessionRequest
     ): App<ServiceLayerError, PortalSessionResponse> = KIO.comprehension {
-        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
-            .onNullFail { Error.CustomerNotFound }
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.CustomerNotFound }
 
         val customerId = user.stripeCustomerId
 
@@ -216,32 +220,31 @@ object SubscriptionService {
     }
 
     fun listInvoices(userId: Long): App<ServiceLayerError, List<InvoiceResponse>> = KIO.comprehension {
-        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
-            .onNullFail { Error.CustomerNotFound }
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.CustomerNotFound }
 
         val customerId = user.stripeCustomerId
         !KIO.failOn(customerId == null) { Error.CustomerNotFound }
 
         val invoices = !StripeSubscriptionService.listInvoices(customerId!!)
 
-        KIO.ok(invoices.map { invoice ->
-            InvoiceResponse(
-                id = invoice.id,
-                amountDue = invoice.amountDue,
-                amountPaid = invoice.amountPaid,
-                currency = invoice.currency,
-                status = invoice.status,
-                invoicePdf = invoice.invoicePdf,
-                created = invoice.created,
-                periodStart = invoice.periodStart,
-                periodEnd = invoice.periodEnd
-            )
-        })
+        KIO.ok(invoices.filter { it.amountPaid > 0 }
+            .map { invoice ->
+                InvoiceResponse(
+                    id = invoice.id,
+                    amountDue = invoice.amountDue,
+                    amountPaid = invoice.amountPaid,
+                    currency = invoice.currency,
+                    status = invoice.status,
+                    invoicePdf = invoice.invoicePdf,
+                    created = invoice.created,
+                    periodStart = invoice.periodStart,
+                    periodEnd = invoice.periodEnd
+                )
+            })
     }
 
     fun getInvoicePdf(userId: Long, invoiceId: String): App<ServiceLayerError, String> = KIO.comprehension {
-        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
-            .onNullFail { Error.CustomerNotFound }
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.CustomerNotFound }
 
         val customerId = user.stripeCustomerId
         !KIO.failOn(customerId == null) { Error.CustomerNotFound }
@@ -255,28 +258,48 @@ object SubscriptionService {
     }
 
     fun createSetupIntent(userId: Long): App<ServiceLayerError, SetupIntentResponse> = KIO.comprehension {
-        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
-            .onNullFail { Error.CustomerNotFound }
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.CustomerNotFound }
 
         val customerId = user.stripeCustomerId
         !KIO.failOn(customerId == null) { Error.CustomerNotFound }
 
         val setupIntent = !StripeSubscriptionService.createSetupIntent(customerId!!)
+        val ephemeralKey = !StripeSubscriptionService.createEphemeralKey(customerId)
 
-        KIO.ok(SetupIntentResponse(clientSecret = setupIntent.clientSecret))
+        KIO.ok(
+            SetupIntentResponse(
+                clientSecret = setupIntent.clientSecret,
+                customerId = customerId,
+                ephemeralKey = ephemeralKey
+            )
+        )
     }
 
     fun updatePaymentMethod(
         userId: Long,
         request: UpdatePaymentMethodRequest
     ): App<ServiceLayerError, Map<String, Boolean>> = KIO.comprehension {
-        val user = !hs.flensburg.marlin.business.api.users.control.UserRepo.fetchById(userId).orDie()
-            .onNullFail { Error.CustomerNotFound }
+        val user = !UserRepo.fetchById(userId).orDie().onNullFail { Error.CustomerNotFound }
 
         val customerId = user.stripeCustomerId
         !KIO.failOn(customerId == null) { Error.CustomerNotFound }
 
-        !StripeSubscriptionService.updateDefaultPaymentMethod(customerId!!, request.paymentMethodId)
+        val paymentMethodId = when {
+            request.paymentMethodId != null -> request.paymentMethodId
+            request.setupIntentId != null -> {
+                val setupIntent = !StripeSubscriptionService.getSetupIntent(request.setupIntentId)
+
+                !KIO.failOn(setupIntent.customer != customerId) { Error.NotFound }
+                val setupIntentPaymentMethod = setupIntent.paymentMethod
+                !KIO.failOn(setupIntentPaymentMethod == null) { Error.SetupIntentPaymentMethodMissing }
+
+                setupIntentPaymentMethod
+            }
+
+            else -> !KIO.fail(Error.InvalidPaymentMethodUpdateRequest)
+        }
+
+        !StripeSubscriptionService.updateDefaultPaymentMethod(customerId!!, paymentMethodId)
 
         KIO.ok(mapOf("updated" to true))
     }

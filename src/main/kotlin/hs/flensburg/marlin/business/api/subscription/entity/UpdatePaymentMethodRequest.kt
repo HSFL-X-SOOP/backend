@@ -4,5 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UpdatePaymentMethodRequest(
-    val paymentMethodId: String
+    val paymentMethodId: String? = null,
+    val setupIntentId: String? = null
 )

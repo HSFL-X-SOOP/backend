@@ -4,5 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class SetupIntentResponse(
-    val clientSecret: String
+    val clientSecret: String,
+    val customerId: String,
+    val ephemeralKey: String
 )
