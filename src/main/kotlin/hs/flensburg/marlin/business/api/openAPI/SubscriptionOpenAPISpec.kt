@@ -19,6 +19,7 @@ import io.ktor.http.HttpStatusCode
 object SubscriptionOpenAPISpec {
 
     val createSubscription: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Create a Stripe subscription and return PaymentSheet parameters. " +
                 "Returns a PaymentIntent client secret (for immediate payment) or SetupIntent client secret " +
@@ -48,6 +49,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val createPortalSession: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Create a Stripe Customer Portal session for managing subscriptions. " +
                 "Returns a URL to redirect the user to the Stripe billing portal."
@@ -76,6 +78,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val getStatus: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Get the current subscription status for both subscription types (APP_NOTIFICATION and API_ACCESS)."
         securitySchemeNames("BearerAuth")
@@ -93,6 +96,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val cancelSubscription: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Cancel a subscription at the end of the current billing period. " +
                 "The subscription remains active until the period ends."
@@ -121,6 +125,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val reactivateSubscription: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Reactivate a subscription that was previously canceled but has not yet reached the end of its billing period."
         securitySchemeNames("BearerAuth")
@@ -152,6 +157,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val listInvoices: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "List all invoices for the authenticated user's Stripe customer."
         securitySchemeNames("BearerAuth")
@@ -173,6 +179,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val getInvoicePdf: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Get the PDF download URL for a specific invoice."
         securitySchemeNames("BearerAuth")
@@ -200,9 +207,10 @@ object SubscriptionOpenAPISpec {
     }
 
     val createSetupIntent: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Create a Stripe SetupIntent for updating the payment method. " +
-                "Returns a client secret for use with the Stripe mobile SDK."
+                "Returns setup intent and customer context required for Stripe PaymentSheet."
         securitySchemeNames("BearerAuth")
 
         response {
@@ -222,13 +230,14 @@ object SubscriptionOpenAPISpec {
     }
 
     val updatePaymentMethod: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Update the default payment method for the authenticated user's Stripe customer."
         securitySchemeNames("BearerAuth")
 
         request {
             body<UpdatePaymentMethodRequest> {
-                description = "The payment method ID to set as default"
+                description = "Provide paymentMethodId directly, or setupIntentId to resolve and set the resulting payment method as default"
             }
         }
 
@@ -249,6 +258,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val pauseSubscription: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Pause a subscription. Invoices will be voided while paused."
         securitySchemeNames("BearerAuth")
@@ -276,6 +286,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val resumeSubscription: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Resume a previously paused subscription."
         securitySchemeNames("BearerAuth")
@@ -303,6 +314,7 @@ object SubscriptionOpenAPISpec {
     }
 
     val webhook: RouteConfig.() -> Unit = {
+        hidden = true
         tags("subscriptions")
         description = "Stripe webhook endpoint for subscription events. " +
                 "Handles customer.subscription.created/updated/deleted and invoice.payment_failed events. " +
