@@ -1,6 +1,9 @@
 package hs.flensburg.marlin.business.api.timezones.boundary
 
+import de.lambda9.tailwind.core.KIO
 import hs.flensburg.marlin.Config
+import hs.flensburg.marlin.business.App
+import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.auth.boundary.IPAddressLookupService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.LocalDate
@@ -40,7 +43,7 @@ object TimezonesService {
 
     fun getClientTimeZoneFromIPOrQueryParam(timezone: String?, clientIp: String): String {
         // optional query param overwrites IP-based timezone
-        if (timezone != null && timezone != "DEFAULT" && isValidTimezone(timezone)) {
+        if (timezone != null && isValidTimezone(timezone)) {
             return timezone
         }
 
