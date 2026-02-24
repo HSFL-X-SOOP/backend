@@ -2,24 +2,24 @@ package hs.flensburg.marlin.business.api.sensors.boundary
 
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.exit.getOrElse
-import de.lambda9.tailwind.core.extensions.exit.getOrNull
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.location.boundary.LocationService
+import hs.flensburg.marlin.business.api.openAPI.SensorsOpenAPISpec
 import hs.flensburg.marlin.business.api.sensors.entity.SensorMeasurementsTimeRange
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.business.api.units.boundary.UnitsService
-import hs.flensburg.marlin.business.api.openAPI.SensorsOpenAPISpec
-import hs.flensburg.marlin.business.api.sensors.entity.UnitsWithLocationWithBoxesDTO
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.kioEnv
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.plugins.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
+import io.ktor.server.plugins.origin
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.routing
 
 fun Application.configureSensors() {
     routing {
@@ -58,54 +58,9 @@ fun Application.configureSensors() {
             )
         }
         get(
-            path = "/location/{id}/latestmeasurements",
-            builder = {
-                tags("location")
-                description = "Get the latest measurements for a single location."
-                request {
-                    pathParameter<Long>("id") {
-                        description = "The location ID (not the sensor ID)"
-                    }
-                    queryParameter<String>("timezone") {
-                        description =
-                            "Optional timezone ('Europe/Berlin'). Defaults to Ip address based timezone. Backup UTC."
-                        required = false
-                    }
-                    queryParameter<String>("units") {
-                        description =
-                            "Optional units for the measurements ('metric, imperial, custom'). Defaults to metric."
-                        required = false
-                    }
-                }
-                response {
-                    HttpStatusCode.OK to {
-                        description = "Successful response with latest measurements for a location"
-                        body<UnitsWithLocationWithBoxesDTO>()
-                    }
-                    HttpStatusCode.InternalServerError to {
-                        description = "Error occurred while retrieving the latest measurements"
-                    }
-                }
-            }
+            "/location/{id}/measurementsWithinTimeRangeFAST",
+            SensorsOpenAPISpec.getLocationMeasurementsWithinTimeRangeFast
         ) {
-            val locationId = call.parameters["id"]?.toLongOrNull()
-                ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
-
-            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
-                call.parameters["timezone"],
-                call.request.origin.remoteAddress
-            )
-
-            call.respondKIO(
-                SensorService.getSingleLocationWithLatestMeasurements(
-                    locationId,
-                    timezone,
-                    call.parameters["units"] ?: "metric"
-                )
-            )
-        }
-
-        get("/location/{id}/measurementsWithinTimeRangeFAST", SensorsOpenAPISpec.getLocationMeasurementsWithinTimeRangeFast) {
             val locationId = call.parameters["id"]?.toLongOrNull()
                 ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
@@ -163,7 +118,10 @@ fun Application.configureSensors() {
                 call.respondKIO(SensorService.getSingleLocationWithLatestMeasurements(locationId, tz, units))
             }
 
-            get("/location/{id}/measurementsWithinTimeRange_v3", SensorsOpenAPISpec.getLocationMeasurementsWithinTimeRangeV3) {
+            get(
+                "/location/{id}/measurementsWithinTimeRange_v3",
+                SensorsOpenAPISpec.getLocationMeasurementsWithinTimeRangeV3
+            ) {
                 val locationId = call.parameters["id"]?.toLongOrNull()
                     ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
