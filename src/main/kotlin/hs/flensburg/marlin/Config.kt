@@ -11,7 +11,8 @@ data class Config(
     val googleAuth: GoogleAuth,
     val appleAuth: AppleAuth,
     val ipInfo: IPInfo,
-    val firebaseInfo: FirebaseInfo
+    val firebaseInfo: FirebaseInfo,
+    val dataSources: DataSources
 ) {
     val frontendUrl: String
         get() = when (mode) {
@@ -77,6 +78,10 @@ data class Config(
         val firebaseCloudMessagingProjectID: String
     )
 
+    data class DataSources(
+        val FrostServerPath: String
+    )
+
     companion object {
         fun Dotenv.parseConfig(): Config = Config(
             mode = Mode.valueOf(get("MODE", "DEV").uppercase()),
@@ -115,6 +120,9 @@ data class Config(
             firebaseInfo = FirebaseInfo(
                 firebaseServiceAccountKeyPath = get("FIREBASE_SERVICE_ACCOUNT_KEY_PATH", ""),
                 firebaseCloudMessagingProjectID = get("FIREBASE_CLOUD_PROJECT_ID", "")
+            ),
+            dataSources = DataSources(
+                FrostServerPath = get("FROST_SERVER_PATH", "")
             )
         )
 
@@ -155,6 +163,9 @@ data class Config(
             firebaseInfo = FirebaseInfo(
                 firebaseServiceAccountKeyPath = System.getenv("FIREBASE_SERVICE_ACCOUNT_KEY_PATH") ?: "",
                 firebaseCloudMessagingProjectID = System.getenv("FIREBASE_CLOUD_PROJECT_ID") ?: ""
+            ),
+            dataSources = DataSources(
+                FrostServerPath = System.getenv("FROST_SERVER_PATH") ?: ""
             )
         )
     }

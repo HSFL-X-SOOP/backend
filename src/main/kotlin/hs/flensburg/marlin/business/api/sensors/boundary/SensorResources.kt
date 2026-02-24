@@ -2,23 +2,24 @@ package hs.flensburg.marlin.business.api.sensors.boundary
 
 import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import de.lambda9.tailwind.core.extensions.exit.getOrElse
-import de.lambda9.tailwind.core.extensions.exit.getOrNull
 import hs.flensburg.marlin.business.api.auth.entity.LoggedInUser
 import hs.flensburg.marlin.business.api.location.boundary.LocationService
+import hs.flensburg.marlin.business.api.openAPI.SensorsOpenAPISpec
 import hs.flensburg.marlin.business.api.sensors.entity.SensorMeasurementsTimeRange
 import hs.flensburg.marlin.business.api.timezones.boundary.TimezonesService
 import hs.flensburg.marlin.business.api.units.boundary.UnitsService
-import hs.flensburg.marlin.business.api.openAPI.SensorsOpenAPISpec
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.kioEnv
 import hs.flensburg.marlin.plugins.respondKIO
 import io.github.smiley4.ktoropenapi.get
-import io.ktor.http.*
-import io.ktor.server.application.*
-import io.ktor.server.auth.*
-import io.ktor.server.plugins.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.Application
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.principal
+import io.ktor.server.plugins.origin
+import io.ktor.server.response.respond
+import io.ktor.server.response.respondText
+import io.ktor.server.routing.routing
 
 fun Application.configureSensors() {
     routing {
@@ -31,12 +32,12 @@ fun Application.configureSensors() {
         }
 
         get("/locations", SensorsOpenAPISpec.getAllLocations) {
-            val tz = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
+            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
                 call.parameters["timezone"],
                 call.request.origin.remoteAddress
             )
 
-            call.respondKIO(LocationService.getAllLocations(tz))
+            call.respondKIO(LocationService.getAllLocations(timezone))
         }
 
         get("/measurements", SensorsOpenAPISpec.getAllMeasurements) {
@@ -56,8 +57,10 @@ fun Application.configureSensors() {
                 )
             )
         }
-
-        get("/location/{id}/measurementsWithinTimeRangeFAST", SensorsOpenAPISpec.getLocationMeasurementsWithinTimeRangeFast) {
+        get(
+            "/location/{id}/measurementsWithinTimeRangeFAST",
+            SensorsOpenAPISpec.getLocationMeasurementsWithinTimeRangeFast
+        ) {
             val locationId = call.parameters["id"]?.toLongOrNull()
                 ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
@@ -115,7 +118,10 @@ fun Application.configureSensors() {
                 call.respondKIO(SensorService.getSingleLocationWithLatestMeasurements(locationId, tz, units))
             }
 
-            get("/location/{id}/measurementsWithinTimeRange_v3", SensorsOpenAPISpec.getLocationMeasurementsWithinTimeRangeV3) {
+            get(
+                "/location/{id}/measurementsWithinTimeRange_v3",
+                SensorsOpenAPISpec.getLocationMeasurementsWithinTimeRangeV3
+            ) {
                 val locationId = call.parameters["id"]?.toLongOrNull()
                     ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 

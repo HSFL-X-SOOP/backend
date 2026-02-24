@@ -56,12 +56,12 @@ fun Application.configureLocation() {
             val locationId = call.parameters["id"]?.toLongOrNull()
                 ?: return@get call.respondText("Missing or wrong id", status = HttpStatusCode.BadRequest)
 
-            val tz = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
+            val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
                 call.parameters["timezone"],
                 call.request.origin.remoteAddress
             )
 
-            call.respondKIO(LocationService.getLocationByID(locationId, tz))
+            call.respondKIO(LocationService.getLocationByID(locationId, timezone))
         }
 
         get(
@@ -133,12 +133,12 @@ fun Application.configureLocation() {
             ) {
                 val user = call.principal<LoggedInUser>()!!
 
-                val tz = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
+                val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
                     call.parameters["timezone"],
                     call.request.origin.remoteAddress
                 )
 
-                call.respondKIO(LocationService.getHarborMasterAssignedLocation(user.id, tz))
+                call.respondKIO(LocationService.getHarborMasterAssignedLocation(user.id, timezone))
             }
 
             put(
@@ -192,12 +192,12 @@ fun Application.configureLocation() {
                 val request = call.receive<UpdateLocationRequest>()
 
 
-                val tz = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
+                val timezone = TimezonesService.getClientTimeZoneFromIPOrQueryParam(
                     call.parameters["timezone"],
                     call.request.origin.remoteAddress
                 )
 
-                call.respondKIO(LocationService.updateLocationByID(user.id, id, request, tz))
+                call.respondKIO(LocationService.updateLocationByID(user.id, id, request, timezone))
             }
 
             delete(

@@ -60,22 +60,6 @@ object TimezonesService {
         return "UTC"
     }
 
-
-    // This function is used in routing to determine the timezone
-    // is provided or retrieved via Ipaddress
-    fun withResolvedTimezone(
-        timezoneParam: String?,
-        remoteIp: String
-    ): String {
-        val timezone = getClientTimeZoneFromIPOrQueryParam(
-            timezone = timezoneParam ?: "DEFAULT",
-            clientIp = remoteIp
-        )
-
-        return timezone
-    }
-
-
     private fun isValidTimezone(tz: String): Boolean =
         try {
             TimeZone.of(tz)

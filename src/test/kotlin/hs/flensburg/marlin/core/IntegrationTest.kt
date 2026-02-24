@@ -92,6 +92,9 @@ abstract class IntegrationTest {
                 firebaseInfo = Config.FirebaseInfo(
                     firebaseServiceAccountKeyPath = "/test/path",
                     firebaseCloudMessagingProjectID = "test-project-id"
+                ),
+                dataSources = Config.DataSources(
+                    FrostServerPath = "test-frost-server-path"
                 )
             )
         )
