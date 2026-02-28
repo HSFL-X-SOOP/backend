@@ -38,6 +38,7 @@ object SensorsOpenAPISpec {
     }
 
     val getAllLocations: RouteConfig.() -> Unit = {
+        specName = "public"
         tags("location")
         description = "Return all locations."
         request {
@@ -56,6 +57,7 @@ object SensorsOpenAPISpec {
     }
 
     val getAllMeasurements: RouteConfig.() -> Unit = {
+        specName = "public"
         tags("measurements")
         description = "Return all measurements (raw form)."
         response {
@@ -146,6 +148,7 @@ object SensorsOpenAPISpec {
     }
 
     val getLatestMeasurementsV3: RouteConfig.() -> Unit = {
+        specName = "public"
         tags("measurements")
         description =
             "Get the latest measurement values for all locations. The measurement must be within the last 2 hours. Version 3."
@@ -173,6 +176,7 @@ object SensorsOpenAPISpec {
     }
 
     val getLocationLatestMeasurements: RouteConfig.() -> Unit = {
+        specName = "public"
         tags("location")
         description = "Get the latest measurements for a single location."
         request {
@@ -202,6 +206,7 @@ object SensorsOpenAPISpec {
     }
 
     val getLocationMeasurementsWithinTimeRangeV3: RouteConfig.() -> Unit = {
+        specName = "public"
         tags("location")
         description = "Get all measurements for a location within a given time range"
         request {
