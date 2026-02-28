@@ -41,9 +41,9 @@ object TimezonesService {
         return toLocalDateTimeInZone(utcTime, timezone).date
     }
 
-    fun getClientTimeZoneFromIPOrQueryParam(timezone: String, clientIp: String): String {
+    fun getClientTimeZoneFromIPOrQueryParam(timezone: String?, clientIp: String): String {
         // optional query param overwrites IP-based timezone
-        if (timezone != "DEFAULT" && isValidTimezone(timezone)) {
+        if (timezone != null && isValidTimezone(timezone)) {
             return timezone
         }
 
@@ -59,24 +59,6 @@ object TimezonesService {
 
         return "UTC"
     }
-
-
-    // This function is used in routing to determine the timezone
-    // is provided or retrieved via Ipaddress
-    fun <T> withResolvedTimezone(
-        timezoneParam: String?,
-        remoteIp: String,
-        block: (resolvedTimezone: String) -> App<ServiceLayerError, T>
-    ): App<ServiceLayerError, T> = KIO.comprehension {
-
-        val timezone = getClientTimeZoneFromIPOrQueryParam(
-            timezone = timezoneParam ?: "DEFAULT",
-            clientIp = remoteIp
-        )
-        // function to run with timezone
-        block(timezone)
-    }
-
 
     private fun isValidTimezone(tz: String): Boolean =
         try {
