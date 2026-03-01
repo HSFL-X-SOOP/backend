@@ -87,6 +87,17 @@ object SensorRepo {
             .firstOrNull()
     }
 
+    fun fetchMeasurementsWithinCustomTimeRange(
+        locationId: Long,
+        timeRange: String,
+        timezone: String,
+        units: String
+    ): JIO<LocationWithLatestMeasurementsDTO?> = Jooq.query {
+        selectFrom(GET_ENRICHED_MEASUREMENTS(timeRange, locationId, null, null))
+            .fetchAndMapToListOfLocationWithLatestMeasurementsDTO(timezone, units)
+            .firstOrNull()
+    }
+
 
     private fun <R : Record> ResultQuery<R>.fetchAndMapToListOfLocationWithLatestMeasurementsDTO(
         timezone: String,
