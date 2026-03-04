@@ -8,12 +8,30 @@ import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.api.sensors.control.SensorRepo
 import hs.flensburg.marlin.business.api.sensors.entity.EnrichedMeasurementDTO
-import hs.flensburg.marlin.business.api.sensors.entity.LocationWithBoxesDTO
 import hs.flensburg.marlin.business.api.sensors.entity.LocationWithLatestMeasurementsDTO
-import hs.flensburg.marlin.business.api.sensors.entity.toLocationWithBoxesDTO
+import hs.flensburg.marlin.business.api.sensors.entity.raw.MeasurementTypeDTO
 import java.security.MessageDigest
+import kotlin.math.abs
 
 object AnomalyDetectionService {
+    //Define constants for all important boundary values of the detection
+    const val MIN_WATER_TEMPERATURE: Double = -2.0
+    const val MAX_WATER_TEMPERATURE: Double = 40.0
+    const val TEMP_SENSOR_DEPTH_LOWER_BORDER: Double = -32.0
+    const val TEMP_SENSOR_DEPTH_UPPER_BORDER: Double = 40.0
+    const val WATER_LEVEL_SENSOR_HEIGHT: Double = 200.0
+    const val WATER_LEVEL_SENSOR_BLIND_ZONE: Double = 20.0
+    const val WATER_LEVEL_SENSOR_MAX_MEASURING_DISTANCE: Double = 700.0
+    const val WATER_LEVEL_SENSOR_UPPER_LIMIT: Double = WATER_LEVEL_SENSOR_HEIGHT - WATER_LEVEL_SENSOR_BLIND_ZONE
+    const val WATER_LEVEL_SENSOR_LOWER_LIMIT: Double = WATER_LEVEL_SENSOR_HEIGHT - WATER_LEVEL_SENSOR_MAX_MEASURING_DISTANCE
+    const val MAX_WATER_LEVEL_FROM_MEDIAN: Double = 20.0
+    const val MAX_TEMPERATURE_FROM_MEDIAN: Double = 1.5
+
+    // Fixed Values from the DB
+    const val MEASUREMENT_NAME_TEMPERATURE = "Temperature, water"
+    const val MEASUREMENT_NAME_WAVE_HEIGHT = "Wave Height"
+    const val MEASUREMENT_NAME_WATER_LEVEL = "Tide"
+
     sealed class Error(private val message: String) : ServiceLayerError {
         object NotFound : Error("Location, Sensor or measurement not found")
 
@@ -24,11 +42,9 @@ object AnomalyDetectionService {
         }
     }
 
-    // Letzte 5 bekannte Hashes pro ID speichern
     val history = mutableListOf<String>()
 
     fun checkNewMeasurements(locationId: Long): App<ServiceLayerError, Unit> = KIO.comprehension {
-        // Abfrage des aktuellsten Werts
         val latestMeasurements =
             !SensorRepo.fetchSingleLocationWithLatestMeasurements(locationId, "UTC", "metric").orDie()
                 .onNullFail { Error.NotFound }
@@ -36,18 +52,15 @@ object AnomalyDetectionService {
 
         val hash = getHash(currentMeasurement)
 
-        // Check, ob der aktuelle Wert bekannt ist
         if (hash !in history) {
             val pastMeasurements =
                 !SensorRepo.fetchMeasurementsWithinCustomTimeRange(locationId, "3h", "UTC", "metric").orDie()
                     .onNullFail { Error.NotFound }
 
-            // Altes Measurement
             detectAnomaly(
                 currentMeasurement.latestMeasurements,
                 pastMeasurements.latestMeasurements - currentMeasurement.latestMeasurements.toSet()
             )
-            // Nein -> detectAnomaly() + Hash speichern
             history.addLast(hash)
         }
         if (history.size > 300) history.removeFirst()
@@ -57,10 +70,51 @@ object AnomalyDetectionService {
     private fun detectAnomaly(
         measurement: List<EnrichedMeasurementDTO>, pastMeasurements: List<EnrichedMeasurementDTO>
     ) {
-        // Formatierung der Listen
+        //Avoid unnecessary calculations
+        var anomalousWaterTemp = false
+        var anomalousWaterLevel = false
+        var anomalousWaveHeight = false
+
+        val currentWaterTemp = measurement.find { it.measurementType.name == MEASUREMENT_NAME_TEMPERATURE }!!
+        val currentWaveHeight = measurement.find { it.measurementType.name == MEASUREMENT_NAME_WAVE_HEIGHT }!!
+        val currentWaterLevel = measurement.find { it.measurementType.name == MEASUREMENT_NAME_WATER_LEVEL }!!
+
+        val pastMeasurementsByType = pastMeasurements.groupBy { it.measurementType }
+
         // Prüfung von physikalischen Limits & Änderungen
+        if (currentWaterTemp.value !in MIN_WATER_TEMPERATURE..MAX_WATER_TEMPERATURE) {
+            anomalousWaterTemp = true
+        }
+        if (currentWaterLevel.value !in WATER_LEVEL_SENSOR_LOWER_LIMIT..WATER_LEVEL_SENSOR_UPPER_LIMIT) {
+            anomalousWaterLevel = true
+        }
+        if (currentWaterLevel.value + currentWaveHeight.value !in 0.0..WATER_LEVEL_SENSOR_UPPER_LIMIT) {
+            anomalousWaveHeight = true
+        }
+        val absDiffFromMedianWaterTemperature =
+            abs(currentWaterTemp.value - calculateMedian(pastMeasurementsByType, MEASUREMENT_NAME_TEMPERATURE))
+        if (!anomalousWaterTemp && absDiffFromMedianWaterTemperature >= MAX_TEMPERATURE_FROM_MEDIAN) {
+            anomalousWaterTemp = true
+        }
+        val absDiffFromMedianWaterLevel =
+            abs(currentWaterLevel.value - calculateMedian(pastMeasurementsByType, MEASUREMENT_NAME_WATER_LEVEL))
+        if (!anomalousWaterLevel && absDiffFromMedianWaterLevel >= MAX_WATER_LEVEL_FROM_MEDIAN) {
+            anomalousWaterLevel = true
+        }
         // Prüfung von verwandten Messwerten
-        // Prüfung von anderen Sensoren
+        if (currentWaterLevel.value !in TEMP_SENSOR_DEPTH_LOWER_BORDER..TEMP_SENSOR_DEPTH_UPPER_BORDER) {
+            anomalousWaterTemp = true
+        }
+
+        // Prüfung von anderen Sensoren - Potential TODO
+
+        currentWaterTemp.takeIf { anomalousWaterTemp }?.let(::writeAnomaly)
+        currentWaterLevel.takeIf { anomalousWaterLevel }?.let(::writeAnomaly)
+        currentWaveHeight.takeIf { anomalousWaveHeight }?.let(::writeAnomaly)
+    }
+
+    private fun writeAnomaly(measurement: EnrichedMeasurementDTO) {
+
     }
 
     private fun getHash(measurement: LocationWithLatestMeasurementsDTO): String {
@@ -69,5 +123,24 @@ object AnomalyDetectionService {
         val digest = md.digest(bytes)
 
         return digest.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun calculateMedian(
+        map: Map<MeasurementTypeDTO, List<EnrichedMeasurementDTO>>, measurementTypeName: String
+    ): Double {
+
+        val key = map.keys.firstOrNull { it.name == measurementTypeName }!!
+        val list = map[key]
+
+        val sortedList = list!!.sortedBy { it.value }
+
+        val size = sortedList.size
+        return if (size % 2 == 1) {
+            sortedList[size / 2].value
+        } else {
+            val mid1 = sortedList[(size / 2) - 1].value
+            val mid2 = sortedList[size / 2].value
+            (mid1 + mid2) / 2.0
+        }
     }
 }
