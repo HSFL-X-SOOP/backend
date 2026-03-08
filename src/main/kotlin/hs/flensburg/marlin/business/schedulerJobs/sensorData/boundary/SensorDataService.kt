@@ -6,6 +6,7 @@ import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.JEnv
 import hs.flensburg.marlin.business.httpclient
+import hs.flensburg.marlin.business.schedulerJobs.anomalyDetection.boundary.AnomalyDetectionService
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.boundary.PreProcessingService.preProcessData
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.control.SensorDataRepo
@@ -33,6 +34,7 @@ object SensorDataService {
             KIO.comprehension {
                 logger.debug { "New measurements for Location $locationId -> Trigger" }
 
+                AnomalyDetectionService.checkNewMeasurements(locationId)
                 // TODO: Call other services here, like anomaly detection and notification
 
                 KIO.unit
