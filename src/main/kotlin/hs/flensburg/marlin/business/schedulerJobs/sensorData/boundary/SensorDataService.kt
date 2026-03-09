@@ -5,6 +5,7 @@ import de.lambda9.tailwind.core.extensions.kio.attempt
 import de.lambda9.tailwind.jooq.transact
 import hs.flensburg.marlin.business.App
 import hs.flensburg.marlin.business.JEnv
+import hs.flensburg.marlin.business.ServiceLayerError
 import hs.flensburg.marlin.business.httpclient
 import hs.flensburg.marlin.business.schedulerJobs.anomalyDetection.boundary.AnomalyDetectionService
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
@@ -25,7 +26,7 @@ private val logger = KotlinLogging.logger { }
 
 object SensorDataService {
 
-    fun getSensorDataFromActiveSensors(): App<PotentialSensorService.Error, Unit> = KIO.comprehension {
+    fun getSensorDataFromActiveSensors(): App<ServiceLayerError, Unit> = KIO.comprehension {
         val activeSensorIds = !PotentialSensorService.getActivePotentialSensorIds()
 
         getAndSaveAllSensorsData(activeSensorIds) { locationId ->
@@ -33,7 +34,7 @@ object SensorDataService {
             KIO.comprehension {
                 logger.debug { "New measurements for Location $locationId -> Trigger" }
                 print("  Test7")
-                AnomalyDetectionService.checkNewMeasurements(locationId)
+                !AnomalyDetectionService.checkNewMeasurements(locationId)
                 print("  Test8")
                 // TODO: Call other services here, like anomaly detection and notification
 
