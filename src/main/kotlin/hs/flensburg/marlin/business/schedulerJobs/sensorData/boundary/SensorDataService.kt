@@ -14,10 +14,9 @@ import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingClean
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.ThingRaw
 import hs.flensburg.marlin.business.schedulerJobs.sensorData.entity.toClean
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.call.body
-import io.ktor.client.request.get
-import io.ktor.http.appendPathSegments
-import io.ktor.http.takeFrom
+import io.ktor.client.call.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.runBlocking
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -33,8 +32,9 @@ object SensorDataService {
             // This block triggers if a new measurement is available for a location within the last hour
             KIO.comprehension {
                 logger.debug { "New measurements for Location $locationId -> Trigger" }
-
+                print("  Test7")
                 AnomalyDetectionService.checkNewMeasurements(locationId)
+                print("  Test8")
                 // TODO: Call other services here, like anomaly detection and notification
 
                 KIO.unit
@@ -67,7 +67,6 @@ object SensorDataService {
             // Fetch Frost Server
             // Response to clean
             val thingClean = fetchSensorDataFrostServer(frostServerBaseUrl, id).toClean()
-
             // Preprocess the data
             val thingProcessed = preProcessData(thingClean)
 
@@ -88,7 +87,6 @@ object SensorDataService {
 
                 if (result.timestamp.isAfter(oneHourAgo)) {
                     printStationInfo(id, result.locationId, thingClean)
-
                     (!onNewData(result.locationId).attempt()).fold(
                         onSuccess = { },
                         onError = { logger.error { it.toString() } })

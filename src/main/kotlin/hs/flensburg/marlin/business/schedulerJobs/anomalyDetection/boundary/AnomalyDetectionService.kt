@@ -47,7 +47,7 @@ object AnomalyDetectionService {
     val history = mutableListOf<String>()
 
     fun checkNewMeasurements(locationId: Long): App<ServiceLayerError, Unit> = KIO.comprehension {
-        print("Check gestartet")
+        print("Check gestartet\n")
         val latestMeasurements =
             !SensorRepo.fetchSingleLocationWithLatestMeasurements(locationId, "UTC", "metric").orDie()
                 .onNullFail { Error.NotFound }
@@ -104,6 +104,8 @@ object AnomalyDetectionService {
         }
 
         // TODO("ggf. Prüfung des Zusammenspiels mit anderen Sensoren")
+
+        print("Temp: $anomalousWaterTemp / ${currentWaterTemp?.value}, Level $anomalousWaterLevel / ${currentWaterLevel?.value}, Wave $anomalousWaveHeight / ${currentWaveHeight?.value}")
 
         currentWaterTemp.takeIf { anomalousWaterTemp }?.let(::writeAnomaly)
         currentWaterLevel.takeIf { anomalousWaterLevel }?.let(::writeAnomaly)
