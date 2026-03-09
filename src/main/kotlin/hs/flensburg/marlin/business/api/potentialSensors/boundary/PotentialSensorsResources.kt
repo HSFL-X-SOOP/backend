@@ -1,6 +1,6 @@
 package hs.flensburg.marlin.business.api.potentialSensors.boundary
 
-import hs.flensburg.marlin.business.api.potentialSensors.entity.PotentialSensorDTO
+import hs.flensburg.marlin.business.api.openAPI.PotentialSensorsOpenAPISpec
 import hs.flensburg.marlin.business.schedulerJobs.potentialSensors.boundary.PotentialSensorService
 import hs.flensburg.marlin.plugins.Realm
 import hs.flensburg.marlin.plugins.authenticate
@@ -14,60 +14,13 @@ import io.ktor.server.routing.routing
 fun Application.configurePotentialSensors() {
     routing {
         authenticate(Realm.ADMIN) {
-            get(
-                path = "/admin/potential-sensors",
-                builder = {
-                    description = "Get all potential sensors. Requires admin role."
-                    tags("admin", "potential-sensors")
-                    securitySchemeNames("BearerAuthAdmin")
-                    description = "Get all potential sensors"
-                    tags("admin")
-                    response {
-                        HttpStatusCode.OK to {
-                            description = "List of potential sensors"
-                            body<List<PotentialSensorDTO>>()
-                        }
-                        HttpStatusCode.Unauthorized to {
-                            description = "Missing or invalid JWT token, or insufficient permissions (admin role required)"
-                            body<String>()
-                        }
-                        HttpStatusCode.InternalServerError to {
-                            description = "Error retrieving potential sensors"
-                        }
-                    }
-                }
-            ) {
+            get("/admin/potential-sensors", PotentialSensorsOpenAPISpec.getPotentialSensors) {
                 call.respondKIO(PotentialSensorService.getAllPotentialSensors())
             }
+
             get(
-                path = "/admin/potential-sensors-toggle/{id}",
-                builder = {
-                    description = "Toggle active state of potential sensors. Requires admin role."
-                    tags("admin")
-                    securitySchemeNames("BearerAuthAdmin")
-                    request {
-                        pathParameter<Long>("id") {
-                            description = "The sensor ID"
-                        }
-                    }
-                    response {
-                        HttpStatusCode.OK to {
-                            description = "potential sensors with updated active state"
-                            body<List<PotentialSensorDTO>>()
-                        }
-                        HttpStatusCode.BadRequest to {
-                            description = "Invalid sensor ID"
-                            body<String>()
-                        }
-                        HttpStatusCode.Unauthorized to {
-                            description = "Missing or invalid JWT token, or insufficient permissions (admin role required)"
-                            body<String>()
-                        }
-                        HttpStatusCode.InternalServerError to {
-                            description = "Error retrieving potential sensors"
-                        }
-                    }
-                }
+                "/admin/potential-sensors-toggle/{id}",
+                PotentialSensorsOpenAPISpec.getPotentialSensorToggle
             ) {
                 val id = call.parameters["id"]?.toLongOrNull()
 
